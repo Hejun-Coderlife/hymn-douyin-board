@@ -33,6 +33,21 @@ BLANK = {
 # 新账号：三横店 8/24 才开始发视频
 START_DATES = {"28098977805": "2026-08-24"}
 
+# 只从店名里推能确定的：带行政区前缀的填区域，带商场字样的算商场店。
+# 其余一律留空，等人在「门店列表」面板里手填 —— 不瞎猜。
+REGION_PREFIX = ["海曙", "江北", "鄞州", "镇海", "北仑", "奉化", "余姚", "慈溪", "象山", "宁海"]
+MALL_WORDS = ["万达", "天街", "广场", "百货", "嘉悦", "海德", "恒一", "购物中心"]
+
+
+def guess(store_name):
+    region = ""
+    for r in REGION_PREFIX:
+        if store_name.startswith(r):
+            region = r
+            break
+    store_type = "商场店" if any(w in store_name for w in MALL_WORDS) else ""
+    return region, store_type
+
 
 def parse_name(account_name):
     """「赫眉·珀莱雅(新河店)」-> ('新河店', '珀莱雅')；「赫眉(西坞店)」-> ('西坞店', '')"""
@@ -69,6 +84,8 @@ def main():
         rec = {"douyinId": did, "accountName": account,
                "storeName": store_name, "brandLine": brand_line}
         rec.update(BLANK)
+        g_region, g_type = guess(store_name)
+        rec["region"], rec["storeType"] = g_region, g_type
         if did in START_DATES:
             rec["startDate"] = START_DATES[did]
             rec["note"] = "新账号，2026-08-24 才开始发视频"

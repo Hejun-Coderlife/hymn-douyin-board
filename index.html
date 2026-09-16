@@ -80,8 +80,17 @@
     <!-- 门店列表 -->
     <section class="panel" id="p-stores">
       <div class="card">
-        <h3>门店档案 <span class="tag">区域 / 门店类型等字段留空，填好后筛选器自动出选项</span></h3>
-        <div style="max-height:calc(100vh - 240px);overflow:auto">
+        <h3>门店档案 <span class="tag">直接在表里改，改完自动生效（筛选器、脚本生成都会用）</span></h3>
+        <p class="note" id="profileStat"></p>
+        <div class="rowbtns" style="margin-top:10px">
+          <button class="btn primary" id="btnExportStores">导出 stores.json</button>
+          <button class="btn danger" id="btnResetStores">还原本机修改</button>
+          <span class="note" style="margin-left:4px">
+            改动先存在浏览器里，看板立刻生效；要固化到项目里就点「导出」，把文件放回 data/ 覆盖。
+          </span>
+        </div>
+        <datalist id="regionList"></datalist>
+        <div class="tablewrap" style="max-height:calc(100vh - 340px);overflow:auto;margin-top:12px">
           <table class="list" id="storelist"></table>
         </div>
       </div>
@@ -142,7 +151,7 @@
 </aside>
 
 <script src="data/stores.js"></script>
-<script src="data/scripts.js"></script>
+<script src="data/scripts-index.js"></script>
 <script src="vendor/xlsx.full.min.js"></script>
 <script src="assets/bg3d.js"></script>
 <script src="assets/core.js"></script>

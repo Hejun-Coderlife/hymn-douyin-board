@@ -50,7 +50,10 @@ reference/            视觉参考 B-浅米系.html、样例 xlsx（不部署也
 字体全部用系统栈（`-apple-system, PingFang SC …`），不引任何网络字体。
 正文 15px 起步，分镜/详情 14.5px，标题 16–19px —— **用户明确嫌过字小，不要再往下调**。
 
-顶部有一条 3D 横幅（`assets/bg3d.js`）：原生 WebGL 片元着色器，透视网格 + 漂浮光球，品牌粉调。
+顶部有一条 3D 横幅（`assets/bg3d.js`）：原生 WebGL 片元着色器，**5 种风格可选**
+（aurora 柔光流云 / silk 丝绸流光 / dust 星云微尘 / liquid 液态色块 / breath 光晕呼吸），
+全部刻意放慢——用户要的是 app.hemei.asia/dashboard 那种「背景图缓慢流动」的感觉，不要快节奏。
+样本页 `背景样本.html` 可以五个并排对比。
 **只铺在横幅那一条，不铺整页**（数据区要干净）。性能约束（用户机器性能有限）：0.55 倍分辨率、
 限 30fps、页面切走或横幅滚出视口就停、拿不到 WebGL 自动退回静态渐变。右下角「动效」按钮可关，
 状态存 `localStorage.hymn_bg3d`。**不要改用 Canvas 2D 的 shadowBlur 之类做动效。**
@@ -79,7 +82,11 @@ reference/            视觉参考 B-浅米系.html、样例 xlsx（不部署也
 
 店名写法不统一（`赫眉(西坞店)`、`赫眉·珀莱雅(新河店)`），解析规则：取括号内为 `storeName`，`赫眉·` 与括号之间为 `brandLine`。
 
-预留字段（区域、门店类型、客群、主推项目、可拍场景、出镜条件）**先留空**，等后续补。
+区域/门店类型只从店名里推能确定的（带行政区前缀、带商场字样），其余**一律留空不瞎猜**。
+
+**门店档案可以在页面上直接改**：「门店列表」面板的表格每格都能编辑，改动存
+`localStorage.hymn_store_edits_v1`，加载时覆盖到 stores 上，看板立刻生效（筛选器会自动出新选项）。
+要固化进项目就点「导出 stores.json」，把文件放回 `data/` 覆盖，再跑 `python3 tools/sync_data.py`。
 
 ### data/scripts.json
 
@@ -106,10 +113,17 @@ reference/            视觉参考 B-浅米系.html、样例 xlsx（不部署也
 }
 ```
 
-第一版是 `tools/gen_sample_scripts.py` + `tools/content_lib.py` 生成的示例占位数据
-（12 家店 × 每天 1 条 × 15 周 ≈ 1260 条，`data/scripts.js` 约 2.8MB）。
-**规模提醒**：真做到 43 店 × 91 天 ≈ 3900 条，单文件会到 8–9MB，届时要按月拆成
-`scripts-2026-10.js` 之类分片加载。真脚本由 AI 生成后替换产物即可，页面逻辑不依赖生成器。
+现在是 `tools/gen_sample_scripts.py` + `tools/content_lib.py` 生成的**全量 43 店**占位数据
+（43 × 每天 1 条 × 15 周 = 4515 条）。真脚本由 AI 生成后替换 `data/scripts.json` 再跑 sync 即可。
+
+**分片（重要）**：4515 条完整脚本约 9.6MB，一次全加载会卡，所以拆成两层——
+- `data/scripts-index.js`（579KB，全量加载）：每条只有 id/store/date/topic/format/tag，
+  日历大表、状态计算、完成率全靠它；
+- `data/scripts/<门店编号>.js`（43 个，每个约 230KB，**按需加载**）：完整分镜等详情。
+  点开侧栏时 `HY.loadDetail(code)` 注入 `<script>` 拉取（file:// 下 fetch 不行但 script 标签可以）。
+
+**加数据字段时注意**：日历上要用的字段必须加进 `INDEX_FIELDS`（见 tools/sync_data.py），
+否则索引里没有，看板取不到。
 
 ## 视频数据导入
 
@@ -162,4 +176,7 @@ reference/            视觉参考 B-浅米系.html、样例 xlsx（不部署也
   **新增任何数据文件都要照这个办法走。**
 - localStorage 按来源隔离：`file://` 和 `http://localhost:8765` 各存各的视频数据，互相看不见。
   换打开方式要用「导出备份 / 导入备份 JSON」搬。
+- 面板路由用 `#view=xxx`，**不能直接用 `#board`**：页面里有 `id="board"` 的表格，
+  浏览器会跳着滚过去（2026-09-16 踩过）。
+- 按钮/卡片要有立体层次（渐变底 + inset 高光 + 投影 + hover 抬起），用户明确说过纯色扁平「不好看」。
 - 推 GitHub 等用户说「推送」再推。

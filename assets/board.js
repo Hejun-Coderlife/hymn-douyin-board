@@ -194,7 +194,23 @@
   }
 
   function openScript(id) {
-    var s = S.scriptById[id];
+    var light = S.scriptById[id];
+    if (!light) return;
+    var st = S.storeById[light.store] || {};
+    // 详情在按门店分片里，先加载再画
+    $('#dTitle').textContent = st.storeName + '｜' + light.topic;
+    $('#dSub').textContent = '计划发布 ' + light.date + ' · 载入脚本详情…';
+    $('#dBody').innerHTML = '<div class="emptyrow">载入中…</div>';
+    openDrawer();
+    HY.loadDetail(st.code).then(function () {
+      drawScript(id);
+    }, function (e) {
+      $('#dBody').innerHTML = '<div class="emptyrow">脚本详情加载失败：' + esc(e.message) + '</div>';
+    });
+  }
+
+  function drawScript(id) {
+    var s = HY.detail(id) || S.scriptById[id];
     if (!s) return;
     var st = S.storeById[s.store] || {};
     var m = S.m.byScript[s.id];
@@ -270,7 +286,6 @@
     if (ct) ct.onclick = function () { copy(s.tag, '已复制 ' + s.tag); };
     var ca = document.getElementById('copyAll');
     if (ca) ca.onclick = function () { copy((s.hashtags || []).join(' '), '标签已全部复制'); };
-    openDrawer();
   }
 
   function copy(text, okMsg) {
@@ -296,25 +311,110 @@
     openDrawer();
   }
 
-  /* ---------- 门店列表 ---------- */
+  /* ---------- 门店档案（可直接编辑） ---------- */
+  var REGION_HINTS = ['海曙', '江北', '鄞州', '镇海', '北仑', '奉化', '慈溪', '余姚',
+                      '象山', '宁海', '绍兴', '台州', '温州'];
+  var TYPE_OPTS = ['', '商场店', '社区店', '街边店', '写字楼店'];
+
   function renderStoreList() {
-    var h = '<thead><tr><th>编号</th><th>门店</th><th>品牌线</th><th>抖音号</th><th>区域</th>' +
-            '<th>门店类型</th><th>脚本数</th><th>视频数</th><th></th></tr></thead><tbody>';
     var cntS = {}, cntV = {};
-    S.scripts.forEach(function (s) { cntS[s.store] = (cntS[s.store] || 0) + 1; });
+    S.scripts.forEach(function (x) { cntS[x.store] = (cntS[x.store] || 0) + 1; });
     S.videos.forEach(function (v) { cntV[v.store] = (cntV[v.store] || 0) + 1; });
+
+    var regions = {};
+    S.stores.forEach(function (x) { if (x.region) regions[x.region] = 1; });
+    REGION_HINTS.forEach(function (r) { regions[r] = 1; });
+    $('#regionList').innerHTML = Object.keys(regions).sort().map(function (r) {
+      return '<option value="' + esc(r) + '">';
+    }).join('');
+
+    var filled = S.stores.filter(function (x) { return x.region; }).length;
+    $('#profileStat').innerHTML = '已填区域 <b>' + filled + '/' + S.stores.length + '</b> 家 · ' +
+      '本机改动 <b>' + HY.StoreEdits.count() + '</b> 家（存在浏览器里，改完记得导出）';
+
+    var h = '<thead><tr><th>门店</th><th>抖音号</th><th style="width:110px">区域</th>' +
+      '<th style="width:110px">门店类型</th><th style="width:150px">客群</th>' +
+      '<th style="width:170px">主推项目</th><th style="width:170px">可拍场景</th>' +
+      '<th style="width:150px">出镜条件</th><th>脚本</th><th>视频</th><th></th></tr></thead><tbody>';
     S.stores.forEach(function (st) {
-      h += '<tr><td class="mono muted">' + st.code + '</td><td>' + esc(st.storeName) +
-        (st.startDate ? ' <span class="muted">（' + st.startDate + ' 开号）</span>' : '') + '</td>' +
-        '<td class="bl">' + esc(st.brandLine || '—') + '</td>' +
-        '<td class="mono">' + st.douyinId + '</td>' +
-        '<td class="muted">' + esc(st.region || '—') + '</td>' +
-        '<td class="muted">' + esc(st.storeType || '—') + '</td>' +
+      h += '<tr data-id="' + st.douyinId + '">' +
+        '<td><div class="nm2">' + esc(st.storeName) + '</div>' +
+        (st.brandLine ? '<div class="bl">' + esc(st.brandLine) + '</div>' : '') + '</td>' +
+        '<td class="mono muted">' + st.douyinId + '</td>' +
+        cellInput(st, 'region', '区域', 'regionList') +
+        cellSelect(st, 'storeType', TYPE_OPTS) +
+        cellInput(st, 'customer', '如 30-45 岁社区妈妈') +
+        cellInput(st, 'mainService', '如 皮肤管理 / 妆造') +
+        cellInput(st, 'scenes', '如 护理床、前台、门头（逗号分隔）') +
+        cellInput(st, 'onCamera', '如 店长可出镜') +
         '<td class="mono">' + (cntS[st.douyinId] || 0) + '</td>' +
         '<td class="mono">' + (cntV[st.douyinId] || 0) + '</td>' +
         '<td><a class="btn sm" href="store.html?store=' + st.douyinId + '" target="_blank">门店页</a></td></tr>';
     });
     $('#storelist').innerHTML = h + '</tbody>';
+
+    $$('#storelist input[data-f], #storelist select[data-f]').forEach(function (el) {
+      el.onchange = function () {
+        var id = el.closest('tr').dataset.id, f = el.dataset.f, v = el.value.trim();
+        HY.StoreEdits.set(id, f, f === 'scenes' ? splitList(v) : v);
+        var st = S.storeById[id];
+        if (st) st[f] = f === 'scenes' ? splitList(v) : v;
+        el.classList.toggle('edited', !!v);
+        refreshFiltersAfterEdit();
+        $('#profileStat').innerHTML = '已填区域 <b>' +
+          S.stores.filter(function (x) { return x.region; }).length + '/' + S.stores.length +
+          '</b> 家 · 本机改动 <b>' + HY.StoreEdits.count() + '</b> 家（存在浏览器里，改完记得导出）';
+      };
+    });
+  }
+  function splitList(v) {
+    return v ? v.split(/[,，、\s]+/).filter(Boolean) : [];
+  }
+  function val(st, f) {
+    var v = st[f];
+    return Array.isArray(v) ? v.join('、') : (v || '');
+  }
+  function cellInput(st, f, ph, listId) {
+    var v = val(st, f);
+    return '<td><input data-f="' + f + '" class="cellin' + (v ? ' edited' : '') + '" value="' +
+      esc(v) + '" placeholder="' + esc(ph) + '"' + (listId ? ' list="' + listId + '"' : '') + '></td>';
+  }
+  function cellSelect(st, f, opts) {
+    var v = val(st, f);
+    return '<td><select data-f="' + f + '" class="cellin' + (v ? ' edited' : '') + '">' +
+      opts.map(function (o) {
+        return '<option value="' + esc(o) + '"' + (o === v ? ' selected' : '') + '>' + (o || '—') + '</option>';
+      }).join('') + '</select></td>';
+  }
+
+  /** 门店字段改了以后，筛选下拉要跟着出新选项 */
+  function refreshFiltersAfterEdit() {
+    ['#fRegion', '#fType'].forEach(function (sel) {
+      var el = $(sel), keep = el.value, f = sel === '#fRegion' ? 'region' : 'storeType';
+      var o = {};
+      S.stores.forEach(function (x) { if (x[f]) o[x[f]] = 1; });
+      el.disabled = false;
+      el.innerHTML = '<option value="">' + (f === 'region' ? '全部区域' : '全部门店类型') + '</option>' +
+        Object.keys(o).sort().map(function (v) {
+          return '<option value="' + esc(v) + '"' + (v === keep ? ' selected' : '') + '>' + esc(v) + '</option>';
+        }).join('');
+    });
+    render();
+  }
+
+  function exportStores() {
+    var out = S.stores.map(function (st) {
+      var o = {};
+      Object.keys(st).forEach(function (k) { o[k] = st[k]; });
+      return o;
+    });
+    var blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'stores.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    HY.toast('已导出 stores.json，替换到 data/ 里再跑 sync_data.py');
   }
 
   /* ---------- 导入 ---------- */
@@ -422,7 +522,14 @@
 
   /* ---------- 面板切换 ---------- */
   var TITLES = { board: '脚本日历', stores: '门店列表', import: '视频数据导入', effect: '效果统计' };
+  function hashView() {
+    var m = /(?:^|[#&])view=([a-z]+)/.exec(location.hash || '');
+    return m && TITLES[m[1]] ? m[1] : 'board';
+  }
   function showPanel(name) {
+    if (!TITLES[name]) name = 'board';
+    // 注意：hash 不能直接写 '#board'，页面里有 id="board" 的表格，浏览器会跳着滚过去
+    if (hashView() !== name) history.replaceState(null, '', '#view=' + name);
     $$('.panel').forEach(function (p) { p.classList.toggle('on', p.id === 'p-' + name); });
     $$('.nav a').forEach(function (a) { a.classList.toggle('on', a.dataset.panel === name); });
     $('#ttl').textContent = TITLES[name] || '';
@@ -521,6 +628,13 @@
       };
       fr.readAsText(f);
     };
+    $('#btnExportStores').onclick = exportStores;
+    $('#btnResetStores').onclick = function () {
+      if (!window.confirm('清掉本机对门店档案的所有修改，回到 data/stores.json 的内容？')) return;
+      HY.StoreEdits.clear();
+      location.reload();
+    };
+
     $('#btnClear').onclick = function () {
       if (!window.confirm('确定清空这个浏览器里累计的全部视频数据？建议先导出备份。')) return;
       HY.Videos.clear();
@@ -537,6 +651,8 @@
     bind();
     initHero();
     refreshAll();
+    showPanel(hashView());
+    window.addEventListener('hashchange', function () { showPanel(hashView()); });
   }).catch(function (e) {
     $('#board').innerHTML = '<tbody><tr><td class="emptyrow">数据加载失败：' + esc(e.message) + '</td></tr></tbody>';
   });

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>背景动效 · 5 个样本</title>
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  body{padding:28px 32px 60px;background:var(--bg)}
+  h1{font-size:22px;font-weight:600;margin-bottom:6px}
+  .lead{font-size:14px;color:var(--t3);margin-bottom:24px;line-height:1.7}
+  .sample{margin-bottom:26px}
+  .sample .cap{display:flex;align-items:baseline;gap:10px;margin-bottom:8px}
+  .sample .cap .no{
+    width:24px;height:24px;border-radius:6px;background:var(--brand);color:#fff;
+    font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  }
+  .sample .cap b{font-size:16px}
+  .sample .cap span{font-size:13.5px;color:var(--t3)}
+</style>
+</head>
+<body>
+<h1>背景动效 · 5 个样本</h1>
+<p class="lead">
+  都是同一条横幅的尺寸，全部放慢了速度（24fps / 0.55 倍分辨率 / 滚出视口自动停）。<br>
+  看中哪个告诉我编号，我换到看板上去。也可以说「第 2 个但再慢一点 / 颜色淡一点」。
+</p>
+<div id="list"></div>
+
+<script src="assets/bg3d.js"></script>
+<script>
+  var box = document.getElementById('list');
+  HYBg.VARIANTS.forEach(function (v, i) {
+    var d = document.createElement('div');
+    d.className = 'sample';
+    d.innerHTML =
+      '<div class="cap"><span class="no">' + (i + 1) + '</span><b>' + v.name + '</b><span>' + v.desc + '</span></div>' +
+      '<div class="hero"><canvas></canvas><div class="hero-in">' +
+      '<div class="hero-eyebrow">赫眉 HYMN · 全部门店</div>' +
+      '<h2>抖音拍摄脚本看板</h2>' +
+      '<p>43 家门店 · 每店每天 1 条 · 往后滚动 13 周</p>' +
+      '</div></div>';
+    box.appendChild(d);
+    HYBg(d.querySelector('canvas'), v.key).start();
+  });
+</script>
+</body>
+</html>

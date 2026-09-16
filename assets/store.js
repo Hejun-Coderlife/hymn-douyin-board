@@ -22,12 +22,18 @@
     if (!st) {
       $('#spName').textContent = '没找到这家门店';
       $('#spSub').textContent = '抖音号 ' + id + ' 不在门店表里';
-      return;
+      return Promise.reject(new Error('门店不存在'));
     }
+    // 脚本详情按门店分片，先把本店那份加载进来
+    return HY.loadDetail(st.code).then(function () { return d; });
+  }).then(function (d) {
+    if (!d) return;
+    var st = d.storeById[id];
     // 视频数据来自总部在本机导入的 localStorage；店员手机上通常是空的，
     // 那就只显示计划，不判断发没发，免得误伤。
     var videos = HY.Videos.list().filter(function (v) { return v.store === id; });
-    var mine = d.scripts.filter(function (s) { return s.store === id; });
+    var mine = d.scripts.filter(function (s) { return s.store === id; })
+      .map(function (x) { return HY.detail(x.id) || x; });
     var m = HY.match(mine, videos);
     var weeks = HY.buildDayGrid(new Date(), HY.WEEKS);
     var hasVideo = videos.length > 0;
