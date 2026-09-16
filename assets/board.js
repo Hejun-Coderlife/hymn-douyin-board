@@ -628,25 +628,39 @@
   }
 
   /* ---------- 顶部 3D 横幅 ---------- */
-  var pagebg = null;
+  var bg = null, pagebg = null;
   function initHero() {
-    var btn = $('#fxToggle'), pg = $('#pageBg');
-    if (!pg || !window.HYBg) { if (btn) btn.style.display = 'none'; return; }
-    var style = localStorage.getItem('hymn_bg3d_style') || 'pearl';
-    pagebg = window.HYBg(pg, style, { light: true });
+    var btn = $('#fxToggle'), pg = $('#pageBg'), cv = $('#heroCanvas');
+    if (!window.HYBg) { if (btn) btn.style.display = 'none'; return; }
+    // 横幅用深色风格，整页背景用浅色的奶油珍珠，两层各管各的
+    var heroStyle = localStorage.getItem('hymn_bg3d_style') || 'aurora';
+    if (cv) bg = window.HYBg(cv, heroStyle);
+    if (pg) pagebg = window.HYBg(pg, 'pearl', { light: true });
     var off = localStorage.getItem('hymn_bg3d') === 'off';
     apply(off);
-    btn.onclick = function () {
+    if (btn) btn.onclick = function () {
       off = !off;
       localStorage.setItem('hymn_bg3d', off ? 'off' : 'on');
       apply(off);
     };
     function apply(isOff) {
-      pg.dataset.on = isOff ? '0' : '1';
-      btn.classList.toggle('off', isOff);
-      btn.textContent = isOff ? '动效已关' : '动效';
-      if (isOff) { pagebg.stop(); pg.classList.add('off'); }
-      else { pg.classList.remove('off'); pagebg.start(); }
+      if (cv) cv.dataset.on = isOff ? '0' : '1';
+      if (pg) pg.dataset.on = isOff ? '0' : '1';
+      if (btn) {
+        btn.classList.toggle('off', isOff);
+        btn.textContent = isOff ? '动效已关' : '动效';
+      }
+      if (isOff) {
+        if (bg) bg.stop();
+        if (pagebg) pagebg.stop();
+        $('#hero').classList.add('nogl');
+        if (pg) pg.classList.add('off');
+      } else {
+        $('#hero').classList.remove('nogl');
+        if (pg) pg.classList.remove('off');
+        if (bg) bg.start();
+        if (pagebg) pagebg.start();
+      }
     }
   }
 

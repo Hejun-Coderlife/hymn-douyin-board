@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>背景动效 · 5 个样本</title>
+<title>背景动效 · 6 个样本</title>
 <link rel="stylesheet" href="assets/style.css">
 <style>
   body{padding:28px 32px 60px;background:var(--bg)}
@@ -17,10 +17,15 @@
   }
   .sample .cap b{font-size:16px}
   .sample .cap span{font-size:13.5px;color:var(--t3)}
+  /* 奶油珍珠是浅色的，文字要用深色，不然看不见 */
+  .hero.light .hero-in h2{color:var(--t1);text-shadow:none}
+  .hero.light .hero-in p{color:var(--t3)}
+  .hero.light .eyebrow{color:var(--gold)}
+  .hero.light{background:#fbf7ef}
 </style>
 </head>
 <body>
-<h1>背景动效 · 5 个样本</h1>
+<h1>背景动效 · 6 个样本</h1>
 <p class="lead">
   都是同一条横幅的尺寸，全部放慢了速度（24fps / 0.55 倍分辨率 / 滚出视口自动停）。<br>
   看中哪个告诉我编号，我换到看板上去。也可以说「第 2 个但再慢一点 / 颜色淡一点」。
