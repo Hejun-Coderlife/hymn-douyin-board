@@ -628,39 +628,25 @@
   }
 
   /* ---------- 顶部 3D 横幅 ---------- */
-  var bg = null, pagebg = null;
+  var pagebg = null;
   function initHero() {
-    var btn = $('#fxToggle'), pg = $('#pageBg'), cv = $('#heroCanvas');
-    if (!window.HYBg) { if (btn) btn.style.display = 'none'; return; }
-    // 横幅用深色风格，整页背景用浅色的奶油珍珠，两层各管各的
-    var heroStyle = localStorage.getItem('hymn_bg3d_style') || 'aurora';
-    if (cv) bg = window.HYBg(cv, heroStyle);
-    if (pg) pagebg = window.HYBg(pg, 'pearl', { light: true });
+    var btn = $('#fxToggle'), pg = $('#pageBg');
+    if (!pg || !window.HYBg) { if (btn) btn.style.display = 'none'; return; }
+    // 只有整页大背景这一层（深色横幅已撤，用户嫌太深）
+    pagebg = window.HYBg(pg, localStorage.getItem('hymn_bg3d_style') || 'pearl', { light: true });
     var off = localStorage.getItem('hymn_bg3d') === 'off';
     apply(off);
-    if (btn) btn.onclick = function () {
+    btn.onclick = function () {
       off = !off;
       localStorage.setItem('hymn_bg3d', off ? 'off' : 'on');
       apply(off);
     };
     function apply(isOff) {
-      if (cv) cv.dataset.on = isOff ? '0' : '1';
-      if (pg) pg.dataset.on = isOff ? '0' : '1';
-      if (btn) {
-        btn.classList.toggle('off', isOff);
-        btn.textContent = isOff ? '动效已关' : '动效';
-      }
-      if (isOff) {
-        if (bg) bg.stop();
-        if (pagebg) pagebg.stop();
-        $('#hero').classList.add('nogl');
-        if (pg) pg.classList.add('off');
-      } else {
-        $('#hero').classList.remove('nogl');
-        if (pg) pg.classList.remove('off');
-        if (bg) bg.start();
-        if (pagebg) pagebg.start();
-      }
+      pg.dataset.on = isOff ? '0' : '1';
+      btn.classList.toggle('off', isOff);
+      btn.textContent = isOff ? '动效已关' : '动效';
+      if (isOff) { pagebg.stop(); pg.classList.add('off'); }
+      else { pg.classList.remove('off'); pagebg.start(); }
     }
   }
 
