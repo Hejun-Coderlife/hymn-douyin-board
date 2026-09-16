@@ -434,8 +434,38 @@
     recompute();
     render();
     renderHint();
+    renderHeroSub();
     if ($('#p-effect').classList.contains('on')) renderEffect();
     if ($('#p-stores').classList.contains('on')) renderStoreList();
+  }
+
+  /* ---------- 顶部 3D 横幅 ---------- */
+  var bg = null;
+  function initHero() {
+    var cv = $('#heroCanvas'), btn = $('#fxToggle');
+    if (!cv || !window.HYBg) return;
+    bg = window.HYBg(cv);
+    var off = localStorage.getItem('hymn_bg3d') === 'off';
+    apply(off);
+    btn.onclick = function () {
+      off = !off;
+      localStorage.setItem('hymn_bg3d', off ? 'off' : 'on');
+      apply(off);
+    };
+    function apply(isOff) {
+      cv.dataset.on = isOff ? '0' : '1';
+      btn.classList.toggle('off', isOff);
+      btn.textContent = isOff ? '动效已关' : '动效';
+      if (isOff) { bg.stop(); $('#hero').classList.add('nogl'); }
+      else { $('#hero').classList.remove('nogl'); bg.start(); }
+    }
+  }
+
+  function renderHeroSub() {
+    var d = new Date();
+    var wd = '日一二三四五六'[d.getDay()];
+    $('#heroSub').textContent = S.stores.length + ' 家门店 · 每店每天 1 条 · 往后滚动 13 周　|　今天 ' +
+      S.today + ' 周' + wd + ' · 在库脚本 ' + HY.num(S.scripts.length) + ' 条';
   }
 
   /* ---------- 事件 ---------- */
@@ -505,6 +535,7 @@
     S.scripts.forEach(function (s) { S.scriptById[s.id] = s; });
     fillFilters();
     bind();
+    initHero();
     refreshAll();
   }).catch(function (e) {
     $('#board').innerHTML = '<tbody><tr><td class="emptyrow">数据加载失败：' + esc(e.message) + '</td></tr></tbody>';
