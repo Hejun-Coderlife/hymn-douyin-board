@@ -49,6 +49,25 @@ window.HY = (function () {
     return out;
   }
 
+  var DOW = ['一', '二', '三', '四', '五', '六', '日'];
+
+  /** 同样的 13 周，但摊开到每一天（看板颗粒度 = 天） */
+  function buildDayGrid(today, n) {
+    var t = ymd(today || new Date());
+    return buildWeeks(today, n).map(function (w) {
+      var mon = parseYmd(w.monday);
+      w.days = [];
+      for (var d = 0; d < 7; d++) {
+        var day = addDays(mon, d);
+        w.days.push({
+          date: ymd(day), dow: DOW[d], dd: day.getDate(),
+          weekend: d >= 5, today: ymd(day) === t
+        });
+      }
+      return w;
+    });
+  }
+
   /* ---------- 视频库（localStorage，累积不覆盖） ---------- */
   var Videos = {
     read: function () {
@@ -162,24 +181,34 @@ window.HY = (function () {
       }
     });
 
-    // 2) 兜底（按计划日期先后处理，保证早的脚本先挑早的视频）
-    scripts.slice().sort(function (a, b) {
+    // 2) 兜底：先找「同一天发的」，再放宽到「同一周发的」。都算推测匹配。
+    var ordered = scripts.slice().sort(function (a, b) {
       return a.date < b.date ? -1 : a.date > b.date ? 1 : 0;
-    }).forEach(function (s) {
-      if (result[s.id]) return;
-      var mon = ymd(monday(parseYmd(s.date)));
-      var sun = ymd(addDays(parseYmd(mon), 6));
-      var pool = byStore[s.store] || [];
-      for (var i = 0; i < pool.length; i++) {
-        var v = pool[i];
-        if (claimed[v.id]) continue;
-        if (v.pubDate >= mon && v.pubDate <= sun) {
-          claimed[v.id] = s.id;
-          result[s.id] = { video: v, type: 'guess' };
-          break;
-        }
-      }
     });
+    function fallback(by) {
+      ordered.forEach(function (s) {
+        if (result[s.id]) return;
+        var from, to;
+        if (by === 'day') {
+          from = to = s.date;
+        } else {
+          from = ymd(monday(parseYmd(s.date)));
+          to = ymd(addDays(parseYmd(from), 6));
+        }
+        var pool = byStore[s.store] || [];
+        for (var i = 0; i < pool.length; i++) {
+          var v = pool[i];
+          if (claimed[v.id]) continue;
+          if (v.pubDate >= from && v.pubDate <= to) {
+            claimed[v.id] = s.id;
+            result[s.id] = { video: v, type: 'guess', by: by };
+            break;
+          }
+        }
+      });
+    }
+    fallback('day');
+    fallback('week');
 
     // 3) 自由发挥
     var free = videos.filter(function (v) { return !claimed[v.id]; });
@@ -227,7 +256,7 @@ window.HY = (function () {
   return {
     BRAND_ID: BRAND_ID, LS_KEY: LS_KEY, WEEKS: WEEKS, COL: COL,
     ymd: ymd, parseYmd: parseYmd, monday: monday, addDays: addDays, md: md,
-    parsePub: parsePub, buildWeeks: buildWeeks,
+    parsePub: parsePub, buildWeeks: buildWeeks, buildDayGrid: buildDayGrid, DOW: DOW,
     Videos: Videos, rowsToVideos: rowsToVideos,
     match: match, statusOf: statusOf, STATUS_CN: STATUS_CN,
     loadData: loadData, toast: toast, num: num
