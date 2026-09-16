@@ -10,7 +10,7 @@
   }
   var pg = document.getElementById('pageBg');
   if (pg && window.HYBg && localStorage.getItem('hymn_bg3d') !== 'off') {
-    window.HYBg(pg, localStorage.getItem('hymn_bg3d_style') || 'aurora',
+    window.HYBg(pg, localStorage.getItem('hymn_bg3d_style') || 'pearl',
                 { light: true, scale: 0.30, fps: 15 }).start();
   } else if (pg) { pg.style.display = 'none'; }
 

@@ -628,13 +628,12 @@
   }
 
   /* ---------- 顶部 3D 横幅 ---------- */
-  var bg = null, pagebg = null;
+  var pagebg = null;
   function initHero() {
-    var cv = $('#heroCanvas'), btn = $('#fxToggle'), pg = $('#pageBg');
-    if (!cv || !window.HYBg) return;
-    var style = localStorage.getItem('hymn_bg3d_style') || 'aurora';
-    bg = window.HYBg(cv, style);
-    if (pg) pagebg = window.HYBg(pg, style, { light: true });
+    var btn = $('#fxToggle'), pg = $('#pageBg');
+    if (!pg || !window.HYBg) { if (btn) btn.style.display = 'none'; return; }
+    var style = localStorage.getItem('hymn_bg3d_style') || 'pearl';
+    pagebg = window.HYBg(pg, style, { light: true });
     var off = localStorage.getItem('hymn_bg3d') === 'off';
     apply(off);
     btn.onclick = function () {
@@ -643,18 +642,11 @@
       apply(off);
     };
     function apply(isOff) {
-      cv.dataset.on = isOff ? '0' : '1';
+      pg.dataset.on = isOff ? '0' : '1';
       btn.classList.toggle('off', isOff);
       btn.textContent = isOff ? '动效已关' : '动效';
-      var pg = $('#pageBg');
-      if (pg) pg.dataset.on = isOff ? '0' : '1';
-      if (isOff) {
-        bg.stop(); if (pagebg) pagebg.stop();
-        $('#hero').classList.add('nogl'); if (pg) pg.classList.add('off');
-      } else {
-        $('#hero').classList.remove('nogl'); if (pg) pg.classList.remove('off');
-        bg.start(); if (pagebg) pagebg.start();
-      }
+      if (isOff) { pagebg.stop(); pg.classList.add('off'); }
+      else { pg.classList.remove('off'); pagebg.start(); }
     }
   }
 

@@ -42,8 +42,55 @@
     '}'
   ].join('\n');
 
+
+  /* 参考 app.hemei.asia/dashboard 的画风：奶油米白底 + 缓慢漂浮的柔光 3D 球。
+     这一版自带最终颜色，不走 TAIL 的明暗映射。 */
+  var TAIL_RAW = [
+    '',
+    'void main(){',
+    '  vec2 uv=gl_FragCoord.xy/u_res;vec2 p=uv*2.0-1.0;p.x*=u_res.x/max(u_res.y,1.0);',
+    '  gl_FragColor=vec4(scene(uv,p),1.0);',
+    '}'
+  ].join('\n');
+
+  var PEARL = [
+    'vec3 sphere(vec2 p,vec2 c,float r,vec3 tint,inout vec3 col){',
+    '  vec2 d=(p-c)/r;float q=dot(d,d);',
+    '  if(q<1.35){',
+    '    float z=sqrt(max(1.0-q,0.0));',
+    '    vec3 n=normalize(vec3(d,z+0.001));',
+    '    vec3 L=normalize(vec3(-0.35,0.62,0.70));',
+    '    float diff=clamp(dot(n,L),0.0,1.0);',
+    '    float rim=pow(1.0-clamp(z,0.0,1.0),2.2);',
+    '    float spec=pow(clamp(dot(n,normalize(L+vec3(0.0,0.0,1.0))),0.0,1.0),26.0);',
+    '    vec3 s=tint*(0.70+0.34*diff)+vec3(1.0,0.97,0.93)*spec*0.30+tint*rim*0.16;',
+    '    float a=smoothstep(1.34,0.80,q);',
+    '    col=mix(col,s,a*0.70);',
+    '  }',
+    '  return col;',
+    '}',
+    'vec3 scene(vec2 uv,vec2 p){',
+    '  float t=u_t*0.026;',                       // 很慢
+    '  vec3 col=mix(vec3(0.988,0.972,0.945),vec3(0.960,0.936,0.894),uv.y);',
+    '  col+=vec3(0.06,0.030,0.004)*pow(max(0.0,1.0-length(p-vec2(-1.1,0.85))*0.75),3.0);',
+    '  col+=vec3(0.05,0.035,0.012)*pow(max(0.0,1.0-length(p-vec2(1.25,-0.75))*0.70),3.0);',
+    '  vec3 cream=vec3(0.985,0.945,0.885);',
+    '  vec3 peach=vec3(0.985,0.878,0.800);',
+    '  vec3 sand =vec3(0.955,0.905,0.812);',
+    '  col=sphere(p,vec2(-1.15+sin(t*0.9)*0.10, 0.52+cos(t*0.7)*0.07),0.30,peach,col);',
+    '  col=sphere(p,vec2( 1.32+cos(t*0.6)*0.12,-0.34+sin(t*0.8)*0.09),0.42,cream,col);',
+    '  col=sphere(p,vec2( 0.55+sin(t*0.5+2.0)*0.14,-0.86+cos(t*0.45)*0.06),0.18,sand,col);',
+    '  col=sphere(p,vec2(-0.62+cos(t*0.75+1.0)*0.09,-0.72+sin(t*0.55)*0.05),0.13,peach,col);',
+    '  col=sphere(p,vec2( 0.05+sin(t*0.4+4.0)*0.18, 0.92+cos(t*0.62)*0.05),0.22,cream,col);',
+    '  return col;',
+    '}'
+  ].join('\n') + TAIL_RAW;
+
   // 五种风格的主体。t 已经放慢过，越小越慢。
   var BODY = {
+    // 0 奶油珍珠（默认）：对标 app.hemei.asia/dashboard
+    pearl: PEARL,
+
     // 1 柔光流云：几团模糊色斑极慢漂移，最接近「背景图动起来」
     aurora: [
       'vec3 scene(vec2 uv,vec2 p){',
@@ -135,6 +182,7 @@
   };
 
   var VARIANTS = [
+    { key: 'pearl',  name: '奶油珍珠', desc: '奶油米白底 + 柔光 3D 球缓慢漂浮（对标经营管理助手）' },
     { key: 'aurora', name: '柔光流云', desc: '几团模糊色斑极慢漂移，最接近「背景图动起来」' },
     { key: 'silk',   name: '丝绸流光', desc: '绸缎般的缓慢波纹，层次感强' },
     { key: 'dust',   name: '星云微尘', desc: '细小光点缓慢流动，最安静' },
@@ -152,7 +200,7 @@
 
   function HYBg(canvas, variant, opts) {
     opts = opts || {};
-    var key = BODY[variant] ? variant : 'aurora';
+    var key = BODY[variant] ? variant : 'pearl';
     var LIGHT = opts.light ? 1.0 : 0.0;
     var gl = null, prog, uRes, uT, uL, raf = 0, last = 0, t0 = Date.now(), running = false, dead = false;
     // 整页背景像素多，所以分辨率和帧率都再降一档
