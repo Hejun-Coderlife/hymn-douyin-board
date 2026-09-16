@@ -32,9 +32,9 @@
     '    float e=clamp(dot(col,vec3(0.85,0.75,0.75)),0.0,1.0);',
     '    float mx=max(col.r,max(col.g,col.b));',
     '    vec3 hue=col/max(mx,0.001);',
-    '    vec3 bg=vec3(0.949,0.953,0.961);',
-    '    vec3 tint=mix(bg,hue*vec3(0.98,0.72,0.86),0.62);',
-    '    col=mix(bg,tint,pow(e,0.85)*0.55);',
+    '    vec3 bg=vec3(0.945,0.922,0.871);',   // #f1ebde 米色
+    '    vec3 tint=mix(bg,hue*vec3(0.96,0.80,0.68),0.50);',   // 偏暖砂金，不要洗成粉
+    '    col=mix(bg,tint,pow(e,0.95)*0.38);',
     '  } else {',
     '    col*=1.0-0.30*length(vec2(p.x*0.33,(uv.y-0.5)*0.9));',
     '  }',
