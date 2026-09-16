@@ -12,6 +12,8 @@ import sys
 
 import openpyxl
 
+import sync_data
+
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT = ROOT / "data" / "stores.json"
 BRAND_ID = "74892160771"  # 品牌号「赫眉美妆护肤连锁」，不进看板
@@ -99,3 +101,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    sync_data.sync()

@@ -195,10 +195,15 @@ window.HY = (function () {
 
   /* ---------- 加载 ---------- */
   function loadData() {
-    return Promise.all([
-      fetch('data/stores.json').then(function (r) { return r.json(); }),
-      fetch('data/scripts.json').then(function (r) { return r.json(); })
-    ]).then(function (a) {
+    // data/stores.js、data/scripts.js 会把数据挂到 window 上，这样双击 file:// 打开也能读到；
+    // 万一没载入（比如只放了 json），再退回 fetch。
+    var pre = (window.HY_STORES && window.HY_SCRIPTS)
+      ? Promise.resolve([window.HY_STORES, window.HY_SCRIPTS])
+      : Promise.all([
+          fetch('data/stores.json').then(function (r) { return r.json(); }),
+          fetch('data/scripts.json').then(function (r) { return r.json(); })
+        ]);
+    return pre.then(function (a) {
       var stores = a[0], scripts = a[1];
       var byId = {};
       stores.forEach(function (s) { byId[s.douyinId] = s; });

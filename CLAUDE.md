@@ -21,11 +21,14 @@ assets/board.js       总部看板逻辑（大表 / 筛选 / 侧栏 / 导入）
 assets/store.js       门店页逻辑
 assets/logo-ink.png   深色 logo（浅底用）
 assets/logo-white.png 白色 logo 原件（深底备用）
-data/stores.json      门店档案（生成物，见 tools/build_stores.py）
-data/scripts.json     脚本数据
+data/stores.json      门店档案（数据源，见 tools/build_stores.py）
+data/scripts.json     脚本数据（数据源）
+data/stores.js        由 json 自动包出来的 js（页面实际加载的就是它）
+data/scripts.js       同上；改完 json 跑 python3 tools/sync_data.py
 vendor/xlsx.full.min.js  SheetJS，本地内置（不走 CDN，保证离线/墙内可用）
 tools/build_stores.py    从 xlsx 重建 stores.json
 tools/gen_sample_scripts.py  生成示例脚本占位数据
+tools/sync_data.py           data/*.json -> data/*.js（上面两个脚本结尾会自动调）
 reference/            视觉参考 B-浅米系.html、样例 xlsx（不部署也无妨）
 ```
 
@@ -141,5 +144,10 @@ reference/            视觉参考 B-浅米系.html、样例 xlsx（不部署也
 ## 约定
 
 - 改完网页不要自动 `open` 预览，用户自己刷新。
-- 本地预览：`python3 -m http.server 8765`（`fetch` JSON 需要 http，不能 `file://` 直接双击）。
+- **用户是双击 `index.html` 打开的（file://）**，所以数据必须走 `<script src="data/*.js">` 挂全局变量，
+  不能用 `fetch('data/*.json')` —— file:// 下 fetch 一律失败，页面会白掉、所有开关没反应。
+  `core.js` 里 `loadData()` 优先读 `window.HY_STORES / HY_SCRIPTS`，取不到才退回 fetch。
+  **新增任何数据文件都要照这个办法走。**
+- localStorage 按来源隔离：`file://` 和 `http://localhost:8765` 各存各的视频数据，互相看不见。
+  换打开方式要用「导出备份 / 导入备份 JSON」搬。
 - 推 GitHub 等用户说「推送」再推。

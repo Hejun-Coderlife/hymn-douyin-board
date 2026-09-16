@@ -11,6 +11,8 @@ import pathlib
 import random
 import sys
 
+import sync_data
+
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 STORES = ROOT / "data" / "stores.json"
 OUT = ROOT / "data" / "scripts.json"
@@ -126,3 +128,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    sync_data.sync()
