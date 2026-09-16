@@ -65,33 +65,59 @@ button,select,input{font:inherit;color:inherit}
 .mono{font-variant-numeric:tabular-nums}
 .muted{color:var(--t3)}
 
-/* ===== 左侧导航 ===== */
+/* ===== 左侧导航（安静的暖色导轨，不抢主区） ===== */
 .sidebar{
-  position:fixed;left:0;top:0;bottom:0;width:var(--nav-w);background:#fff;
-  box-shadow:1px 0 2px rgba(34,29,23,.03);
-  border-right:1px solid var(--line);display:flex;flex-direction:column;z-index:60;
+  position:fixed;left:0;top:0;bottom:0;width:var(--nav-w);
+  background:linear-gradient(180deg,#FBF8F1 0%,#F6F1E6 100%);
+  border-right:1px solid rgba(185,151,76,.20);
+  display:flex;flex-direction:column;z-index:60;
 }
-.sidebar .logo{padding:20px 18px 16px;border-bottom:1px solid var(--line)}
-.sidebar .logo img{height:22px;display:block}
-.sidebar .logo .st{font-size:13px;color:var(--t3);margin-top:8px;letter-spacing:.02em}
-.nav{padding:10px 10px;flex:1;overflow:auto}
+.sidebar .logo{padding:22px 18px 16px;border-bottom:1px solid rgba(185,151,76,.16)}
+.sidebar .logo img{height:19px;display:block;opacity:.88}
+.sidebar .logo .st{font-size:12px;color:var(--t3);margin-top:9px;letter-spacing:.04em}
+
+.nav{padding:12px 10px;flex:1;overflow:auto}
+.nav .grp{
+  font-size:10px;font-weight:700;letter-spacing:.24em;color:#B6AB98;
+  padding:16px 12px 7px;text-transform:uppercase;
+}
 .nav a{
-  display:flex;align-items:center;gap:10px;padding:11px 16px;border-radius:999px;
-  font-size:15px;color:var(--t2);cursor:pointer;margin-bottom:2px;
+  position:relative;display:flex;align-items:center;gap:11px;
+  padding:10px 14px;border-radius:10px;margin-bottom:2px;
+  font-size:14.5px;font-weight:500;color:var(--t2);cursor:pointer;
+  transition:background .2s ease, color .2s ease, box-shadow .2s ease;
 }
-.nav a:hover{background:#f7f2e7;color:var(--t1)}
+.nav a .ico{width:16px;text-align:center;font-size:13px;color:var(--t4);transition:color .2s}
+.nav a:hover{background:rgba(255,255,255,.75);color:var(--t1)}
+.nav a:hover .ico{color:var(--t3)}
 .nav a.on{
-  color:var(--ink-text);font-weight:700;background:var(--ink-gradient);
-  text-shadow:0 1px 2px rgba(0,0,0,.3);
-  box-shadow:0 1px 0 rgba(255,255,255,.12) inset, 0 8px 22px rgba(34,29,23,.28);
+  background:#fff;color:var(--t1);font-weight:700;overflow:hidden;
+  box-shadow:0 1px 2px rgba(34,29,23,.05), 0 6px 16px rgba(34,29,23,.06);
 }
-.nav a .ico{width:18px;text-align:center;font-size:15px;opacity:.9}
-.nav .grp{font-size:12px;color:var(--t4);padding:14px 12px 6px;letter-spacing:.08em}
-.sidedata{padding:14px 14px 12px;border-top:1px solid var(--line)}
-.sidedata .hint{font-size:12px;color:var(--t3);line-height:1.65;margin-bottom:10px}
+.nav a.on .ico{color:var(--brand)}
+.nav a.on::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
+  background:linear-gradient(180deg,var(--brand),var(--gold-bright));
+}
+
+/* 数据状态 + 导入入口：低调的白底药丸，不用大块橙 */
+.sidedata{padding:14px 14px 12px;border-top:1px solid rgba(185,151,76,.16)}
+.sidedata .hint{font-size:11.5px;color:#9A907F;line-height:1.75;margin-bottom:10px}
 .sidedata .hint b{color:var(--t2);font-weight:700}
 .btn.block{width:100%;justify-content:center;text-align:center}
-.sidebar .foot{padding:12px 16px;border-top:1px solid var(--line);font-size:12.5px;color:var(--t3);line-height:1.5}
+.sidedata .btn{
+  background:#fff;border-color:rgba(185,151,76,.35);color:var(--brand-deep);
+  font-weight:700;letter-spacing:.04em;min-height:38px;font-size:13.5px;
+  box-shadow:0 1px 2px rgba(34,29,23,.04);
+}
+.sidedata .btn:hover{
+  background:var(--grad-brand-v);border-color:transparent;color:#fff;
+  box-shadow:0 3px 10px rgba(232,89,12,.28);
+}
+.sidebar .foot{
+  padding:12px 16px 14px;border-top:1px solid rgba(185,151,76,.16);
+  font-size:11.5px;color:#ADA292;line-height:1.7;
+}
 
 /* ===== 主区 ===== */
 .main{margin-left:var(--nav-w);min-height:100vh;display:flex;flex-direction:column}
@@ -534,7 +560,8 @@ body.storepage{background:var(--bg)}
   .hero{height:118px}
   .hero-in{padding:18px 20px}
   .hero-in h2{font-size:21px}
-  .sidebar{position:static;width:auto;flex-direction:row;align-items:center;border-right:none;border-bottom:1px solid var(--line)}
+  .sidebar{position:static;width:auto;flex-direction:row;align-items:center;
+    border-right:none;border-bottom:1px solid rgba(185,151,76,.20)}
   .sidebar .logo{border-bottom:none;padding:12px 16px}
   .sidebar .logo .st{display:none}
   .nav{display:flex;gap:4px;padding:8px}
