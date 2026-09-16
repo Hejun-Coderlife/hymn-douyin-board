@@ -10,7 +10,7 @@
 
   var HEAD = [
     'precision mediump float;',
-    'uniform vec2 u_res;uniform float u_t;',
+    'uniform vec2 u_res;uniform float u_t;uniform float u_light;',
     'float h21(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}',
     'float noise(vec2 p){',
     '  vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);',
@@ -20,12 +20,33 @@
     ''
   ].join('\n');
 
+  /* 所有风格共用的收尾：
+     u_light=0 深色版（横幅用）；u_light=1 浅色版（整页背景用，把颜色映射到近白底上，
+     只留极淡的色晕，保证卡片和文字的可读性不受影响）。 */
+  var TAIL = [
+    '',
+    'void main(){',
+    '  vec2 uv=gl_FragCoord.xy/u_res;vec2 p=uv*2.0-1.0;p.x*=u_res.x/max(u_res.y,1.0);',
+    '  vec3 col=scene(uv,p);',
+    '  if(u_light>0.5){',
+    '    float e=clamp(dot(col,vec3(0.85,0.75,0.75)),0.0,1.0);',
+    '    float mx=max(col.r,max(col.g,col.b));',
+    '    vec3 hue=col/max(mx,0.001);',
+    '    vec3 bg=vec3(0.949,0.953,0.961);',
+    '    vec3 tint=mix(bg,hue*vec3(0.98,0.72,0.86),0.62);',
+    '    col=mix(bg,tint,pow(e,0.85)*0.55);',
+    '  } else {',
+    '    col*=1.0-0.30*length(vec2(p.x*0.33,(uv.y-0.5)*0.9));',
+    '  }',
+    '  gl_FragColor=vec4(col,1.0);',
+    '}'
+  ].join('\n');
+
   // 五种风格的主体。t 已经放慢过，越小越慢。
   var BODY = {
     // 1 柔光流云：几团模糊色斑极慢漂移，最接近「背景图动起来」
     aurora: [
-      'void main(){',
-      '  vec2 uv=gl_FragCoord.xy/u_res;vec2 p=uv*2.0-1.0;p.x*=u_res.x/max(u_res.y,1.0);',
+      'vec3 scene(vec2 uv,vec2 p){',
       '  float t=u_t*0.045;',
       '  vec3 col=mix(vec3(0.085,0.072,0.078),vec3(0.045,0.038,0.046),uv.y);',
       '  vec2 a=vec2(sin(t*1.3)*1.4, 0.35+cos(t*0.9)*0.35);',
@@ -35,15 +56,13 @@
       '  col+=vec3(0.86,0.60,0.80)*0.070/(dot(p-b,p-b)*1.5+0.110);',
       '  col+=vec3(1.00,0.84,0.70)*0.048/(dot(p-c,p-c)*1.8+0.090);',
       '  col*=0.93+0.10*fbm(p*1.6+t*2.0);',
-      '  col*=1.0-0.30*length(vec2(p.x*0.34,(uv.y-0.5)*0.9));',
-      '  gl_FragColor=vec4(col,1.0);',
-      '}'
+            '  return col;',
+      '}'+TAIL
     ].join('\n'),
 
     // 2 丝绸流光：绸缎一样的缓慢波纹
     silk: [
-      'void main(){',
-      '  vec2 uv=gl_FragCoord.xy/u_res;vec2 p=uv*2.0-1.0;p.x*=u_res.x/max(u_res.y,1.0);',
+      'vec3 scene(vec2 uv,vec2 p){',
       '  float t=u_t*0.035;',
       '  vec2 q=p*1.1;',
       '  float w=fbm(q+vec2(t,t*0.6));',
@@ -53,15 +72,13 @@
       '  vec3 sheen=mix(vec3(0.92,0.62,0.70),vec3(0.72,0.58,0.86),w2);',
       '  vec3 col=base+sheen*pow(band,3.5)*0.42;',
       '  col+=vec3(1.0,0.86,0.80)*pow(band,10.0)*0.14;',
-      '  col*=1.0-0.30*length(vec2(p.x*0.32,(uv.y-0.5)*0.9));',
-      '  gl_FragColor=vec4(col,1.0);',
-      '}'
+            '  return col;',
+      '}'+TAIL
     ].join('\n'),
 
     // 3 星云微尘：细小光点缓慢流动，最安静
     dust: [
-      'void main(){',
-      '  vec2 uv=gl_FragCoord.xy/u_res;vec2 p=uv*2.0-1.0;p.x*=u_res.x/max(u_res.y,1.0);',
+      'vec3 scene(vec2 uv,vec2 p){',
       '  float t=u_t*0.030;',
       '  vec3 col=mix(vec3(0.062,0.055,0.066),vec3(0.035,0.030,0.040),uv.y);',
       '  col+=vec3(0.55,0.36,0.46)*fbm(p*0.9+vec2(t*1.2,t*0.5))*0.30;',
@@ -77,15 +94,13 @@
       '    }',
       '  }',
       '  col+=vec3(1.0,0.90,0.92)*d*0.85;',
-      '  col*=1.0-0.30*length(vec2(p.x*0.34,(uv.y-0.5)*0.9));',
-      '  gl_FragColor=vec4(col,1.0);',
-      '}'
+            '  return col;',
+      '}'+TAIL
     ].join('\n'),
 
     // 4 液态色块：大色块像液体缓缓起伏，颜色最饱满
     liquid: [
-      'void main(){',
-      '  vec2 uv=gl_FragCoord.xy/u_res;vec2 p=uv*2.0-1.0;p.x*=u_res.x/max(u_res.y,1.0);',
+      'vec3 scene(vec2 uv,vec2 p){',
       '  float t=u_t*0.040;',
       '  vec2 q=p*0.85;',
       '  q+=0.35*vec2(fbm(q*1.3+vec2(t,0.0)),fbm(q*1.3+vec2(0.0,t*0.8)));',
@@ -97,15 +112,13 @@
       '  col=mix(col,c3,smoothstep(0.60,0.88,n)*0.75);',
       '  col+=vec3(1.0,0.88,0.84)*pow(smoothstep(0.78,0.98,n),2.0)*0.30;',
       '  col*=0.82;',
-      '  col*=1.0-0.32*length(vec2(p.x*0.32,(uv.y-0.5)*0.9));',
-      '  gl_FragColor=vec4(col,1.0);',
-      '}'
+            '  return col;',
+      '}'+TAIL
     ].join('\n'),
 
     // 5 光晕呼吸：两三团光晕缓慢明暗+位移，最克制、最不抢戏
     breath: [
-      'void main(){',
-      '  vec2 uv=gl_FragCoord.xy/u_res;vec2 p=uv*2.0-1.0;p.x*=u_res.x/max(u_res.y,1.0);',
+      'vec3 scene(vec2 uv,vec2 p){',
       '  float t=u_t*0.025;',
       '  vec3 col=mix(vec3(0.072,0.066,0.074),vec3(0.040,0.036,0.044),uv.y);',
       '  vec2 a=vec2(1.05+sin(t*1.1)*0.22, 0.10+cos(t*0.8)*0.12);',
@@ -116,9 +129,8 @@
       '  col+=vec3(0.78,0.66,0.88)*0.052*pb/(dot(p-b,p-b)*1.3+0.14);',
       '  float lines=smoothstep(0.985,1.0,sin((p.x*0.9-p.y*1.6)*6.0+u_t*0.10));',
       '  col+=vec3(1.0,0.92,0.94)*lines*0.05;',
-      '  col*=1.0-0.28*length(vec2(p.x*0.32,(uv.y-0.5)*0.9));',
-      '  gl_FragColor=vec4(col,1.0);',
-      '}'
+            '  return col;',
+      '}'+TAIL
     ].join('\n')
   };
 
@@ -138,10 +150,14 @@
     return s;
   }
 
-  function HYBg(canvas, variant) {
+  function HYBg(canvas, variant, opts) {
+    opts = opts || {};
     var key = BODY[variant] ? variant : 'aurora';
-    var gl = null, prog, uRes, uT, raf = 0, last = 0, t0 = Date.now(), running = false, dead = false;
-    var SCALE = 0.55, FRAME = 1000 / 24;
+    var LIGHT = opts.light ? 1.0 : 0.0;
+    var gl = null, prog, uRes, uT, uL, raf = 0, last = 0, t0 = Date.now(), running = false, dead = false;
+    // 整页背景像素多，所以分辨率和帧率都再降一档
+    var SCALE = opts.scale || (opts.light ? 0.34 : 0.55);
+    var FRAME = 1000 / (opts.fps || (opts.light ? 20 : 24));
     var noop = { start: function () {}, stop: function () {}, destroy: function () {} };
 
     try {
@@ -166,6 +182,8 @@
       gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
       uRes = gl.getUniformLocation(prog, 'u_res');
       uT = gl.getUniformLocation(prog, 'u_t');
+      uL = gl.getUniformLocation(prog, 'u_light');
+      gl.uniform1f(uL, LIGHT);
     } catch (e) {
       canvas.parentNode.classList.add('nogl');
       return noop;

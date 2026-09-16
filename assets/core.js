@@ -52,6 +52,32 @@ window.HY = (function () {
 
   var DOW = ['一', '二', '三', '四', '五', '六', '日'];
 
+  function ymOf(dateStr) { return String(dateStr).slice(0, 7); }
+  function monthLabel(ym) {
+    var p = ym.split('-');
+    return p[0] + ' 年 ' + (+p[1]) + ' 月';
+  }
+  /** 某个月摊开成天，按周分组（周一开头，首尾补空格子对齐） */
+  function buildMonthGrid(ym) {
+    var p = ym.split('-'), y = +p[0], mo = +p[1];
+    var first = new Date(y, mo - 1, 1), last = new Date(y, mo, 0);
+    var t = ymd(new Date()), days = [];
+    for (var d = 1; d <= last.getDate(); d++) {
+      var day = new Date(y, mo - 1, d);
+      var wd = (day.getDay() + 6) % 7;
+      days.push({ date: ymd(day), dow: DOW[wd], dd: d, weekend: wd >= 5,
+                  today: ymd(day) === t, wstart: wd === 0 });
+    }
+    return { ym: ym, label: monthLabel(ym), days: days,
+             from: ymd(first), to: ymd(last) };
+  }
+  /** 数据里出现过的月份，从小到大 */
+  function monthsIn(scripts) {
+    var o = {};
+    scripts.forEach(function (s) { o[ymOf(s.date)] = 1; });
+    return Object.keys(o).sort();
+  }
+
   /** 同样的 13 周，但摊开到每一天（看板颗粒度 = 天） */
   function buildDayGrid(today, n) {
     var t = ymd(today || new Date());
@@ -272,24 +298,30 @@ window.HY = (function () {
     });
   }
 
-  /* 按门店编号加载脚本详情分片；file:// 下 fetch 不行，但注入 <script> 可以 */
+  /* 按「门店编号 × 月份」加载脚本详情分片；file:// 下 fetch 不行，但注入 <script> 可以 */
   var _pending = {};
-  function loadDetail(code) {
-    if (!code) return Promise.reject(new Error('缺少门店编号'));
-    if (window.HY_DETAIL_LOADED && window.HY_DETAIL_LOADED[code]) return Promise.resolve();
-    if (_pending[code]) return _pending[code];
-    _pending[code] = new Promise(function (resolve, reject) {
+  function loadDetail(code, ym) {
+    if (!code || !ym) return Promise.reject(new Error('缺少门店编号或月份'));
+    var key = code + '-' + ym;
+    if (window.HY_DETAIL_LOADED && window.HY_DETAIL_LOADED[key]) return Promise.resolve();
+    if (_pending[key]) return _pending[key];
+    _pending[key] = new Promise(function (resolve, reject) {
       var el = document.createElement('script');
-      el.src = 'data/scripts/' + code + '.js';
+      el.src = 'data/scripts/' + key + '.js';
       el.onload = function () { resolve(); };
       el.onerror = function () {
-        delete _pending[code];
-        reject(new Error('加载 data/scripts/' + code + '.js 失败'));
+        delete _pending[key];
+        reject(new Error('加载 data/scripts/' + key + '.js 失败'));
       };
       document.head.appendChild(el);
     });
-    return _pending[code];
+    return _pending[key];
   }
+  /** 一次加载多个月（门店页翻月用） */
+  function loadDetails(code, yms) {
+    return Promise.all(yms.map(function (ym) { return loadDetail(code, ym); }));
+  }
+
   function detail(id) { return (window.HY_DETAIL || {})[id]; }
 
   function toast(msg) {
@@ -307,9 +339,10 @@ window.HY = (function () {
     BRAND_ID: BRAND_ID, LS_KEY: LS_KEY, WEEKS: WEEKS, COL: COL,
     ymd: ymd, parseYmd: parseYmd, monday: monday, addDays: addDays, md: md,
     parsePub: parsePub, buildWeeks: buildWeeks, buildDayGrid: buildDayGrid, DOW: DOW,
+    ymOf: ymOf, monthLabel: monthLabel, buildMonthGrid: buildMonthGrid, monthsIn: monthsIn,
     Videos: Videos, rowsToVideos: rowsToVideos,
     StoreEdits: StoreEdits, EDITABLE: EDITABLE,
     match: match, statusOf: statusOf, STATUS_CN: STATUS_CN,
-    loadData: loadData, loadDetail: loadDetail, detail: detail, toast: toast, num: num
+    loadData: loadData, loadDetail: loadDetail, loadDetails: loadDetails, detail: detail, toast: toast, num: num
   };
 })();

@@ -7,6 +7,8 @@
 <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
+<canvas id="pageBg"></canvas>
+
 
 <aside class="sidebar">
   <div class="logo">
@@ -21,7 +23,7 @@
     <a data-panel="import"><span class="ico">↥</span>视频数据导入</a>
     <a data-panel="effect"><span class="ico">◷</span>效果统计</a>
   </nav>
-  <div class="foot">每店每天 1 条<br>滚动展示 13 周</div>
+  <div class="foot">每店每天 1 条<br>脚本排到一整年</div>
 </aside>
 
 <div class="main">
@@ -42,7 +44,7 @@
         <div class="hero-in">
           <div class="hero-eyebrow">赫眉 HYMN · 全部门店</div>
           <h2>抖音拍摄脚本看板</h2>
-          <p id="heroSub">43 家门店 · 每店每天 1 条 · 往后滚动 13 周</p>
+          <p id="heroSub">43 家门店 · 每店每天 1 条</p>
         </div>
         <button class="fxbtn" id="fxToggle" title="关掉/打开背景动效">动效</button>
       </div>
@@ -60,7 +62,6 @@
         <select id="fLine"><option value="">全部品牌线</option></select>
         <input type="search" id="fSearch" placeholder="搜门店 / 抖音号">
         <label class="chk"><input type="checkbox" id="fLate"> 只看有逾期</label>
-        <label class="chk"><input type="checkbox" id="fArchive"> 显示已归档</label>
         <div class="legend">
           <span><i style="background:#e9ebef"></i>待拍</span>
           <span><i style="background:#f53f3f"></i>逾期未发</span>
@@ -69,6 +70,8 @@
           <span><i style="background:#eaa8b1;border-radius:50%"></i>当天另有自由发挥</span>
         </div>
       </div>
+
+      <div class="monthbar" id="monthbar"></div>
 
       <div class="gridcard">
         <div class="gridwrap">

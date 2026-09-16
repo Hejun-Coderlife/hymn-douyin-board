@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """生成 data/scripts.json 的示例占位数据。
 
-颗粒度：**每店每天 1 条**。窗口 = 往前 2 周（演示归档/已发布）+ 往后 13 周。
+颗粒度：**每店每天 1 条**。窗口 = 往前 2 周（演示归档/已发布）+ 往后一整年（52 周）。
 内容素材在 tools/content_lib.py，真脚本由 AI 生成后直接替换产物。
 
 用法: python3 tools/gen_sample_scripts.py [门店数] [基准日期YYYY-MM-DD]
@@ -19,7 +19,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 STORES = ROOT / "data" / "stores.json"
 OUT = ROOT / "data" / "scripts.json"
 
-WEEKS_BACK, WEEKS_FWD = 2, 13
+WEEKS_BACK, WEEKS_FWD = 2, 52   # 往前 2 周（演示归档）+ 往后一整年
 
 TOPIC_KEYS = list(L.TOPICS.keys())
 FORMAT_KEYS = list(L.FORMATS.keys())

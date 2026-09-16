@@ -5,8 +5,10 @@
   data/stores.js              门店档案，全量
   data/scripts-index.js       **轻索引**：每条只留 id/store/date/topic/format/tag
                               —— 日历大表、状态计算、完成率全靠它，必须一次加载
-  data/scripts/<门店编号>.js   **完整详情**（分镜/标题/封面/要点…），按门店一份，
-                              点开侧栏或打开门店页时才按需注入 <script> 加载
+  data/scripts/<门店编号>-<年月>.js  **完整详情**（分镜/标题/封面/要点…），
+                              按「门店 × 月份」切片，点开侧栏 / 门店页翻到那个月时
+                              才按需注入 <script> 加载。切得细是因为数据到了一整年，
+                              按门店整份会有 700KB+，手机端吃不消。
 
 JSON 是唯一数据源；改完 JSON 跑一次本脚本。
 build_stores.py / gen_sample_scripts.py 结尾会自动调用。
@@ -55,24 +57,28 @@ def sync_scripts(stores):
         shutil.rmtree(SHARD_DIR)
     SHARD_DIR.mkdir(parents=True)
 
-    by_code = {}
+    by_shard = {}
     for s in scripts:
-        by_code.setdefault(code_of.get(s["store"], "S00"), []).append(s)
+        key = "%s-%s" % (code_of.get(s["store"], "S00"), s["date"][:7])
+        by_shard.setdefault(key, []).append(s)
 
     total_kb = 0
-    for code, arr in sorted(by_code.items()):
+    for key, arr in sorted(by_shard.items()):
         obj = {s["id"]: s for s in arr}
         txt = (HEAD % "scripts.json" +
                "window.HY_DETAIL=window.HY_DETAIL||{};"
                "Object.assign(window.HY_DETAIL,%s);"
-               "(window.HY_DETAIL_LOADED=window.HY_DETAIL_LOADED||{})['%s']=1;\n" % (dump(obj), code))
-        f = SHARD_DIR / ("%s.js" % code)
+               "(window.HY_DETAIL_LOADED=window.HY_DETAIL_LOADED||{})['%s']=1;\n" % (dump(obj), key))
+        f = SHARD_DIR / ("%s.js" % key)
         f.write_text(txt, encoding="utf-8")
         total_kb += len(txt.encode("utf-8")) / 1024
 
     idx_kb = (DATA / "scripts-index.js").stat().st_size / 1024
-    print("同步 scripts.json -> scripts-index.js（%d 条，%.0fKB）+ scripts/ 下 %d 个分片（合计 %.1fMB，按需加载）"
-          % (len(scripts), idx_kb, len(by_code), total_kb / 1024))
+    sizes = sorted(f.stat().st_size for f in SHARD_DIR.iterdir())
+    print("同步 scripts.json -> scripts-index.js（%d 条，%.1fMB）+ scripts/ 下 %d 个分片"
+          "（合计 %.1fMB，单片中位 %.0fKB，按需加载）"
+          % (len(scripts), idx_kb / 1024, len(by_shard), total_kb / 1024,
+             sizes[len(sizes) // 2] / 1024))
 
     # 旧的单体文件不再使用，清掉免得误引
     old = DATA / "scripts.js"

@@ -5,6 +5,7 @@
   var S = {
     stores: [], storeById: {}, scripts: [], scriptById: {}, videos: [],
     weeks: [], today: HY.ymd(new Date()), m: null,
+    months: [], view: 'month', ym: '',      // view: 'month' 看某月每天 / 'year' 看全年每月
     byStoreDate: {}, freeByStoreDate: {}, freeByStore: {}
   };
   var $ = function (s) { return document.querySelector(s); };
@@ -17,7 +18,11 @@
 
   /* ---------- 计算 ---------- */
   function recompute() {
-    S.weeks = HY.buildDayGrid(new Date(), HY.WEEKS);
+    S.months = HY.monthsIn(S.scripts);
+    if (!S.ym || S.months.indexOf(S.ym) === -1) {
+      var cur = HY.ymOf(S.today);
+      S.ym = S.months.indexOf(cur) >= 0 ? cur : (S.months[0] || cur);
+    }
     S.videos = HY.Videos.list();
     S.m = HY.match(S.scripts, S.videos);
 
@@ -36,9 +41,16 @@
 
   function statusOfScript(s) { return HY.statusOf(s, S.m.byScript[s.id], S.today); }
 
+  /** 当前视图覆盖的脚本：月视图=该月；全年=全部 */
   function windowScripts() {
-    var from = S.weeks[0].days[0].date, to = S.weeks[S.weeks.length - 1].days[6].date;
-    return S.scripts.filter(function (s) { return s.date >= from && s.date <= to; });
+    if (S.view === 'year') return S.scripts;
+    var g = HY.buildMonthGrid(S.ym);
+    return S.scripts.filter(function (s) { return s.date >= g.from && s.date <= g.to; });
+  }
+  function rangeLabel() {
+    return S.view === 'year'
+      ? '全年（' + HY.monthLabel(S.months[0]) + ' – ' + HY.monthLabel(S.months[S.months.length - 1]) + '）'
+      : HY.monthLabel(S.ym);
   }
 
   /* ---------- KPI + 排行 ---------- */
@@ -59,7 +71,7 @@
     rows.forEach(function (st) { freeCount += (S.freeByStore[st.douyinId] || []).length; });
 
     $('#kpis').innerHTML = [
-      kpi('完成率', rate + '<small>%</small>', '', '已到计划日期的 ' + due + ' 条里'),
+      kpi('完成率', rate + '<small>%</small>', '', rangeLabel() + ' · 已到期 ' + due + ' 条'),
       kpi('已发布', c.done + c.guess, 'done', '其中标签精确 ' + c.done + ' 条'),
       kpi('逾期未发', c.late, 'late', '过了计划日仍没匹配到'),
       kpi('待拍', c.todo, '', '计划日期还没到'),
@@ -83,6 +95,40 @@
     });
   }
 
+  /* ---------- 月份选择条 ---------- */
+  function renderMonthBar() {
+    var h = '<button class="mchip nav" id="mPrev" title="上一月">‹</button>';
+    h += '<div class="mscroll" id="mScroll">';
+    S.months.forEach(function (ym) {
+      var past = ym < HY.ymOf(S.today), now = ym === HY.ymOf(S.today);
+      h += '<button class="mchip' + (S.view === 'month' && ym === S.ym ? ' on' : '') +
+        (past ? ' past' : '') + (now ? ' thismonth' : '') + '" data-ym="' + ym + '">' +
+        ym.slice(0, 4) + '.' + ym.slice(5) + (now ? ' <i>本月</i>' : '') + '</button>';
+    });
+    h += '</div>';
+    h += '<button class="mchip nav" id="mNext" title="下一月">›</button>';
+    h += '<button class="mchip year' + (S.view === 'year' ? ' on' : '') + '" id="mYear">全年总览</button>';
+    $('#monthbar').innerHTML = h;
+
+    $$('#monthbar .mchip[data-ym]').forEach(function (el) {
+      el.onclick = function () { S.view = 'month'; S.ym = el.dataset.ym; render(); scrollMonthIntoView(); };
+    });
+    $('#mYear').onclick = function () { S.view = S.view === 'year' ? 'month' : 'year'; render(); };
+    $('#mPrev').onclick = function () { stepMonth(-1); };
+    $('#mNext').onclick = function () { stepMonth(1); };
+    scrollMonthIntoView();
+  }
+  function stepMonth(d) {
+    var i = S.months.indexOf(S.ym) + d;
+    if (i < 0 || i >= S.months.length) return;
+    S.view = 'month'; S.ym = S.months[i];
+    render(); scrollMonthIntoView();
+  }
+  function scrollMonthIntoView() {
+    var el = $('#monthbar .mchip.on');
+    if (el && el.scrollIntoView) el.scrollIntoView({ block: 'nearest', inline: 'center' });
+  }
+
   /* ---------- 日历大表 ---------- */
   function filtered() {
     var q = $('#fSearch').value.trim();
@@ -101,84 +147,119 @@
     });
   }
 
-  function weeksToShow() {
-    var weeks = S.weeks.slice();
-    if (!$('#fArchive').checked) return weeks;
-    var first = weeks[0].days[0].date, mons = {};
-    S.scripts.forEach(function (s) {
-      var m = HY.ymd(HY.monday(HY.parseYmd(s.date)));
-      if (m < first) mons[m] = 1;
-    });
-    var past = Object.keys(mons).sort().map(function (m) {
-      var mon = HY.parseYmd(m), days = [];
-      for (var d = 0; d < 7; d++) {
-        var day = HY.addDays(mon, d);
-        days.push({ date: HY.ymd(day), dow: HY.DOW[d], dd: day.getDate(), weekend: d >= 5, today: false });
-      }
-      return { i: 0, monday: m, sunday: HY.ymd(HY.addDays(mon, 6)), days: days, archived: true };
-    });
-    return past.concat(weeks);
-  }
-
   function render() {
     var rows = filtered();
     renderKpis(rows);
-    var weeks = weeksToShow();
+    renderMonthBar();
+    $('#board').innerHTML = S.view === 'year' ? yearTable(rows) : monthTable(rows);
+    bindCells();
+  }
 
+  /** 月视图：该月每天一列 */
+  function monthTable(rows) {
+    var g = HY.buildMonthGrid(S.ym);
     var h = '<thead><tr class="r1"><th class="stcol" rowspan="2">门店 <span class="muted">(' +
             rows.length + ')</span></th>';
-    weeks.forEach(function (w) {
-      var isNow = w.days.some(function (d) { return d.today; });
-      h += '<th class="wk' + (isNow ? ' now' : '') + '" colspan="7">' +
-           (w.archived ? '归档 ' : '第 ' + w.i + ' 周 · ') + HY.md(w.monday) + '–' + HY.md(w.sunday) + '</th>';
-    });
+    // 第一行按周分组
+    var i = 0;
+    while (i < g.days.length) {
+      var j = i;
+      while (j + 1 < g.days.length && !g.days[j + 1].wstart) j++;
+      var span = j - i + 1;
+      var isNow = g.days.slice(i, j + 1).some(function (d) { return d.today; });
+      h += '<th class="wk' + (isNow ? ' now' : '') + '" colspan="' + span + '">' +
+           g.days[i].dd + '–' + g.days[j].dd + ' 日</th>';
+      i = j + 1;
+    }
     h += '</tr><tr class="r2">';
-    weeks.forEach(function (w) {
-      w.days.forEach(function (d, i) {
-        h += '<th class="day' + (d.weekend ? ' wknd' : '') + (d.today ? ' today' : '') +
-             (i === 0 ? ' wstart' : '') + '">' + d.dow + '<span class="d">' + d.dd + '</span></th>';
-      });
+    g.days.forEach(function (d) {
+      h += '<th class="day' + (d.weekend ? ' wknd' : '') + (d.today ? ' today' : '') +
+           (d.wstart ? ' wstart' : '') + '">' + d.dow + '<span class="d">' + d.dd + '</span></th>';
     });
     h += '</tr></thead><tbody>';
 
-    if (!rows.length) {
-      h += '<tr><td class="emptyrow" colspan="99">没有符合筛选条件的门店</td></tr>';
-    }
+    if (!rows.length) h += '<tr><td class="emptyrow" colspan="99">没有符合筛选条件的门店</td></tr>';
     rows.forEach(function (st) {
-      h += '<tr><td class="stcol"><div class="nm">' + esc(st.storeName) + '</div><div class="meta">' +
-        (st.brandLine ? '<span class="bl">' + esc(st.brandLine) + '</span>' : '') +
-        '<span class="mono">' + st.douyinId + '</span>' +
-        '<a class="mob" href="store.html?store=' + st.douyinId + '" target="_blank">门店页</a></div></td>';
-      weeks.forEach(function (w) {
-        w.days.forEach(function (d, i) {
-          var cls = 'cell' + (d.weekend ? ' wknd' : '') + (i === 0 ? ' wstart' : '');
-          var sc = S.byStoreDate[st.douyinId + '|' + d.date];
-          var free = S.freeByStoreDate[st.douyinId + '|' + d.date];
-          h += '<td class="' + cls + '">';
-          if (sc) {
-            var stt = statusOfScript(sc);
-            h += '<span class="dot ' + stt + (free ? ' free' : '') + '" data-id="' + esc(sc.id) +
-                 '" title="' + esc(d.date + ' ' + sc.topic + '·' + sc.format + ' — ' + HY.STATUS_CN[stt] +
-                 (free ? '（当天另有 ' + free.length + ' 条自由发挥）' : '')) + '"></span>';
-          } else if (free) {
-            h += '<span class="dot none free" data-free="' + st.douyinId + '|' + d.date +
-                 '" title="' + free.length + ' 条自由发挥视频"></span>';
-          } else {
-            h += '<span class="dot none"></span>';
-          }
-          h += '</td>';
-        });
+      h += '<tr>' + storeCell(st);
+      g.days.forEach(function (d) {
+        var cls = 'cell' + (d.weekend ? ' wknd' : '') + (d.wstart ? ' wstart' : '');
+        var sc = S.byStoreDate[st.douyinId + '|' + d.date];
+        var free = S.freeByStoreDate[st.douyinId + '|' + d.date];
+        h += '<td class="' + cls + '">';
+        if (sc) {
+          var stt = statusOfScript(sc);
+          h += '<span class="dot ' + stt + (free ? ' free' : '') + '" data-id="' + esc(sc.id) +
+               '" title="' + esc(d.date + ' ' + sc.topic + '·' + sc.format + ' — ' + HY.STATUS_CN[stt] +
+               (free ? '（当天另有 ' + free.length + ' 条自由发挥）' : '')) + '"></span>';
+        } else if (free) {
+          h += '<span class="dot none free" data-free="' + st.douyinId + '|' + d.date +
+               '" title="' + free.length + ' 条自由发挥视频"></span>';
+        } else {
+          h += '<span class="dot none"></span>';
+        }
+        h += '</td>';
       });
       h += '</tr>';
     });
-    h += '</tbody>';
+    return h + '</tbody>';
+  }
 
-    $('#board').innerHTML = h;
+  /** 全年总览：每月一列，格子里是该店该月的完成情况条 */
+  function yearTable(rows) {
+    var h = '<thead><tr class="r2"><th class="stcol">门店 <span class="muted">(' + rows.length +
+            ')</span></th>';
+    S.months.forEach(function (ym) {
+      var now = ym === HY.ymOf(S.today);
+      h += '<th class="mcol' + (now ? ' today' : '') + '">' + (+ym.slice(5)) + ' 月' +
+           '<span class="d">' + ym.slice(0, 4) + '</span></th>';
+    });
+    h += '</tr></thead><tbody>';
+
+    if (!rows.length) h += '<tr><td class="emptyrow" colspan="99">没有符合筛选条件的门店</td></tr>';
+    rows.forEach(function (st) {
+      h += '<tr>' + storeCell(st);
+      S.months.forEach(function (ym) {
+        var c = { done: 0, guess: 0, late: 0, todo: 0 }, n = 0;
+        S.scripts.forEach(function (sc) {
+          if (sc.store !== st.douyinId || HY.ymOf(sc.date) !== ym) return;
+          c[statusOfScript(sc)]++; n++;
+        });
+        var ok = c.done + c.guess, due = ok + c.late;
+        h += '<td class="mcell" data-ym="' + ym + '">';
+        if (!n) {
+          h += '<span class="muted">—</span>';
+        } else {
+          var w = function (x) { return n ? (x / n * 100).toFixed(1) + '%' : '0%'; };
+          h += '<div class="bar" title="' + esc(ym + '：共 ' + n + ' 条，已发 ' + ok +
+               '，逾期 ' + c.late + '，待拍 ' + c.todo) + '">' +
+               '<i class="s-done" style="width:' + w(ok) + '"></i>' +
+               '<i class="s-late" style="width:' + w(c.late) + '"></i>' +
+               '<i class="s-todo" style="width:' + w(c.todo) + '"></i></div>' +
+               '<div class="bnum">' + (due ? ok + '/' + due : n + ' 待拍') + '</div>';
+        }
+        h += '</td>';
+      });
+      h += '</tr>';
+    });
+    return h + '</tbody>';
+  }
+
+  function storeCell(st) {
+    return '<td class="stcol"><div class="nm">' + esc(st.storeName) + '</div><div class="meta">' +
+      (st.brandLine ? '<span class="bl">' + esc(st.brandLine) + '</span>' : '') +
+      '<span class="mono">' + st.douyinId + '</span>' +
+      '<a class="mob" href="store.html?store=' + st.douyinId + '" target="_blank">门店页</a></div></td>';
+  }
+
+  function bindCells() {
     $$('#board .dot[data-id]').forEach(function (el) {
       el.onclick = function () { openScript(el.dataset.id); };
     });
     $$('#board .dot[data-free]').forEach(function (el) {
       el.onclick = function () { openFree(el.dataset.free); };
+    });
+    $$('#board td.mcell[data-ym]').forEach(function (el) {
+      el.onclick = function () { S.view = 'month'; S.ym = el.dataset.ym; render(); };
     });
   }
 
@@ -202,7 +283,7 @@
     $('#dSub').textContent = '计划发布 ' + light.date + ' · 载入脚本详情…';
     $('#dBody').innerHTML = '<div class="emptyrow">载入中…</div>';
     openDrawer();
-    HY.loadDetail(st.code).then(function () {
+    HY.loadDetail(st.code, HY.ymOf(light.date)).then(function () {
       drawScript(id);
     }, function (e) {
       $('#dBody').innerHTML = '<div class="emptyrow">脚本详情加载失败：' + esc(e.message) + '</div>';
@@ -547,11 +628,13 @@
   }
 
   /* ---------- 顶部 3D 横幅 ---------- */
-  var bg = null;
+  var bg = null, pagebg = null;
   function initHero() {
-    var cv = $('#heroCanvas'), btn = $('#fxToggle');
+    var cv = $('#heroCanvas'), btn = $('#fxToggle'), pg = $('#pageBg');
     if (!cv || !window.HYBg) return;
-    bg = window.HYBg(cv);
+    var style = localStorage.getItem('hymn_bg3d_style') || 'aurora';
+    bg = window.HYBg(cv, style);
+    if (pg) pagebg = window.HYBg(pg, style, { light: true });
     var off = localStorage.getItem('hymn_bg3d') === 'off';
     apply(off);
     btn.onclick = function () {
@@ -563,16 +646,24 @@
       cv.dataset.on = isOff ? '0' : '1';
       btn.classList.toggle('off', isOff);
       btn.textContent = isOff ? '动效已关' : '动效';
-      if (isOff) { bg.stop(); $('#hero').classList.add('nogl'); }
-      else { $('#hero').classList.remove('nogl'); bg.start(); }
+      var pg = $('#pageBg');
+      if (pg) pg.dataset.on = isOff ? '0' : '1';
+      if (isOff) {
+        bg.stop(); if (pagebg) pagebg.stop();
+        $('#hero').classList.add('nogl'); if (pg) pg.classList.add('off');
+      } else {
+        $('#hero').classList.remove('nogl'); if (pg) pg.classList.remove('off');
+        bg.start(); if (pagebg) pagebg.start();
+      }
     }
   }
 
   function renderHeroSub() {
     var d = new Date();
     var wd = '日一二三四五六'[d.getDay()];
-    $('#heroSub').textContent = S.stores.length + ' 家门店 · 每店每天 1 条 · 往后滚动 13 周　|　今天 ' +
-      S.today + ' 周' + wd + ' · 在库脚本 ' + HY.num(S.scripts.length) + ' 条';
+    var span = S.months.length ? (HY.monthLabel(S.months[0]) + ' – ' + HY.monthLabel(S.months[S.months.length - 1])) : '';
+    $('#heroSub').textContent = S.stores.length + ' 家门店 · 每店每天 1 条 · ' + span +
+      '　|　今天 ' + S.today + ' 周' + wd + ' · 在库脚本 ' + HY.num(S.scripts.length) + ' 条';
   }
 
   /* ---------- 事件 ---------- */
@@ -586,7 +677,7 @@
     $('#backdrop').onclick = closeDrawer;
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeDrawer(); });
 
-    ['#fRegion', '#fType', '#fLine', '#fLate', '#fArchive'].forEach(function (s) { $(s).onchange = render; });
+    ['#fRegion', '#fType', '#fLine', '#fLate'].forEach(function (s) { $(s).onchange = render; });
     $('#fSearch').oninput = render;
 
     $('#drop').onclick = function () { $('#file').click(); };
