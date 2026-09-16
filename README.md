@@ -5,7 +5,7 @@
 ## 本地预览
 
 ```bash
-cd ~/Projects/hymn-douyin-board
+cd ~/Desktop/hymn-douyin-board
 python3 -m http.server 8765
 # 总部看板 http://localhost:8765/
 # 门店页   http://localhost:8765/store.html?store=70299081510
