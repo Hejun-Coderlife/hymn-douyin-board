@@ -83,22 +83,20 @@ button,select,input{font:inherit;color:inherit}
 }
 .nav a{
   position:relative;display:flex;align-items:center;gap:11px;
-  padding:10px 14px;border-radius:10px;margin-bottom:2px;
+  padding:11px 16px;border-radius:999px;margin-bottom:2px;
   font-size:14.5px;font-weight:500;color:var(--t2);cursor:pointer;
   transition:background .2s ease, color .2s ease, box-shadow .2s ease;
 }
 .nav a .ico{width:16px;text-align:center;font-size:13px;color:var(--t4);transition:color .2s}
 .nav a:hover{background:rgba(255,255,255,.75);color:var(--t1)}
 .nav a:hover .ico{color:var(--t3)}
+/* 选中态：墨黑药丸（用户要求保持不变） */
 .nav a.on{
-  background:#fff;color:var(--t1);font-weight:700;overflow:hidden;
-  box-shadow:0 1px 2px rgba(34,29,23,.05), 0 6px 16px rgba(34,29,23,.06);
+  background:var(--ink-gradient);color:var(--ink-text);font-weight:700;
+  text-shadow:0 1px 2px rgba(0,0,0,.3);
+  box-shadow:0 1px 0 rgba(255,255,255,.12) inset, 0 8px 22px rgba(34,29,23,.28);
 }
-.nav a.on .ico{color:var(--brand)}
-.nav a.on::before{
-  content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
-  background:linear-gradient(180deg,var(--brand),var(--gold-bright));
-}
+.nav a.on .ico{color:rgba(246,237,220,.85)}
 
 /* 数据状态 + 导入入口：低调的白底药丸，不用大块橙 */
 .sidedata{padding:14px 14px 12px;border-top:1px solid rgba(185,151,76,.16)}
