@@ -132,12 +132,10 @@
   /* ---------- 日历大表 ---------- */
   function filtered() {
     var q = $('#fSearch').value.trim();
-    var reg = $('#fRegion').value, typ = $('#fType').value, line = $('#fLine').value;
+    var line = $('#fLine').value;
     var onlyLate = $('#fLate').checked;
     var ws = onlyLate ? windowScripts() : null;
     return S.stores.filter(function (st) {
-      if (reg && st.region !== reg) return false;
-      if (typ && st.storeType !== typ) return false;
       if (line && (st.brandLine || '') !== line) return false;
       if (q && (st.storeName + st.accountName + st.douyinId).indexOf(q) === -1) return false;
       if (onlyLate && !ws.some(function (s) {
@@ -468,20 +466,8 @@
       }).join('') + '</select></td>';
   }
 
-  /** 门店字段改了以后，筛选下拉要跟着出新选项 */
-  function refreshFiltersAfterEdit() {
-    ['#fRegion', '#fType'].forEach(function (sel) {
-      var el = $(sel), keep = el.value, f = sel === '#fRegion' ? 'region' : 'storeType';
-      var o = {};
-      S.stores.forEach(function (x) { if (x[f]) o[x[f]] = 1; });
-      el.disabled = false;
-      el.innerHTML = '<option value="">' + (f === 'region' ? '全部区域' : '全部门店类型') + '</option>' +
-        Object.keys(o).sort().map(function (v) {
-          return '<option value="' + esc(v) + '"' + (v === keep ? ' selected' : '') + '>' + esc(v) + '</option>';
-        }).join('');
-    });
-    render();
-  }
+  /** 门店档案改完重画一次（区域/门店类型的筛选器已按用户要求去掉） */
+  function refreshFiltersAfterEdit() { render(); }
 
   function exportStores() {
     var out = S.stores.map(function (st) {
@@ -536,9 +522,10 @@
     var last = meta.imports[meta.imports.length - 1];
     var ranges = {};
     S.videos.forEach(function (v) { if (v.rangeFrom) ranges[v.rangeFrom + '~' + v.rangeTo] = 1; });
-    $('#datahint').innerHTML = '已累计 <b>' + HY.num(n) + '</b> 条视频 · 统计范围 ' +
+    $('#datahint').innerHTML = '已累计 <b>' + HY.num(n) + '</b> 条视频<br>统计范围 ' +
       Object.keys(ranges).sort().join('、') + '<br>最近导入 ' +
-      (last ? new Date(last.at).toLocaleString('zh-CN') : '—');
+      (last ? new Date(last.at).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric',
+              hour: '2-digit', minute: '2-digit' }) : '—');
   }
 
   /* ---------- 效果统计 ---------- */
@@ -596,8 +583,6 @@
       });
       if (!vals.length) sel.disabled = true;
     }
-    fill($('#fRegion'), uniq('region'));
-    fill($('#fType'), uniq('storeType'));
     fill($('#fLine'), uniq('brandLine'));
   }
 
@@ -613,7 +598,8 @@
     if (hashView() !== name) history.replaceState(null, '', '#view=' + name);
     $$('.panel').forEach(function (p) { p.classList.toggle('on', p.id === 'p-' + name); });
     $$('.nav a').forEach(function (a) { a.classList.toggle('on', a.dataset.panel === name); });
-    $('#ttl').textContent = TITLES[name] || '';
+    var ttl = $('#ttl');
+    if (ttl) ttl.textContent = TITLES[name] || '';   // 顶栏已去掉，这里容错
     if (name === 'effect') renderEffect();
     if (name === 'stores') renderStoreList();
   }
@@ -669,7 +655,7 @@
     $('#backdrop').onclick = closeDrawer;
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeDrawer(); });
 
-    ['#fRegion', '#fType', '#fLine', '#fLate'].forEach(function (s) { $(s).onchange = render; });
+    ['#fLine', '#fLate'].forEach(function (s) { $(s).onchange = render; });
     $('#fSearch').oninput = render;
 
     $('#drop').onclick = function () { $('#file').click(); };

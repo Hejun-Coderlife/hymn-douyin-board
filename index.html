@@ -23,17 +23,14 @@
     <a data-panel="import"><span class="ico">↥</span>视频数据导入</a>
     <a data-panel="effect"><span class="ico">◷</span>效果统计</a>
   </nav>
+  <div class="sidedata">
+    <div class="hint" id="datahint">未导入视频数据</div>
+    <button class="btn primary block" id="btnImport">导入视频数据</button>
+  </div>
   <div class="foot">每店每天 1 条<br>脚本排到一整年</div>
 </aside>
 
 <div class="main">
-  <header class="topbar">
-    <h1 id="ttl">脚本日历</h1>
-    <div class="sp"></div>
-    <div class="hint" id="datahint">未导入视频数据</div>
-    <button class="btn primary" id="btnImport">导入视频数据</button>
-  </header>
-
   <div class="content">
 
     <!-- 脚本日历 -->
@@ -56,8 +53,6 @@
       </div>
 
       <div class="filters">
-        <select id="fRegion"><option value="">全部区域</option></select>
-        <select id="fType"><option value="">全部门店类型</option></select>
         <select id="fLine"><option value="">全部品牌线</option></select>
         <input type="search" id="fSearch" placeholder="搜门店 / 抖音号">
         <label class="chk"><input type="checkbox" id="fLate"> 只看有逾期</label>
