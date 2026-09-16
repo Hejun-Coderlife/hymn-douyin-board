@@ -58,6 +58,12 @@ reference/            视觉参考 B-浅米系.html、样例 xlsx（不部署也
 | `--gold` / `--gold-bright` | `#B9974C` / `#D9BC7A` | 香槟金（发丝边、eyebrow） |
 | `--grad-brand` | `135deg,#F2680F,#E8590C 55%,#D9BC7A` | 主按钮/选中态 |
 | `--hairline-gold` | 横向金色渐变 | KPI 卡顶部那条发丝线 |
+| `--ink-gradient` / `--ink-text` | `180deg,#2B251E,#191510` / `#F6EDDC` | **墨黑药丸**：分段控件的选中态 |
+
+**分段控件（参考站的 Maison Segments）**：玻璃药丸容器（`border-radius:999px`，padding 5px，
+金色细边）+ 选中项是墨黑渐变药丸、米白字、带 inset 高光和大投影。
+用在**月份选择条**和**左侧导航选中态**。通用变体是 `.btn.ink`。
+**橙色只留给主按钮和强调线**，选中态一律用墨黑，别到处铺橙。
 
 字体：标题 `--serif`（Songti SC / Noto Serif SC），字重 900、字距 .04em；正文系统 sans。
 KPI 数字也用衬线，大字重。
