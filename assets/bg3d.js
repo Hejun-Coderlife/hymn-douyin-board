@@ -54,7 +54,7 @@
   ].join('\n');
 
   var PEARL = [
-    'vec3 sphere(vec2 p,vec2 c,float r,vec3 tint,inout vec3 col){',
+    'vec3 sphere(vec2 p,vec2 c,float r,vec3 tint,float k,inout vec3 col){',
     '  vec2 d=(p-c)/r;float q=dot(d,d);',
     '  if(q<1.35){',
     '    float z=sqrt(max(1.0-q,0.0));',
@@ -63,26 +63,33 @@
     '    float diff=clamp(dot(n,L),0.0,1.0);',
     '    float rim=pow(1.0-clamp(z,0.0,1.0),2.2);',
     '    float spec=pow(clamp(dot(n,normalize(L+vec3(0.0,0.0,1.0))),0.0,1.0),26.0);',
-    '    vec3 s=tint*(0.86+0.14*diff)+vec3(1.0,0.99,0.97)*spec*0.24+tint*rim*0.10;',
+    '    vec3 s=tint*(0.916+0.084*diff)+vec3(1.0,0.99,0.97)*spec*0.22+tint*rim*0.08;',
     '    float a=smoothstep(1.34,0.80,q);',
-    '    col=mix(col,s,a*0.78);',
+    '    col=mix(col,s,a*0.47*k);',
     '  }',
     '  return col;',
     '}',
+    '/* 左上角是标题区，球飘到那儿会挡字，这里做一个避让遮罩 */',
+    'float titleMask(vec2 uv){',
+    '  float mx=smoothstep(0.58,0.74,uv.x);',   // 越往右越放行
+    '  float my=smoothstep(0.88,0.64,uv.y);',   // 越往下越放行
+    '  return clamp(mx+my,0.0,1.0);',
+    '}',
     'vec3 scene(vec2 uv,vec2 p){',
+    '  float k=titleMask(uv);',
     '  float t=u_t*0.025;',                       // 幅度大但走得很慢（用户要求再慢 3 倍）
     '  vec3 col=mix(vec3(0.988,0.972,0.945),vec3(0.960,0.936,0.894),uv.y);',
     '  col+=vec3(0.06,0.030,0.004)*pow(max(0.0,1.0-length(p-vec2(-1.1,0.85))*0.75),3.0);',
     '  col+=vec3(0.05,0.035,0.012)*pow(max(0.0,1.0-length(p-vec2(1.25,-0.75))*0.70),3.0);',
-    '  vec3 cream=vec3(0.992,0.966,0.930);',
-    '  vec3 peach=vec3(0.992,0.912,0.850);',
-    '  vec3 sand =vec3(0.978,0.936,0.866);',
+    '  vec3 cream=vec3(0.994,0.972,0.943);',
+    '  vec3 peach=vec3(0.994,0.926,0.872);',
+    '  vec3 sand =vec3(0.982,0.946,0.887);',
     // 幅度是原来的 6~8 倍：球在整屏范围里游走，不是原地微抖
-    '  col=sphere(p,vec2(-1.00+sin(t*0.90)*0.85, 0.42+cos(t*0.70)*0.42),0.32,peach,col);',
-    '  col=sphere(p,vec2( 1.20+cos(t*0.62)*0.95,-0.28+sin(t*0.83)*0.46),0.44,cream,col);',
-    '  col=sphere(p,vec2( 0.40+sin(t*0.51+2.0)*1.15,-0.78+cos(t*0.47)*0.40),0.21,sand,col);',
-    '  col=sphere(p,vec2(-0.50+cos(t*0.77+1.0)*0.90,-0.60+sin(t*0.57)*0.38),0.16,peach,col);',
-    '  col=sphere(p,vec2( 0.00+sin(t*0.43+4.0)*1.30, 0.86+cos(t*0.65)*0.34),0.26,cream,col);',
+    '  col=sphere(p,vec2(-1.00+sin(t*0.90)*0.85, 0.42+cos(t*0.70)*0.42),0.32,peach,k,col);',
+    '  col=sphere(p,vec2( 1.20+cos(t*0.62)*0.95,-0.28+sin(t*0.83)*0.46),0.44,cream,k,col);',
+    '  col=sphere(p,vec2( 0.40+sin(t*0.51+2.0)*1.15,-0.78+cos(t*0.47)*0.40),0.21,sand,k,col);',
+    '  col=sphere(p,vec2(-0.50+cos(t*0.77+1.0)*0.90,-0.60+sin(t*0.57)*0.38),0.16,peach,k,col);',
+    '  col=sphere(p,vec2( 0.00+sin(t*0.43+4.0)*1.30, 0.86+cos(t*0.65)*0.34),0.26,cream,k,col);',
     '  return col;',
     '}'
   ].join('\n') + TAIL_RAW;
