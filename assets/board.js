@@ -53,6 +53,128 @@
       : HY.monthLabel(S.ym);
   }
 
+  /* ---------- 图块区（灰底方块 + 会动的数据图）----------
+     四块：完成率圆环 / 近 13 周发布量 / 本月状态构成 / 今天要拍（线描插画）。
+     颜色沿用状态色，每块都带文字标签，不靠颜色单独表意。 */
+  var TILE_C = { done:'#2F5D45', guess:'#B58B3E', late:'#9C3B2E', todo:'#CFC7BC' };
+
+  function renderTiles(rows) {
+    var visible = {};
+    rows.forEach(function (st) { visible[st.douyinId] = 1; });
+    var ws = windowScripts().filter(function (s) { return visible[s.store]; });
+    var c = { done: 0, guess: 0, late: 0, todo: 0 };
+    ws.forEach(function (s) { c[statusOfScript(s)]++; });
+    var due = c.done + c.guess + c.late;
+    var rate = due ? Math.round((c.done + c.guess) / due * 100) : 0;
+
+    $('#tiles').innerHTML =
+      tileRing(rate, due, c) + tileSpark(visible) + tileStack(c, ws.length) + tileToday(visible);
+  }
+
+  /* 1) 完成率圆环：单值，中间直接放数字 */
+  function tileRing(rate, due, c) {
+    var r = 52, cx = 78, cy = 78, circ = 2 * Math.PI * r;
+    var off = circ * (1 - rate / 100);
+    var svg =
+      '<svg viewBox="0 0 156 156" role="img" aria-label="完成率 ' + rate + '%">' +
+        '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="#D8D0C5" stroke-width="9"/>' +
+        '<circle class="ring-val" cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" ' +
+          'stroke="' + TILE_C.done + '" stroke-width="9" stroke-linecap="butt" ' +
+          'transform="rotate(-90 ' + cx + ' ' + cy + ')" ' +
+          'stroke-dasharray="' + circ.toFixed(1) + '" stroke-dashoffset="' + off.toFixed(1) + '" ' +
+          'style="--dash:' + circ.toFixed(1) + 'px;--off:' + off.toFixed(1) + 'px">' +
+          '<title>完成率 ' + rate + '%（已到期 ' + due + ' 条，已发布 ' + (c.done + c.guess) + ' 条）</title>' +
+        '</circle>' +
+      '</svg>' +
+      '<div class="tval"><b>' + rate + '<small>%</small></b><i>已发布 ' + (c.done + c.guess) + ' / ' + due + '</i></div>';
+    return tile(svg, '完成率', rangeLabel() + ' · 已到期 ' + due + ' 条');
+  }
+
+  /* 2) 近 13 周发布量：单序列柱状，只标最高和本周 */
+  function tileSpark(visible) {
+    var weeks = [], end = HY.monday(HY.parseYmd(S.today));
+    for (var i = 12; i >= 0; i--) {
+      var from = HY.ymd(HY.addDays(end, -7 * i));
+      weeks.push({ from: from, to: HY.ymd(HY.addDays(HY.parseYmd(from), 6)), n: 0 });
+    }
+    S.videos.forEach(function (v) {
+      if (!v.pubDate || !visible[v.store]) return;
+      for (var i = 0; i < weeks.length; i++) {
+        if (v.pubDate >= weeks[i].from && v.pubDate <= weeks[i].to) { weeks[i].n++; return; }
+      }
+    });
+    var max = Math.max.apply(null, weeks.map(function (w) { return w.n; })) || 1;
+    var total = weeks.reduce(function (a, w) { return a + w.n; }, 0);
+    var W = 196, H = 112, bw = 9, gap = (W - weeks.length * bw) / (weeks.length - 1);
+    var bars = weeks.map(function (w, i) {
+      var h = Math.max(w.n ? 3 : 1, Math.round(w.n / max * (H - 26)));
+      var x = (bw + gap) * i, y = H - h;
+      return '<rect x="' + x.toFixed(1) + '" y="' + y + '" width="' + bw + '" height="' + h + '" rx="2" ' +
+        'fill="' + (w.n ? TILE_C.done : '#D8D0C5') + '" ' +
+        'style="transform-origin:' + (x + bw / 2).toFixed(1) + 'px ' + H + 'px;animation-delay:' + (0.72 + i * 0.03).toFixed(2) + 's">' +
+        '<title>' + HY.md(w.from) + '–' + HY.md(w.to) + ' 发布 ' + w.n + ' 条</title></rect>';
+    }).join('');
+    var lastN = weeks[weeks.length - 1].n;
+    var svg = '<svg class="spark" viewBox="-14 -22 224 152" role="img" aria-label="近 13 周发布量">' +
+      '<text x="' + W + '" y="-8" text-anchor="end" font-size="11" fill="#5E5E5E">峰值 ' + max + '</text>' +
+      bars +
+      '<text x="' + W + '" y="' + (H + 16) + '" text-anchor="end" font-size="11" fill="#5E5E5E">本周 ' + lastN + '</text>' +
+      '</svg>';
+    return tile(svg, '近 13 周发布量',
+      total ? '合计 ' + HY.num(total) + ' 条 · 鼠标悬停看每周' : '还没导入视频数据');
+  }
+
+  /* 3) 本月状态构成：一根堆叠条 + 四个直接标注（段间留 2px 缝） */
+  function tileStack(c, all) {
+    var order = [['done', '已发布·精确'], ['guess', '已发布·推测'], ['late', '逾期未发'], ['todo', '待拍']];
+    var W = 200, H = 16, x = 0, segs = '', keys = '';
+    order.forEach(function (o) {
+      var n = c[o[0]], w = all ? (n / all) * W : 0;
+      if (w > 0) {
+        segs += '<rect class="seg" x="' + x.toFixed(1) + '" y="0" width="' + Math.max(0, w - 2).toFixed(1) + '" height="' + H + '" ' +
+          'fill="' + TILE_C[o[0]] + '" style="transform-origin:' + x.toFixed(1) + 'px 0">' +
+          '<title>' + o[1] + ' ' + n + ' 条（' + Math.round(n / all * 100) + '%）</title></rect>';
+      }
+      x += w;
+      keys += '<em><u style="background:' + TILE_C[o[0]] + '"></u>' + o[1] + ' <b>' + n + '</b></em>';
+    });
+    var svg = '<svg viewBox="-16 -40 232 96" role="img" aria-label="本月状态构成">' + segs + '</svg>' +
+      '<div class="note">' + rangeLabel() + ' 共 ' + HY.num(all) + ' 条</div>' +
+      '<div class="keys">' + keys + '</div>';
+    return tile(svg, '状态构成', '四种状态各占多少');
+  }
+
+  /* 4) 今天要拍：线描插画（相机 + 补光灯），笔画逐渐画出来 */
+  function tileToday(visible) {
+    var n = 0, late = 0;
+    S.scripts.forEach(function (s) {
+      if (!visible[s.store]) return;
+      if (s.date === S.today) n++;
+      if (s.date < S.today && statusOfScript(s) === 'late') late++;
+    });
+    var svg =
+      '<svg viewBox="0 0 200 196" fill="none" stroke="#3F3A34" stroke-width="1.4" ' +
+        'stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="今天要拍 ' + n + ' 条">' +
+        '<g class="ink-draw" transform="translate(0,-6)" style="--len:760px" stroke-dasharray="760" stroke-dashoffset="0">' +
+          '<rect x="26" y="58" width="86" height="56" rx="4"/>' +
+          '<path d="M44 58l9-13h32l9 13"/>' +
+          '<circle cx="69" cy="86" r="17"/><circle cx="69" cy="86" r="7"/>' +
+          '<path d="M100 68h6"/>' +
+          '<path d="M150 112V72"/><path d="M136 124h28"/>' +
+          '<path d="M133 60h34l-6 12h-22z"/>' +
+          '<path d="M150 46v-9M133 50l-6-7M167 50l6-7"/>' +
+        '</g>' +
+      '</svg>' +
+      '<div class="tval" style="justify-content:flex-end;padding-bottom:16px">' +
+        '<b>' + n + '<small> 条</small></b><i>今天要拍</i></div>';
+    return tile(svg, '今天的活', late ? '另有 ' + late + ' 条逾期待补' : '没有积压的逾期');
+  }
+
+  function tile(inner, cap, sub) {
+    return '<figure class="tile"><div class="box">' + inner + '</div>' +
+      '<figcaption>' + cap + '<span>' + esc(sub) + '</span></figcaption></figure>';
+  }
+
   /* ---------- KPI + 排行 ---------- */
   function kpi(lab, val, cls, sub) {
     return '<div class="kpi ' + cls + '"><div class="lab">' + lab + '</div><div class="val">' + val +
@@ -147,6 +269,7 @@
 
   function render() {
     var rows = filtered();
+    renderTiles(rows);
     renderKpis(rows);
     renderMonthBar();
     $('#board').innerHTML = S.view === 'year' ? yearTable(rows) : monthTable(rows);

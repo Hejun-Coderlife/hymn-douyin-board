@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>日历格子样本 · 四种画法</title>
+<style>
+:root{
+  --bg:#FCF7F1;--card:#fff;--line:#E4DED7;--line-2:#D2CFCD;--t1:#000;--t3:#5E5E5E;--t4:#9C9691;
+  --accent:#9C3B2E;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--t1);
+  font:14px/1.7 "PingFang SC","Helvetica Neue",system-ui,sans-serif;padding:40px 44px 80px}
+h1{font-size:22px;font-weight:600;margin-bottom:6px}
+.sub{font-size:12.5px;color:var(--t3);margin-bottom:32px}
+section{background:var(--card);padding:22px 24px;margin-bottom:22px}
+h2{font-size:15px;font-weight:600;margin-bottom:2px}
+h2 em{font-style:normal;font-size:12px;color:var(--accent);margin-left:8px;font-weight:400}
+.desc{font-size:12.5px;color:var(--t3);margin-bottom:16px}
+table{border-collapse:separate;border-spacing:0}
+th,td{border-bottom:1px solid var(--line)}
+th{font-size:11px;color:var(--t4);font-weight:400;width:32px;text-align:center;padding-bottom:6px}
+th.st,td.st{width:104px;text-align:left;font-size:12.5px;color:var(--t3);padding-right:12px;border-right:1px solid var(--line)}
+td{width:32px;height:34px;text-align:center;vertical-align:middle}
+td.wknd{background:#F7F2EC}
+.legend{display:flex;gap:18px;margin-top:16px;font-size:12px;color:var(--t3);flex-wrap:wrap;align-items:center}
+.legend b{font-weight:400;color:var(--t1)}
+
+/* ---------- A 柔色块（当前采用） ---------- */
+.A i{display:inline-block;width:13px;height:13px;vertical-align:middle}
+.A .todo{background:#E8E3DC}
+.A .late{background:#9C3B2E}
+.A .done{background:#2F5D45}
+.A .guess{background:#B58B3E}
+
+/* ---------- B 小圆点 ---------- */
+.B i{display:inline-block;border-radius:50%;vertical-align:middle}
+.B .todo{width:5px;height:5px;background:#E8E3DC}
+.B .late{width:9px;height:9px;background:#9C3B2E}
+.B .done{width:9px;height:9px;background:#2F5D45}
+.B .guess{width:9px;height:9px;background:#B58B3E}
+
+/* ---------- C 细竖条 ---------- */
+.C i{display:inline-block;width:3px;height:16px;vertical-align:middle}
+.C .todo{background:#E8E3DC}
+.C .late{background:#9C3B2E;width:4px}
+.C .done{background:#2F5D45}
+.C .guess{background:#B58B3E}
+
+/* ---------- D 全中性（不用橙） ---------- */
+.D i{display:inline-block;width:13px;height:13px;vertical-align:middle}
+.D .todo{background:#E8E3DC}
+.D .late{background:#8A3125}
+.D .done{background:#27503B}
+.D .guess{background:#A87E33}
+</style>
+</head>
+<body>
+<h1>日历格子 · 四种画法</h1>
+<div class="sub">同一份数据画四遍，挑一个告诉我编号就行。配色是「状态各一色」：墨绿=已发布、驼黄=推测、砖红=逾期、浅灰=待拍，<b>没有橙色</b>。</div>
+
+<section class="A">
+  <h2>A · 柔色块<em>当前采用</em></h2>
+  <div class="desc">13px 实心方块，<b>没有描边</b>，深浅本身就是信息：越深越要管。</div>
+  <div class="grid"></div>
+  <div class="legend">
+    <span><i class="todo"></i> 待拍</span><span><i class="late"></i> 逾期未发</span>
+    <span><i class="done"></i> 已发布·精确</span><span><i class="guess"></i> 已发布·推测</span>
+  </div>
+</section>
+
+<section class="B">
+  <h2>B · 小圆点</h2>
+  <div class="desc">最安静的一种。待拍缩成 5px 几乎隐形，整张表只剩下"发了没"的节奏感。</div>
+  <div class="grid"></div>
+  <div class="legend">
+    <span><i class="todo"></i> 待拍</span><span><i class="late"></i> 逾期未发</span>
+    <span><i class="done"></i> 已发布·精确</span><span><i class="guess"></i> 已发布·推测</span>
+  </div>
+</section>
+
+<section class="C">
+  <h2>C · 细竖条</h2>
+  <div class="desc">像日程条。竖条比方块轻，列与列之间的呼吸更明显。</div>
+  <div class="grid"></div>
+  <div class="legend">
+    <span><i class="todo"></i> 待拍</span><span><i class="late"></i> 逾期未发</span>
+    <span><i class="done"></i> 已发布·精确</span><span><i class="guess"></i> 已发布·推测</span>
+  </div>
+</section>
+
+<section class="D">
+  <h2>D · 柔色块 · 对比更强</h2>
+  <div class="desc">跟 A 同一种方块，但四档之间拉得更开：逾期更深、已发布更实。远看更容易分出层次。</div>
+  <div class="grid"></div>
+  <div class="legend">
+    <span><i class="todo"></i> 待拍</span><span><i class="late"></i> 逾期未发</span>
+    <span><i class="done"></i> 已发布·精确</span><span><i class="guess"></i> 已发布·推测</span>
+  </div>
+</section>
+
+<script>
+// 固定的一份假数据，四个样本用同一份，才好比
+var STORES = ['丈亭店','三横店','义桥店','低塘店','余姚泗门店','古林店','周巷店','塘下店'];
+var DAYS = 22;
+function rng(seed){ return function(){ seed = (seed*1103515245 + 12345) % 2147483648; return seed/2147483648; }; }
+function pattern(){
+  var r = rng(20260917), rows = [];
+  for (var i=0;i<STORES.length;i++){
+    var row=[];
+    for (var d=0;d<DAYS;d++){
+      var v=r();
+      // 前 16 天是过去（已发/逾期/推测），后面是待拍
+      if (d<16) row.push(v<0.42?'done':(v<0.62?'late':(v<0.72?'guess':'todo')));
+      else row.push('todo');
+    }
+    rows.push(row);
+  }
+  return rows;
+}
+var P = pattern();
+document.querySelectorAll('.grid').forEach(function(g){
+  var h='<table><thead><tr><th class="st"></th>';
+  for(var d=0;d<DAYS;d++) h+='<th>'+(d+1)+'</th>';
+  h+='</tr></thead><tbody>';
+  P.forEach(function(row,i){
+    h+='<tr><td class="st">'+STORES[i]+'</td>';
+    row.forEach(function(st,d){
+      var wk=(d%7===5||d%7===6)?' class="wknd"':'';
+      h+='<td'+wk+'><i class="'+st+'"></i></td>';
+    });
+    h+='</tr>';
+  });
+  g.innerHTML=h+'</tbody></table>';
+});
+</script>
+</body>
+</html>

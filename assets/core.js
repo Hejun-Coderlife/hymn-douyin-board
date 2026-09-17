@@ -339,9 +339,10 @@ window.HY = (function () {
     if (bootHidden) return;
     bootHidden = true;
     var el = document.getElementById('boot');
-    if (!el) return;
+    if (!el) { document.body.classList.add('booted'); return; }
     setTimeout(function () {
       el.classList.add('off');
+      document.body.classList.add('booted');   // 触发标题区的进场动画
       setTimeout(function () { el.style.display = 'none'; }, 600);
     }, Math.max(0, BOOT_MIN - (Date.now() - bootAt)));
   }

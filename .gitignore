@@ -1,2 +1,9 @@
 .DS_Store
 node_modules/
+
+# 40MB 的脚本源文件：站点不加载它（页面读的是 data/scripts-index.js + data/scripts/*.js 分片），
+# 每次重生成都是整文件替换，进 git 会让仓库飞快膨胀。需要时用 tools/ 重新生成。
+data/scripts.json
+
+# 本地参考素材：样例 xlsx 里有视频成交金额等经营数据，不进公开仓库
+reference/
