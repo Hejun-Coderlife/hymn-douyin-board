@@ -213,6 +213,28 @@ reference/            视觉参考 B-浅米系.html、样例 xlsx（不部署也
 
 **口径陷阱**：播放数疑似只统计导出日期范围内的数据，老视频播放数大量为 0。对比时**只纳入发布时间落在「数据日期范围」内的视频**，否则均值被老视频稀释。第一版只留入口，不做完整实现。
 
+## 发布到线上
+
+GitHub Pages：**https://hejun-coderlife.github.io/hymn-douyin-board/**（仓库 `Hejun-Coderlife/hymn-douyin-board`，公开）。
+纯静态，**没有任何服务器要跑**；43 家店同时开也只是 GitHub 在发文件。
+
+换了脚本数据之后的发布流程 = **双击根目录的 `发布到线上.command`**，它做四件事：
+`sync_data.py` 重建索引和分片 → 列出变化 → commit + push → 等 Pages 构建完成并打印地址。
+
+手动版就是：
+```bash
+python3 tools/sync_data.py && git add -A && git commit -m "更新脚本数据" && git push
+```
+
+要点：
+- `sync_data.py` 是**确定性输出**（无时间戳、键序固定），没变的分片重新生成后内容一致，
+  git 认不出改动 → **每次只提交真正变了的月份**，仓库不会每次胖 36MB。
+- **`data/scripts.json`（40MB）和 `reference/` 不进仓库**（见 .gitignore）：前者站点不加载、每次整文件替换会撑爆仓库；
+  后者那份样例 xlsx 里有视频成交金额。**这也意味着 scripts.json 只存在你本机，要另外备份。**
+- **视频数据不会随着上线**：它在各自浏览器的 localStorage 里，线上（github.io）和本地（file://）是两套存储。
+  线上要有数据，得在本机「导出备份 JSON」再到线上「导入备份」。
+- 国内访问 github.io 偶尔不稳；真成问题就把同一套文件搬到国内静态托管，代码不用改。
+
 ## 约定
 
 - 改完网页不要自动 `open` 预览，用户自己刷新。
