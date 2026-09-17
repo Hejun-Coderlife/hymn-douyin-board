@@ -20,6 +20,7 @@
   if (!id) {
     $('#spName').textContent = '缺少门店参数';
     $('#spSub').innerHTML = '链接应形如 <code>store.html?store=抖音号</code>';
+    HY.bootDone();
     return;
   }
 
@@ -43,7 +44,7 @@
       return HY.loadDetail(st.code, ym).catch(function () {});  // 某个月没分片就跳过，别让整页挂掉
     })).then(function () { return d; });
   }).then(function (d) {
-    if (!d) return;
+    if (!d) { HY.bootDone(); return; }
     var st = d.storeById[id];
     // 视频数据来自总部在本机导入的 localStorage；店员手机上通常是空的，
     // 那就只显示计划，不判断发没发，免得误伤。
@@ -55,18 +56,6 @@
     var hasVideo = videos.length > 0;
 
     $('#spName').textContent = st.storeName + (st.brandLine ? '（' + st.brandLine + '）' : '');
-    $('#spSub').innerHTML = '抖音号 <span class="mono">' + st.douyinId + '</span> · 每天 1 条 · 往后 13 周' +
-      (hasVideo ? '' : '<br>本机没有视频数据，只显示计划，不判断是否已发');
-
-    var from = weeks[0].days[0].date, to = weeks[weeks.length - 1].days[6].date;
-    var win = mine.filter(function (s) { return s.date >= from && s.date <= to; });
-    var c = { done: 0, guess: 0, late: 0, todo: 0 };
-    win.forEach(function (s) { c[HY.statusOf(s, m.byScript[s.id], today)]++; });
-
-    $('#spKpis').innerHTML =
-      kpi('本周期脚本', win.length, '') +
-      (hasVideo ? kpi('已发布', c.done + c.guess, 'done') + kpi('逾期', c.late, 'late')
-                : kpi('今天之后', win.filter(function (s) { return s.date >= today; }).length, ''));
 
     var byDate = {};
     mine.forEach(function (s) { byDate[s.date] = s; });
@@ -81,7 +70,7 @@
         (isNow ? '本周' : '第 ' + w.i + ' 周') +
         ' <span class="rg">' + HY.md(w.monday) + '–' + HY.md(w.sunday) + '</span>' +
         '<span class="cnt">' + days.length + ' 条</span></div><div class="wb">';
-      if (!days.length) html += '<div class="card2" style="color:var(--t3)">本周暂无脚本</div>';
+      if (!days.length) html += '<div class="emptyday">本周暂无脚本</div>';
       days.forEach(function (dd) {
         var s = byDate[dd.date];
         var mm = m.byScript[s.id];
@@ -95,29 +84,55 @@
     $$('.wkblock .wh').forEach(function (el) {
       el.onclick = function () { el.parentNode.classList.toggle('open'); };
     });
-    $$('.card2 .more').forEach(function (el) {
-      el.onclick = function () {
-        var c2 = el.parentNode;
-        c2.classList.toggle('open');
-        el.textContent = c2.classList.contains('open') ? '收起 ▲' : '看完整分镜 ▼';
-      };
+    $$('.card2').forEach(function (el) {
+      el.onclick = function () { el.classList.toggle('open'); };
     });
-    $$('.card2 .tgline').forEach(function (el) {
-      el.onclick = function () {
+    $$('.card2 .vlink').forEach(function (el) {
+      el.onclick = function (e) { e.stopPropagation(); };   // 点视频链接别把卡片收起来
+    });
+    $$('.card2 .hashrow span').forEach(function (el) {      // 单个标签：点一下复制自己
+      el.onclick = function (e) {
+        e.stopPropagation();
         var t = el.textContent.trim();
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(t).then(function () { HY.toast('已复制 ' + t); },
-            function () { HY.toast('复制失败，长按选中'); });
-        } else { HY.toast('长按选中复制'); }
+        copyText(t).then(function (ok) { HY.toast(ok ? '已复制 ' + t : '复制失败，长按选中'); });
       };
     });
+    $$('.card2 .copyall').forEach(function (el) {            // 一键复制这条的全部标签
+      el.onclick = function (e) {
+        e.stopPropagation();
+        var row = el.parentNode.nextSibling;
+        var all = Array.prototype.map.call(row.querySelectorAll('span'), function (x) {
+          return x.textContent.trim();
+        }).join(' ');
+        copyText(all).then(function (ok) {
+          HY.toast(ok ? '已复制 ' + row.querySelectorAll('span').length + ' 个标签' : '复制失败，长按选中');
+        });
+      };
+    });
+    HY.bootDone();
   }).catch(function (e) {
     $('#spName').textContent = '数据加载失败';
     $('#spSub').textContent = e.message;
+    HY.bootDone();
   });
 
-  function kpi(lab, val, cls) {
-    return '<div class="kpi ' + cls + '"><div class="lab">' + lab + '</div><div class="val">' + val + '</div></div>';
+  // file:// 打开时 navigator.clipboard 多半不可用，退回老办法
+  function copyText(t) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(t).then(function () { return true; }, fallback);
+    }
+    return Promise.resolve(fallback());
+    function fallback() {
+      var ta = document.createElement('textarea');
+      ta.value = t;
+      ta.style.cssText = 'position:fixed;left:-9999px;top:0';
+      document.body.appendChild(ta);
+      ta.select();
+      var ok = false;
+      try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+      document.body.removeChild(ta);
+      return ok;
+    }
   }
 
   function list(arr, cls) {
@@ -129,18 +144,23 @@
 
   function card(s, dd, m, stt, hasVideo) {
     var label = hasVideo ? HY.STATUS_CN[stt] : (s.date < today ? '计划日期已过' : '待拍');
+    // 列表行只留四样：日期、周几、标题、完成情况（用户 2026-09-17 要求）；
+    // 标签、痛点、分镜全部收进 detail，点整张卡片展开。
     var h = '<div class="card2 ' + stt + '">' +
       '<div class="ct"><span class="dt">' + s.date + '（周' + dd.dow + '）</span>' +
-      '<span class="pill ' + stt + '">' + label + '</span></div>' +
-      '<h5>' + esc(s.topic) + '｜' + esc(s.format) + '</h5>' +
-      '<div class="fmt">' + esc(s.pain || '') + '</div>' +
-      '<div class="tgline">' + esc(s.tag) + '</div>' +
-      '<div class="fmt" style="margin-top:6px">↑ 发布时把这个标签打进标题，总部才认得出</div>';
+      '<span class="pill ' + stt + '">' + label + '</span>' +
+      '<span class="tog"><em class="o">展开</em><em class="c">收起</em><i>▾</i></span></div>' +
+      '<h5>' + esc(s.title || (s.topic + '｜' + s.format)) + '</h5>' +
+      '<div class="detail">';
     if (m) {
       h += '<a class="vlink" href="' + esc(m.video.url) + '" target="_blank" rel="noopener">已发布：' +
         esc(m.video.title || '（无标题）') + ' ↗</a>';
     }
-    h += '<span class="more">看完整分镜 ▼</span><div class="detail">';
+    if (s.audience || s.pain) {
+      h += '<div class="sechead">拍给谁看</div><div class="kvs">' +
+        '<div class="k">人群</div><div>' + esc(s.audience || '—') + '</div>' +
+        '<div class="k">她的烦恼</div><div>' + esc(s.pain || '—') + '</div></div>';
+    }
     h += '<div class="sechead">开头 3 秒</div><div class="bigline">' + esc(s.hook) + '</div>';
     h += '<div class="sechead">分镜 ' + (s.shots || []).length + ' 幕 · ' + esc(s.duration || '') + '</div>';
     (s.shots || []).forEach(function (sh, i) {
@@ -157,8 +177,11 @@
       '<div class="k">BGM</div><div>' + esc(s.bgm || '—') + '</div>' +
       '<div class="k">道具</div><div>' + esc((s.props || []).join('、') || '—') + '</div></div>';
     if (s.hashtags && s.hashtags.length) {
-      h += '<div class="sechead">话题标签</div><div class="hashrow">' +
-        s.hashtags.map(function (t) { return '<span>' + esc(t) + '</span>'; }).join('') + '</div>';
+      // 专属标签 2026-09-17 取消，s.tag 不再显示，只留普通话题标签
+      var tags = s.hashtags.filter(function (t) { return t !== s.tag; });
+      h += '<div class="sechead row">话题标签<button class="btnmini copyall" type="button">复制全部标签</button></div>' +
+        '<div class="hashrow">' +
+        tags.map(function (t) { return '<span>' + esc(t) + '</span>'; }).join('') + '</div>';
     }
     h += '</div></div>';
     return h;

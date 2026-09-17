@@ -71,7 +71,8 @@ def build_one(store, date, seq, tag_no):
         "duration": f["duration"],
         "cover": fill(f["cover"], ctx),
         "bgm": L.BGMS[seq % len(L.BGMS)],
-        "props": [t["product"], "补光灯", "手机三脚架"],
+        # 店员只有一部手机，道具只列店里现成的东西（2026-09-17 用户要求）
+        "props": ["一部手机（靠纸巾盒/毛巾卷固定）", t["product"], "镜子 + 干净毛巾"],
         "cta": "结尾引导：%s" % ("评论区扣「1」，我私信你适配方案" if seq % 3 == 0
                                 else "点左下角，到店先做一次免费皮肤检测" if seq % 3 == 1
                                 else "主页领新客体验券，到店核销"),

@@ -178,8 +178,10 @@ window.HY = (function () {
 
   /* ---------- 匹配引擎 ---------- */
   /**
-   * 1) 精确：标题含脚本 tag
-   * 2) 兜底：同抖音号 + 发布日落在脚本计划日所在周 + 视频未被占用 -> 推测匹配
+   * 脚本专属标签已在 2026-09-17 整个取消（用户：不指望店员记得打标签，完成情况就靠猜），
+   * 所以这里**没有精确匹配**，全是按时间推测：
+   * 1) 同抖音号 + 发布日 == 计划日            -> by:'day'（当天发的，比较可信）
+   * 2) 放宽到计划日所在自然周（周一~周日）     -> by:'week'
    * 3) 剩下的视频 = 自由发挥
    * 一条视频只匹配一个脚本；一个脚本只取一条视频。
    */
@@ -192,23 +194,7 @@ window.HY = (function () {
       byStore[k].sort(function (a, b) { return a.pubTs - b.pubTs; });
     });
 
-    // 1) 精确
-    scripts.forEach(function (s) {
-      var body = String(s.tag || '').replace(/^#/, '').trim();
-      if (!body) return;
-      var pool = byStore[s.store] || [];
-      for (var i = 0; i < pool.length; i++) {
-        var v = pool[i];
-        if (claimed[v.id]) continue;
-        if (v.title && v.title.indexOf(body) !== -1) {
-          claimed[v.id] = s.id;
-          result[s.id] = { video: v, type: 'exact' };
-          break;
-        }
-      }
-    });
-
-    // 2) 兜底：先找「同一天发的」，再放宽到「同一周发的」。都算推测匹配。
+    // 先找「同一天发的」，再放宽到「同一周发的」。两种都是推测，只是可信度不同。
     var ordered = scripts.slice().sort(function (a, b) {
       return a.date < b.date ? -1 : a.date > b.date ? 1 : 0;
     });
@@ -237,17 +223,17 @@ window.HY = (function () {
     fallback('day');
     fallback('week');
 
-    // 3) 自由发挥
+    // 剩下的 = 自由发挥
     var free = videos.filter(function (v) { return !claimed[v.id]; });
     return { byScript: result, free: free, claimed: claimed };
   }
 
-  /** 单条脚本的状态：done / guess / late / todo */
+  /** 单条脚本的状态：done（当天发的）/ guess（同周内发的）/ late / todo */
   function statusOf(script, matched, todayYmd) {
-    if (matched) return matched.type === 'exact' ? 'done' : 'guess';
+    if (matched) return matched.by === 'day' ? 'done' : 'guess';
     return script.date < todayYmd ? 'late' : 'todo';
   }
-  var STATUS_CN = { done: '已发布', guess: '已发布·推测', late: '逾期未发', todo: '待拍' };
+  var STATUS_CN = { done: '已发布·当天', guess: '已发布·当周', late: '逾期未发', todo: '待拍' };
 
   /* ---------- 加载 ---------- */
   /* 门店档案的人工编辑：存 localStorage，加载时覆盖到 stores 上 */
@@ -333,8 +319,9 @@ window.HY = (function () {
     el._t = setTimeout(function () { el.classList.remove('on'); }, 1800);
   }
 
-  /* 刷新过场：至少显示 BOOT_MIN，渲染完就淡出；3 秒保险，出错也不会把页面盖死 */
-  var BOOT_MIN = 850, bootAt = Date.now(), bootHidden = false;
+  /* 刷新过场：至少显示 BOOT_MIN，渲染完就淡出；3 秒保险，出错也不会把页面盖死。
+     BOOT_MIN 卡在 420ms 是为了让 logo 揭字（.38s）跑完，再短就会被切一半。 */
+  var BOOT_MIN = 420, bootAt = Date.now(), bootHidden = false;
   function bootDone() {
     if (bootHidden) return;
     bootHidden = true;
@@ -343,7 +330,7 @@ window.HY = (function () {
     setTimeout(function () {
       el.classList.add('off');
       document.body.classList.add('booted');   // 触发标题区的进场动画
-      setTimeout(function () { el.style.display = 'none'; }, 600);
+      setTimeout(function () { el.style.display = 'none'; }, 300);
     }, Math.max(0, BOOT_MIN - (Date.now() - bootAt)));
   }
   setTimeout(bootDone, 3000);

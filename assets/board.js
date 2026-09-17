@@ -126,7 +126,7 @@
 
   /* 3) 本月状态构成：一根堆叠条 + 四个直接标注（段间留 2px 缝） */
   function tileStack(c, all) {
-    var order = [['done', '已发布·精确'], ['guess', '已发布·推测'], ['late', '逾期未发'], ['todo', '待拍']];
+    var order = [['done', '已发布·当天'], ['guess', '已发布·当周'], ['late', '逾期未发'], ['todo', '待拍']];
     var W = 200, H = 16, x = 0, segs = '', keys = '';
     order.forEach(function (o) {
       var n = c[o[0]], w = all ? (n / all) * W : 0;
@@ -194,7 +194,7 @@
 
     $('#kpis').innerHTML = [
       kpi('完成率', rate + '<small>%</small>', '', rangeLabel() + ' · 已到期 ' + due + ' 条'),
-      kpi('已发布', c.done + c.guess, 'done', '其中标签精确 ' + c.done + ' 条'),
+      kpi('已发布', c.done + c.guess, 'done', '其中当天发的 ' + c.done + ' 条'),
       kpi('逾期未发', c.late, 'late', '过了计划日仍没匹配到'),
       kpi('待拍', c.todo, '', '计划日期还没到'),
       kpi('自由发挥视频', HY.num(freeCount), '', '没对上任何脚本'),
@@ -424,9 +424,6 @@
 
     var h = '<span class="pill ' + stt + '">' + HY.STATUS_CN[stt] + '</span>';
 
-    h += '<div class="tagbox"><span class="tg" id="copyTag">' + esc(s.tag) + '</span>' +
-         '<span class="ds">发布时必须把这个标签打进标题，总部靠它认脚本。点击复制</span></div>';
-
     h += '<div class="statusbox">';
     if (m) {
       var v = m.video;
@@ -434,12 +431,11 @@
            esc(v.title || '（无标题）') + ' ↗</a>' +
            '<div class="vmeta mono">发布 ' + v.pubDate + ' · 播放 ' + HY.num(v.play) +
            ' · 成交 ¥' + HY.num(v.gmv) + '</div>';
-      if (m.type === 'guess') {
-        h += '<div class="vmeta">※ 推测匹配：标题里没有该标签，' +
-             (m.by === 'day' ? '只是当天发了这条视频。' : '只是同一周内发了这条视频。') + '</div>';
-      }
+      h += '<div class="vmeta">※ 按时间推测：' +
+           (m.by === 'day' ? '计划当天发了这条视频。' : '计划日那一周内发了这条视频，不一定是这条脚本。') +
+           '</div>';
     } else if (stt === 'late') {
-      h += '<div class="vmeta">计划日期已过，没匹配到视频。已拍的话检查标题是否带标签，或重新导入最新数据。</div>';
+      h += '<div class="vmeta">计划日期已过，那一周内该门店没有没被认领的视频。已拍的话重新导入最新数据看看。</div>';
     } else {
       h += '<div class="vmeta">还没到计划日期。</div>';
     }
@@ -474,7 +470,8 @@
 
     if (s.hashtags && s.hashtags.length) {
       h += '<div class="sechead">话题标签</div><div class="hashrow">' +
-        s.hashtags.map(function (t) { return '<span>' + esc(t) + '</span>'; }).join('') +
+        s.hashtags.filter(function (t) { return t !== s.tag; })   // 专属标签已取消，不再露出
+          .map(function (t) { return '<span>' + esc(t) + '</span>'; }).join('') +
         '</div><div class="rowbtns"><button class="btn sm" id="copyAll">复制全部标签</button></div>';
     }
 
@@ -484,10 +481,10 @@
     $('#dBody').innerHTML = h;
     $('#dBody').scrollTop = 0;
 
-    var ct = document.getElementById('copyTag');
-    if (ct) ct.onclick = function () { copy(s.tag, '已复制 ' + s.tag); };
     var ca = document.getElementById('copyAll');
-    if (ca) ca.onclick = function () { copy((s.hashtags || []).join(' '), '标签已全部复制'); };
+    if (ca) ca.onclick = function () {
+      copy((s.hashtags || []).filter(function (t) { return t !== s.tag; }).join(' '), '标签已全部复制');
+    };
   }
 
   function copy(text, okMsg) {
@@ -774,6 +771,16 @@
       a.onclick = function () { showPanel(a.dataset.panel); };
     });
     $('#btnImport').onclick = function () { showPanel('import'); };
+
+    // 侧栏折叠，状态记在 localStorage，下次打开保持
+    var NAVKEY = 'hymn_navhide';
+    function setNav(hide) {
+      document.body.classList.toggle('navhide', hide);
+      $('#navTog').title = hide ? '展开侧栏' : '收起侧栏';
+      try { localStorage.setItem(NAVKEY, hide ? '1' : '0'); } catch (e) {}
+    }
+    setNav(localStorage.getItem(NAVKEY) === '1');
+    $('#navTog').onclick = function () { setNav(!document.body.classList.contains('navhide')); };
 
     $('#dClose').onclick = closeDrawer;
     $('#backdrop').onclick = closeDrawer;

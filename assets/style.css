@@ -77,23 +77,25 @@ button,select,input{font:inherit;color:inherit}
 
 /* ===== 刷新过场：logo 从左往右揭出来，下面再滑出一条线 =====
    跟 hermes.cn 刷新时居中那匹马是同一个位置和作用。渲染完 core.js 调 HY.bootDone() 淡出；
-   3 秒保险丝在 core.js 里，出错也不会把页面盖死。 */
+   3 秒保险丝在 core.js 里，出错也不会把页面盖死。
+   2026-09-17 整体提速：揭字 .85s→.38s、划线 .7s→.3s、淡出 .55s→.25s，
+   配合 core.js 的 BOOT_MIN 850→420，整套从约 1.4s 压到约 0.7s（用户嫌太久）。 */
 #boot{
   position:fixed;inset:0;z-index:300;background:var(--bg);
   display:flex;align-items:center;justify-content:center;
-  transition:opacity .55s ease;
+  transition:opacity .25s ease;
 }
 #boot.off{opacity:0;pointer-events:none}
 #boot .bmark{position:relative}
 #boot .bmark img{
   display:block;width:min(210px,44vw);
   -webkit-clip-path:inset(0 100% 0 0);clip-path:inset(0 100% 0 0);
-  animation:bootwipe .85s cubic-bezier(.25,.1,.25,1) .1s forwards;
+  animation:bootwipe .38s cubic-bezier(.25,.1,.25,1) 0s forwards;
 }
 #boot .bmark::after{
   content:'';position:absolute;left:0;right:0;bottom:-14px;height:1px;background:var(--t1);
   transform:scaleX(0);transform-origin:left center;
-  animation:bootline .7s cubic-bezier(.25,.1,.25,1) .55s forwards;
+  animation:bootline .3s cubic-bezier(.25,.1,.25,1) .18s forwards;
 }
 @keyframes bootwipe{to{-webkit-clip-path:inset(0 0 0 0);clip-path:inset(0 0 0 0)}}
 @keyframes bootline{to{transform:scaleX(1)}}
@@ -119,7 +121,21 @@ button,select,input{font:inherit;color:inherit}
   background:var(--bg);border-right:1px solid var(--line-2);
   display:flex;flex-direction:column;z-index:60;
 }
-.sidebar .logo{padding:30px 22px 22px;border-bottom:1px solid var(--line-2)}
+.sidebar{transition:transform .24s cubic-bezier(.25,.1,.25,1)}
+.sidebar .logo{padding:30px 22px 22px;border-bottom:1px solid var(--line-2);padding-right:56px}
+
+/* 侧栏折叠按钮：展开时贴在侧栏右上角，收起后滑到页面左上角（用户 2026-09-17 要的 ChatGPT 那个）*/
+.navtog{
+  position:fixed;top:26px;left:calc(var(--nav-w) - 46px);z-index:70;
+  width:30px;height:30px;display:flex;align-items:center;justify-content:center;
+  border:1px solid var(--line-2);border-radius:0;background:var(--bg);color:var(--t2);
+  cursor:pointer;padding:0;transition:left .24s cubic-bezier(.25,.1,.25,1),background .2s,color .2s;
+}
+.navtog:hover{background:var(--ink);color:#fff;border-color:var(--ink)}
+body.navhide .sidebar{transform:translateX(-100%)}
+body.navhide .main{margin-left:0}
+body.navhide .navtog{left:16px}
+.main{transition:margin-left .24s cubic-bezier(.25,.1,.25,1)}
 .sidebar .logo img{height:18px;display:block}
 .sidebar .logo .st{font-size:11.5px;color:var(--t3);margin-top:12px;letter-spacing:.02em}
 
@@ -531,7 +547,15 @@ ul.lines{list-style:none;font-size:13.5px;line-height:1.85}
 ul.lines li{padding-left:18px;position:relative;margin-bottom:5px;color:var(--t2)}
 ul.lines li::before{content:"";position:absolute;left:4px;top:11px;width:4px;height:4px;background:var(--t4)}
 ul.lines.warn li::before{background:var(--brick)}
-.hashrow{display:flex;flex-wrap:wrap;gap:6px}
+.sechead.row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.btnmini{
+  border:1px solid var(--ink);border-radius:0;background:transparent;color:var(--t1);
+  padding:4px 10px;font-size:11.5px;letter-spacing:.02em;cursor:pointer;font-family:inherit;
+}
+.btnmini:hover{background:var(--ink);color:#fff}
+.hashrow{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.hashrow span{cursor:pointer}
+.hashrow .tgline{margin-top:0;font-size:12.5px;padding:5px 11px}   /* 专属标签混在话题标签里，但加重 */
 .hashrow span{
   background:#fff;border:1px solid var(--line-2);border-radius:0;
   padding:5px 11px;font-size:11px;font-weight:400;letter-spacing:.06em;color:var(--t2);
@@ -616,10 +640,41 @@ body.storepage{background:var(--bg)}
 .wkblock.now{box-shadow:inset 2px 0 0 var(--navy)}
 .wkblock .wb{display:none;padding:0 16px 10px}
 .wkblock.open .wb{display:block}
-.card2{border-top:1px solid var(--line);padding:14px 0}
+.card2{border-top:1px solid var(--line);padding:14px 0;cursor:pointer}
+/* 展开那一条要一眼看出边界，不然详情末尾和下一天的日期粘成一坨（用户 2026-09-17 反馈）：
+   左边 2px 黑竖条 + 上下换成深一号的分区线 + 上下留空，整块从清单里「拎」出来 */
+.card2.open{
+  background:var(--paper);                     /* 展开=换底色，收起的行是白底（用户 2026-09-17 要求「颜色上做个区分」）*/
+  box-shadow:inset 2px 0 0 var(--ink);
+  border-top:1px solid var(--line-2);border-bottom:1px solid var(--line-2);
+  margin:10px -16px;padding:16px 16px 22px 30px; /* 负边距把浅底铺满整行宽 */
+}
+/* 底色换成浅灰之后，里面原本也用 --paper 的块要翻成白，不然糊成一片 */
+.card2.open .bigline,
+.card2.open .tgline,
+.card2.open .pill.todo,
+.card2.open .hashrow span{background:var(--card)}
+.card2.open .shot{border-bottom-color:var(--line-2)}
+.card2.open .detail{border-top-color:var(--line-2)}
+.card2.open + .card2{border-top:0}
+/* 展开/收起按钮：站内标准方框按钮（1px 黑边），展开后翻成黑底白字，
+   一眼能找到（用户 2026-09-17：「打开/收起的按钮，着重突出」）*/
+.card2 .ct .tog{
+  margin-left:auto;display:inline-flex;align-items:center;gap:6px;flex-shrink:0;
+  border:1px solid var(--ink);border-radius:0;padding:5px 10px;
+  font-size:12px;letter-spacing:.02em;color:var(--t1);background:transparent;
+}
+.card2 .ct .tog em{font-style:normal}
+.card2 .ct .tog .c{display:none}
+.card2 .ct .tog i{font-style:normal;font-size:10px;line-height:1;transition:transform .2s}
+.card2.open .ct .tog{background:var(--ink);color:#fff}
+.card2.open .ct .tog .o{display:none}
+.card2.open .ct .tog .c{display:inline}
+.card2.open .ct .tog i{transform:rotate(180deg)}
+.emptyday{border-top:1px solid var(--line);padding:14px 0;font-size:12.5px;color:var(--t3)}
 .card2 .ct{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .card2 .ct .dt{font-size:12.5px;color:var(--t3);font-variant-numeric:tabular-nums}
-.card2 h5{font-size:15.5px;font-weight:500;margin:8px 0 3px;line-height:1.55}
+.card2 h5{font-size:15.5px;font-weight:600;margin:8px 0 0;line-height:1.55}
 .card2 .fmt{font-size:12.5px;color:var(--t3)}
 .card2 .tgline{
   display:inline-block;background:transparent;color:var(--t1);border:1px solid var(--ink);
@@ -634,7 +689,8 @@ body.storepage{background:var(--bg)}
 }
 .card2 .more:hover::after{transform:scaleX(1);transform-origin:left center}
 .card2 .more:hover{color:var(--ink)}
-.card2 .detail{display:none;margin-top:12px;border-top:1px solid var(--line);padding-top:12px}
+.card2 .detail{display:none;margin-top:16px;border-top:1px solid var(--line);padding-top:4px}
+.card2 .detail .sechead:first-child,.card2 .detail .vlink{margin-top:18px}
 .card2.open .detail{display:block}
 
 .toast{
@@ -658,6 +714,7 @@ body.storepage{background:var(--bg)}
   .btn.block{width:auto}
   .sidebar .foot{display:none}
   .main{margin-left:0}
+  .navtog{display:none}
   .content{padding:18px 16px 60px}
   .pagehead{margin-bottom:22px;padding-bottom:16px}
   .pagehead h2{font-size:23px}
