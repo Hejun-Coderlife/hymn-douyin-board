@@ -9,7 +9,7 @@
     });
   }
   var pg = document.getElementById('pageBg');
-  if (pg && window.HYBg && localStorage.getItem('hymn_bg3d') !== 'off') {
+  if (pg && window.HYBg && localStorage.getItem('hymn_bg3d') === 'on') {
     window.HYBg(pg, localStorage.getItem('hymn_bg3d_style') || 'pearl',
                 { light: true, scale: 0.30, fps: 15 }).start();
   } else if (pg) { pg.style.display = 'none'; }
@@ -30,8 +30,18 @@
       $('#spSub').textContent = '抖音号 ' + id + ' 不在门店表里';
       return Promise.reject(new Error('门店不存在'));
     }
-    // 脚本详情按门店分片，先把本店那份加载进来
-    return HY.loadDetail(st.code).then(function () { return d; });
+    // 脚本详情按「门店 × 月份」分片，把展示窗口覆盖到的月份都加载进来
+    // （之前这里只传了 code、没传月份，loadDetail 直接 reject，门店页一开就是「数据加载失败」）
+    var yms = [], seen = {};
+    HY.buildDayGrid(new Date(), HY.WEEKS).forEach(function (w) {
+      w.days.forEach(function (day) {
+        var ym = HY.ymOf(day.date);
+        if (!seen[ym]) { seen[ym] = 1; yms.push(ym); }
+      });
+    });
+    return Promise.all(yms.map(function (ym) {
+      return HY.loadDetail(st.code, ym).catch(function () {});  // 某个月没分片就跳过，别让整页挂掉
+    })).then(function () { return d; });
   }).then(function (d) {
     if (!d) return;
     var st = d.storeById[id];

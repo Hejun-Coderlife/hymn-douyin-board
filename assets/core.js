@@ -333,6 +333,20 @@ window.HY = (function () {
     el._t = setTimeout(function () { el.classList.remove('on'); }, 1800);
   }
 
+  /* 刷新过场：至少显示 BOOT_MIN，渲染完就淡出；3 秒保险，出错也不会把页面盖死 */
+  var BOOT_MIN = 850, bootAt = Date.now(), bootHidden = false;
+  function bootDone() {
+    if (bootHidden) return;
+    bootHidden = true;
+    var el = document.getElementById('boot');
+    if (!el) return;
+    setTimeout(function () {
+      el.classList.add('off');
+      setTimeout(function () { el.style.display = 'none'; }, 600);
+    }, Math.max(0, BOOT_MIN - (Date.now() - bootAt)));
+  }
+  setTimeout(bootDone, 3000);
+
   function num(n) { return (n || 0).toLocaleString('zh-CN'); }
 
   return {
@@ -343,6 +357,7 @@ window.HY = (function () {
     Videos: Videos, rowsToVideos: rowsToVideos,
     StoreEdits: StoreEdits, EDITABLE: EDITABLE,
     match: match, statusOf: statusOf, STATUS_CN: STATUS_CN,
-    loadData: loadData, loadDetail: loadDetail, loadDetails: loadDetails, detail: detail, toast: toast, num: num
+    loadData: loadData, loadDetail: loadDetail, loadDetails: loadDetails, detail: detail, toast: toast, num: num,
+    bootDone: bootDone
   };
 })();

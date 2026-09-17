@@ -620,7 +620,8 @@
     if (!pg || !window.HYBg) { if (btn) btn.style.display = 'none'; return; }
     // 只有整页大背景这一层（深色横幅已撤，用户嫌太深）
     pagebg = window.HYBg(pg, localStorage.getItem('hymn_bg3d_style') || 'pearl', { light: true });
-    var off = localStorage.getItem('hymn_bg3d') === 'off';
+    // 改成爱马仕白底风之后，背景动效默认关，想要再点「动效」打开（状态照旧存 localStorage）
+    var off = localStorage.getItem('hymn_bg3d') !== 'on';
     apply(off);
     btn.onclick = function () {
       off = !off;
@@ -630,7 +631,7 @@
     function apply(isOff) {
       pg.dataset.on = isOff ? '0' : '1';
       btn.classList.toggle('off', isOff);
-      btn.textContent = isOff ? '动效已关' : '动效';
+      btn.textContent = isOff ? '开启动效' : '关闭动效';
       if (isOff) { pagebg.stop(); pg.classList.add('off'); }
       else { pg.classList.remove('off'); pagebg.start(); }
     }
@@ -722,7 +723,9 @@
     refreshAll();
     showPanel(hashView());
     window.addEventListener('hashchange', function () { showPanel(hashView()); });
+    HY.bootDone();
   }).catch(function (e) {
     $('#board').innerHTML = '<tbody><tr><td class="emptyrow">数据加载失败：' + esc(e.message) + '</td></tr></tbody>';
+    HY.bootDone();
   });
 })();

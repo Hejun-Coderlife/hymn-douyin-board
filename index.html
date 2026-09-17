@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
+<div id="boot"><div class="bmark"><img src="assets/logo-ink.png" alt="赫眉 HYMN"></div></div>
 <canvas id="pageBg"></canvas>
 
 
@@ -17,11 +18,11 @@
   </div>
   <nav class="nav">
     <div class="grp">运营</div>
-    <a class="on" data-panel="board"><span class="ico">▦</span>脚本日历</a>
-    <a data-panel="stores"><span class="ico">▤</span>门店列表</a>
+    <a class="on" data-panel="board"><span class="ico">▦</span><span class="lb">脚本日历</span></a>
+    <a data-panel="stores"><span class="ico">▤</span><span class="lb">门店列表</span></a>
     <div class="grp">数据</div>
-    <a data-panel="import"><span class="ico">↥</span>视频数据导入</a>
-    <a data-panel="effect"><span class="ico">◷</span>效果统计</a>
+    <a data-panel="import"><span class="ico">↥</span><span class="lb">视频数据导入</span></a>
+    <a data-panel="effect"><span class="ico">◷</span><span class="lb">效果统计</span></a>
   </nav>
   <div class="sidedata">
     <div class="hint" id="datahint">未导入视频数据</div>
@@ -57,11 +58,11 @@
         <input type="search" id="fSearch" placeholder="搜门店 / 抖音号">
         <label class="chk"><input type="checkbox" id="fLate"> 只看有逾期</label>
         <div class="legend">
-          <span><i style="background:linear-gradient(180deg,#eae4d6,#ded6c4)"></i>待拍</span>
-          <span><i style="background:linear-gradient(180deg,#d4614c,#b53a28)"></i>逾期未发</span>
-          <span><i style="background:linear-gradient(180deg,#5c9b6d,#3a7049)"></i>已发布·标签精确</span>
-          <span><i style="background:#f0f5ec;border:1px solid #7d9b6a"></i>已发布·推测</span>
-          <span><i style="background:linear-gradient(135deg,#f3b4c6,#9c3a6b);border-radius:50%"></i>当天另有自由发挥</span>
+          <span><i style="background:transparent;border:1px solid #DBD5CE"></i>待拍</span>
+          <span><i style="background:#000"></i>逾期未发</span>
+          <span><i style="background:#8E8781"></i>已发布·标签精确</span>
+          <span><i style="background:transparent;border:2px solid #8E8781"></i>已发布·推测</span>
+          <span><i style="background:#F26E21"></i>当天另有自由发挥</span>
         </div>
       </div>
 
