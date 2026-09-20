@@ -8,45 +8,33 @@
 <style>
 /* 入口页：店员输手机号进自己店。**认人，不是鉴权**（见 core.js 里 phoneHash 那段注释）。 */
 body.loginpage{background:var(--bg)}
-.lg{max-width:420px;margin:0 auto;padding:16vh 24px 40px}
-.lg .top{display:flex;align-items:center;gap:12px;margin-bottom:34px}
-.lg .top img{width:64px;height:auto;display:block}
-.lg .top b{font-size:19px;font-weight:600}
-.lg h1{font-size:23px;font-weight:600;letter-spacing:.01em;margin-bottom:8px}
-.lg p.hint{font-size:13px;color:var(--t3);line-height:1.8;margin-bottom:22px}
-.lg label{display:block;font-size:12px;color:var(--t3);letter-spacing:.06em;margin-bottom:8px}
+/* 2026-09-20 用户：「只要一个更大的赫眉logo，下面一个店铺手机号标题，再一个输入框，
+   别的都不要」——标题「进入我的门店」、说明文字、「进入」按钮、底部脚注全删了。
+   按钮删了怎么提交：**输满 11 位自动进入**（回车也行）。
+   只剩下 .msg 还在，那是报错用的（号码没登记要有个交代），没事的时候它是空的、不占地方。 */
+.lg{max-width:420px;margin:0 auto;padding:18vh 24px 40px}
+.lg img.logo{width:150px;height:auto;display:block;margin-bottom:54px}
+.lg label{display:block;font-size:15px;color:var(--t1);font-weight:600;margin-bottom:12px}
 .lg input{
   width:100%;box-sizing:border-box;border:1px solid var(--line-2);border-radius:0;
-  background:var(--card);padding:14px 14px;font-size:17px;letter-spacing:.04em;
+  background:var(--card);padding:16px 14px;font-size:19px;letter-spacing:.06em;
   font-variant-numeric:tabular-nums;
 }
 .lg input:focus{outline:none;border-color:var(--ink)}
-.lg .go{width:100%;margin-top:14px;padding:14px 0;font-size:15px}
 .lg .msg{margin-top:14px;font-size:13px;line-height:1.8;min-height:1.8em}
 .lg .msg.err{color:var(--brick)}
 .lg .msg.ok{color:var(--green)}
-.lg .foot{margin-top:30px;padding-top:18px;border-top:1px solid var(--line-2);
-  font-size:12px;color:var(--t3);line-height:1.9}
 </style>
 </head>
 <body class="loginpage">
 <div id="boot"><div class="bmark"><img src="assets/logo-ink.png" alt="赫眉 HYMN"></div></div>
 
 <div class="lg">
-  <div class="top"><img src="assets/logo-ink.png" alt="赫眉 HYMN"></div>
-  <h1>进入我的门店</h1>
-  <p class="hint">输入店铺手机号，进到你这家店的拍摄计划。<br>只要输一次，以后打开就直接是自己店。</p>
-
+  <img class="logo" src="assets/logo-ink.png" alt="赫眉 HYMN">
   <label for="ph">店铺手机号</label>
   <input id="ph" type="tel" inputmode="numeric" autocomplete="tel"
          maxlength="20" placeholder="11 位手机号">
-  <button class="btn primary go" id="go" type="button">进入</button>
   <div class="msg" id="msg"></div>
-
-  <div class="foot">
-    号码没登记、或者换了号码，找区域经理改。<br>
-    这里看到的是拍摄脚本，不涉及经营数据。
-  </div>
 </div>
 
 <script src="data/stores.js"></script>
@@ -86,7 +74,16 @@ body.loginpage{background:var(--bg)}
       location.replace('store.html?store=' + encodeURIComponent(hit.douyinId));
     }
 
-    $('#go').onclick = submit;
+    /* 没有「进入」按钮了：输满 11 位就自动走。
+       只在**刚好凑满 11 位**时触发一次，不然每敲一下都会弹一次「还没登记」。 */
+    var lastTried = '';
+    input.addEventListener('input', function () {
+      var d = HY.normPhone(input.value);
+      if (d.length < 11) { say(''); lastTried = ''; return; }
+      if (d === lastTried) return;
+      lastTried = d;
+      submit();
+    });
     input.addEventListener('keydown', function (e) { if (e.key === 'Enter') submit(); });
     input.focus();
   }).catch(function (e) {
