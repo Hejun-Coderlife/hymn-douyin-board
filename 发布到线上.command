@@ -14,6 +14,10 @@ fi
 
 echo "① 重建索引和分片…"
 python3 tools/sync_data.py || { echo "❌ 生成失败，先看上面的报错"; read -n 1 -s -r -p "按任意键关闭"; exit 1; }
+
+# 给 css/js 打版本戳。GitHub Pages 对静态资源发 max-age=600，不打戳的话
+# 推完 10 分钟内手机上刷新看到的还是旧版（2026-09-20 被坑了三次）。
+python3 tools/stamp_assets.py || { echo "❌ 打版本戳失败"; read -n 1 -s -r -p "按任意键关闭"; exit 1; }
 echo
 
 echo "② 看看有什么变化…"
