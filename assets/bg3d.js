@@ -65,25 +65,26 @@
     '    float spec=pow(clamp(dot(n,normalize(L+vec3(0.0,0.0,1.0))),0.0,1.0),26.0);',
     '    vec3 s=tint*(0.885+0.115*diff)+vec3(1.0,0.99,0.97)*spec*0.26+tint*rim*0.10;',
     '    float a=smoothstep(1.34,0.80,q);',
-    '    col=mix(col,s,a*0.66*k);',
+    '    col=mix(col,s,a*1.00*k);',          // 2026-09-17：用户「完全看不出来」，混合拉满
     '  }',
     '  return col;',
     '}',
     '/* 左上角是标题区，球飘到那儿会挡字，这里做一个避让遮罩 */',
     'float titleMask(vec2 uv){',
-    '  float mx=smoothstep(0.46,0.62,uv.x);',   // 越往右越放行
-    '  float my=smoothstep(0.93,0.76,uv.y);',   // 越往下越放行
-    '  return clamp(mx+my,0.0,1.0);',
+    // 2026-09-17：原来只放行右下角，等于整屏看不见。改成全屏放行，
+    // 只在最顶上那条（大标题所在）压到 0.55，别把字糊了。
+    '  return mix(0.55,1.0,smoothstep(0.98,0.86,uv.y));',
     '}',
     'vec3 scene(vec2 uv,vec2 p){',
     '  float k=titleMask(uv);',
-    '  float t=u_t*0.025;',                       // 幅度大但走得很慢（用户要求再慢 3 倍）
+    '  float t=u_t*0.075;',                       // 2026-09-17 提速 3 倍（原 0.025 慢到看不出在动）
     '  vec3 col=mix(vec3(0.988,0.972,0.945),vec3(0.960,0.936,0.894),uv.y);',
     '  col+=vec3(0.06,0.030,0.004)*pow(max(0.0,1.0-length(p-vec2(-1.1,0.85))*0.75),3.0);',
     '  col+=vec3(0.05,0.035,0.012)*pow(max(0.0,1.0-length(p-vec2(1.25,-0.75))*0.70),3.0);',
-    '  vec3 cream=vec3(0.993,0.968,0.933);',
-    '  vec3 peach=vec3(0.993,0.917,0.857);',
-    '  vec3 sand =vec3(0.980,0.940,0.874);',
+    // 2026-09-17：球色压深一档，跟奶油底拉开 8~10% 的明度差，不然白底上等于隐形
+    '  vec3 cream=vec3(0.957,0.918,0.868);',
+    '  vec3 peach=vec3(0.960,0.850,0.775);',
+    '  vec3 sand =vec3(0.925,0.872,0.792);',
     // 幅度是原来的 6~8 倍：球在整屏范围里游走，不是原地微抖
     '  col=sphere(p,vec2(-1.00+sin(t*0.90)*0.85, 0.42+cos(t*0.70)*0.42),0.32,peach,k,col);',
     '  col=sphere(p,vec2( 1.20+cos(t*0.62)*0.95,-0.28+sin(t*0.83)*0.46),0.44,cream,k,col);',
@@ -256,17 +257,29 @@
       gl.uniform2f(uRes, canvas.width, canvas.height);
     }
 
-    function frame(now) {
-      if (!running || dead) return;
-      raf = requestAnimationFrame(frame);
-      if (now - last < FRAME) return;
-      last = now;
+    function draw() {
       resize();
       gl.uniform1f(uT, (Date.now() - t0) / 1000);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
     }
 
-    function start() { if (!running && !dead) { running = true; last = 0; raf = requestAnimationFrame(frame); } }
+    function frame(now) {
+      if (!running || dead) return;
+      raf = requestAnimationFrame(frame);
+      // now 用 rAF 给的时间戳；某些环境下它不前进，退回 Date.now()，
+      // 否则这里会一直「距上一帧不足 FRAME 毫秒」而永远画不出来（2026-09-17 抓到的 bug）
+      var t = (typeof now === 'number' && now > 0) ? now : Date.now();
+      if (last && t - last < FRAME) return;
+      last = t;
+      draw();
+    }
+
+    function start() {
+      if (running || dead) return;
+      running = true; last = 0;
+      draw();                                   // 先画一帧，别让节流把开场吞掉
+      raf = requestAnimationFrame(frame);
+    }
     function stop() { running = false; if (raf) cancelAnimationFrame(raf); raf = 0; }
 
     document.addEventListener('visibilitychange', function () {

@@ -56,19 +56,75 @@
   /* ---------- 图块区（灰底方块 + 会动的数据图）----------
      四块：完成率圆环 / 近 13 周发布量 / 本月状态构成 / 今天要拍（线描插画）。
      颜色沿用状态色，每块都带文字标签，不靠颜色单独表意。 */
-  var TILE_C = { done:'#2F5D45', guess:'#B58B3E', late:'#9C3B2E', todo:'#CFC7BC' };
+  var TILE_C = { done:'#2F5D45', late:'#9C3B2E', todo:'#CFC7BC' };
 
   function renderTiles(rows) {
     var visible = {};
     rows.forEach(function (st) { visible[st.douyinId] = 1; });
     var ws = windowScripts().filter(function (s) { return visible[s.store]; });
-    var c = { done: 0, guess: 0, late: 0, todo: 0 };
+    var c = { done: 0, late: 0, todo: 0 };
     ws.forEach(function (s) { c[statusOfScript(s)]++; });
-    var due = c.done + c.guess + c.late;
-    var rate = due ? Math.round((c.done + c.guess) / due * 100) : 0;
+    var due = c.done + c.late;
+    var rate = due ? Math.round(c.done / due * 100) : 0;
 
     $('#tiles').innerHTML =
       tileRing(rate, due, c) + tileSpark(visible) + tileStack(c, ws.length) + tileToday(visible);
+    bindSparkHover();
+  }
+
+  /* 图块里的悬停标签：柱状图按周、堆叠条按状态，都在鼠标那块的正上方弹一个黑标签 */
+  function bindSparkHover() {
+    // 1) 近 13 周柱状图
+    var spark = $('#tiles .spark');
+    if (spark) {
+      var sbox = spark.closest('.tile');             // 必须是 figure.tile（position:relative），挂到 .box 上定位会偏
+      var stip = mkTip(sbox);
+      var bars = sbox.querySelectorAll('rect.bar');
+      sbox.querySelectorAll('rect.hot').forEach(function (hot) {
+        hot.onmouseenter = function () {
+          var bar = bars[+hot.dataset.i];
+          if (bar) bar.classList.add('on');
+          showTip(stip, sbox, bar, hot.dataset.lab + ' · ' + hot.dataset.n + ' 条');
+        };
+        hot.onmouseleave = function () {
+          var bar = bars[+hot.dataset.i];
+          if (bar) bar.classList.remove('on');
+          stip.classList.remove('on');
+        };
+      });
+    }
+    // 2) 状态构成堆叠条
+    var segs = $$('#tiles rect.seg');
+    if (segs.length) {
+      var kbox = segs[0].closest('.tile');
+      var ktip = mkTip(kbox);
+      segs.forEach(function (sg) {
+        sg.onmouseenter = function () {
+          sg.classList.add('on');
+          showTip(ktip, kbox, sg, sg.dataset.lab + ' ' + HY.num(+sg.dataset.n) + ' 条 · ' + sg.dataset.p + '%');
+        };
+        sg.onmouseleave = function () {
+          sg.classList.remove('on');
+          ktip.classList.remove('on');
+        };
+      });
+    }
+  }
+  function mkTip(box) {
+    var old = box.querySelector('.sparktip');
+    if (old) return old;
+    var t = document.createElement('div');
+    t.className = 'sparktip';
+    box.appendChild(t);
+    return t;
+  }
+  function showTip(tip, box, el, text) {
+    if (!el) return;
+    var r = el.getBoundingClientRect(), bx = box.getBoundingClientRect();
+    tip.textContent = text;
+    tip.style.left = Math.min(Math.max(r.left - bx.left + r.width / 2, 54), bx.width - 54) + 'px';
+    tip.style.top = (r.top - bx.top) + 'px';
+    tip.classList.add('on');
   }
 
   /* 1) 完成率圆环：单值，中间直接放数字 */
@@ -83,10 +139,10 @@
           'transform="rotate(-90 ' + cx + ' ' + cy + ')" ' +
           'stroke-dasharray="' + circ.toFixed(1) + '" stroke-dashoffset="' + off.toFixed(1) + '" ' +
           'style="--dash:' + circ.toFixed(1) + 'px;--off:' + off.toFixed(1) + 'px">' +
-          '<title>完成率 ' + rate + '%（已到期 ' + due + ' 条，已发布 ' + (c.done + c.guess) + ' 条）</title>' +
+          '<title>完成率 ' + rate + '%（已到期 ' + due + ' 条，已发布 ' + c.done + ' 条）</title>' +
         '</circle>' +
       '</svg>' +
-      '<div class="tval"><b>' + rate + '<small>%</small></b><i>已发布 ' + (c.done + c.guess) + ' / ' + due + '</i></div>';
+      '<div class="tval"><b>' + rate + '<small>%</small></b><i>已发布 ' + c.done + ' / ' + due + '</i></div>';
     return tile(svg, '完成率', rangeLabel() + ' · 已到期 ' + due + ' 条');
   }
 
@@ -109,15 +165,22 @@
     var bars = weeks.map(function (w, i) {
       var h = Math.max(w.n ? 3 : 1, Math.round(w.n / max * (H - 26)));
       var x = (bw + gap) * i, y = H - h;
-      return '<rect x="' + x.toFixed(1) + '" y="' + y + '" width="' + bw + '" height="' + h + '" rx="2" ' +
+      // 鼠标悬停靠 bindSparkHover() 画自己的标签（原生 <title> 要等 1 秒才出、字又小）
+      return '<rect class="bar" x="' + x.toFixed(1) + '" y="' + y + '" width="' + bw + '" height="' + h + '" rx="2" ' +
         'fill="' + (w.n ? TILE_C.done : '#D8D0C5') + '" ' +
-        'style="transform-origin:' + (x + bw / 2).toFixed(1) + 'px ' + H + 'px;animation-delay:' + (0.72 + i * 0.03).toFixed(2) + 's">' +
-        '<title>' + HY.md(w.from) + '–' + HY.md(w.to) + ' 发布 ' + w.n + ' 条</title></rect>';
+        'data-lab="' + HY.md(w.from) + '–' + HY.md(w.to) + '" data-n="' + w.n + '" ' +
+        'style="transform-origin:' + (x + bw / 2).toFixed(1) + 'px ' + H + 'px;animation-delay:' + (0.72 + i * 0.03).toFixed(2) + 's"></rect>';
+    }).join('');
+    // 透明热区：整列都能触发，不然 9px 宽的柱子太难瞄
+    var hots = weeks.map(function (w, i) {
+      var x = (bw + gap) * i - gap / 2, ww = bw + gap;
+      return '<rect class="hot" x="' + x.toFixed(1) + '" y="-20" width="' + ww.toFixed(1) + '" height="' + (H + 20) +
+        '" fill="transparent" data-lab="' + HY.md(w.from) + '–' + HY.md(w.to) + '" data-n="' + w.n + '" data-i="' + i + '"></rect>';
     }).join('');
     var lastN = weeks[weeks.length - 1].n;
     var svg = '<svg class="spark" viewBox="-14 -22 224 152" role="img" aria-label="近 13 周发布量">' +
       '<text x="' + W + '" y="-8" text-anchor="end" font-size="11" fill="#5E5E5E">峰值 ' + max + '</text>' +
-      bars +
+      bars + hots +
       '<text x="' + W + '" y="' + (H + 16) + '" text-anchor="end" font-size="11" fill="#5E5E5E">本周 ' + lastN + '</text>' +
       '</svg>';
     return tile(svg, '近 13 周发布量',
@@ -126,14 +189,15 @@
 
   /* 3) 本月状态构成：一根堆叠条 + 四个直接标注（段间留 2px 缝） */
   function tileStack(c, all) {
-    var order = [['done', '已发布·当天'], ['guess', '已发布·当周'], ['late', '逾期未发'], ['todo', '待拍']];
+    var order = [['done', '已发布'], ['late', '逾期未发'], ['todo', '待拍']];
     var W = 200, H = 16, x = 0, segs = '', keys = '';
     order.forEach(function (o) {
       var n = c[o[0]], w = all ? (n / all) * W : 0;
       if (w > 0) {
         segs += '<rect class="seg" x="' + x.toFixed(1) + '" y="0" width="' + Math.max(0, w - 2).toFixed(1) + '" height="' + H + '" ' +
-          'fill="' + TILE_C[o[0]] + '" style="transform-origin:' + x.toFixed(1) + 'px 0">' +
-          '<title>' + o[1] + ' ' + n + ' 条（' + Math.round(n / all * 100) + '%）</title></rect>';
+          'fill="' + TILE_C[o[0]] + '" data-lab="' + o[1] + '" data-n="' + n +
+          '" data-p="' + Math.round(n / all * 100) + '" ' +
+          'style="transform-origin:' + x.toFixed(1) + 'px 0"></rect>';
       }
       x += w;
       keys += '<em><u style="background:' + TILE_C[o[0]] + '"></u>' + o[1] + ' <b>' + n + '</b></em>';
@@ -185,16 +249,16 @@
     var visible = {};
     rows.forEach(function (st) { visible[st.douyinId] = 1; });
     var ws = windowScripts().filter(function (s) { return visible[s.store]; });
-    var c = { done: 0, guess: 0, late: 0, todo: 0 };
+    var c = { done: 0, late: 0, todo: 0 };
     ws.forEach(function (s) { c[statusOfScript(s)]++; });
-    var due = c.done + c.guess + c.late;
-    var rate = due ? Math.round((c.done + c.guess) / due * 100) : 0;
+    var due = c.done + c.late;
+    var rate = due ? Math.round(c.done / due * 100) : 0;
     var freeCount = 0;
     rows.forEach(function (st) { freeCount += (S.freeByStore[st.douyinId] || []).length; });
 
     $('#kpis').innerHTML = [
       kpi('完成率', rate + '<small>%</small>', '', rangeLabel() + ' · 已到期 ' + due + ' 条'),
-      kpi('已发布', c.done + c.guess, 'done', '其中当天发的 ' + c.done + ' 条'),
+      kpi('已发布', c.done, 'done', '计划当天发的才算'),
       kpi('逾期未发', c.late, 'late', '过了计划日仍没匹配到'),
       kpi('待拍', c.todo, '', '计划日期还没到'),
       kpi('自由发挥视频', HY.num(freeCount), '', '没对上任何脚本'),
@@ -254,11 +318,12 @@
   /* ---------- 日历大表 ---------- */
   function filtered() {
     var q = $('#fSearch').value.trim();
-    var line = $('#fLine').value;
+    var mgr = $('#fMgr').value, picked = selValues($('#fStore'));
     var onlyLate = $('#fLate').checked;
     var ws = onlyLate ? windowScripts() : null;
     return S.stores.filter(function (st) {
-      if (line && (st.brandLine || '') !== line) return false;
+      if (mgr && (st.manager || '') !== mgr) return false;
+      if (picked.length && picked.indexOf(st.douyinId) === -1) return false;
       if (q && (st.storeName + st.accountName + st.douyinId).indexOf(q) === -1) return false;
       if (onlyLate && !ws.some(function (s) {
         return s.store === st.douyinId && statusOfScript(s) === 'late';
@@ -340,12 +405,12 @@
     rows.forEach(function (st) {
       h += '<tr>' + storeCell(st);
       S.months.forEach(function (ym) {
-        var c = { done: 0, guess: 0, late: 0, todo: 0 }, n = 0;
+        var c = { done: 0, late: 0, todo: 0 }, n = 0;
         S.scripts.forEach(function (sc) {
           if (sc.store !== st.douyinId || HY.ymOf(sc.date) !== ym) return;
           c[statusOfScript(sc)]++; n++;
         });
-        var ok = c.done + c.guess, due = ok + c.late;
+        var ok = c.done, due = ok + c.late;
         h += '<td class="mcell" data-ym="' + ym + '">';
         if (!n) {
           h += '<span class="muted">—</span>';
@@ -431,11 +496,9 @@
            esc(v.title || '（无标题）') + ' ↗</a>' +
            '<div class="vmeta mono">发布 ' + v.pubDate + ' · 播放 ' + HY.num(v.play) +
            ' · 成交 ¥' + HY.num(v.gmv) + '</div>';
-      h += '<div class="vmeta">※ 按时间推测：' +
-           (m.by === 'day' ? '计划当天发了这条视频。' : '计划日那一周内发了这条视频，不一定是这条脚本。') +
-           '</div>';
+      h += '<div class="vmeta">※ 计划当天该门店发了这条视频，就按完成算（没有标签可核对，只看日期）。</div>';
     } else if (stt === 'late') {
-      h += '<div class="vmeta">计划日期已过，那一周内该门店没有没被认领的视频。已拍的话重新导入最新数据看看。</div>';
+      h += '<div class="vmeta">计划日期已过，当天该门店没有视频。晚几天补发的不算，已拍的话重新导入最新数据看看。</div>';
     } else {
       h += '<div class="vmeta">还没到计划日期。</div>';
     }
@@ -515,6 +578,14 @@
                       '象山', '宁海', '绍兴', '台州', '温州'];
   var TYPE_OPTS = ['', '商场店', '社区店', '街边店', '写字楼店'];
 
+  /** 经理名单 = 手工加的名字 ∪ 门店上已经填着的名字 */
+  function managerNames() {
+    var o = {};
+    HY.Managers.list().forEach(function (m) { o[m] = 1; });
+    S.stores.forEach(function (x) { if (x.manager) o[x.manager] = 1; });
+    return Object.keys(o).sort(function (a, c) { return a.localeCompare(c, 'zh'); });
+  }
+
   function renderStoreList() {
     var cntS = {}, cntV = {};
     S.scripts.forEach(function (x) { cntS[x.store] = (cntS[x.store] || 0) + 1; });
@@ -531,15 +602,33 @@
     $('#profileStat').innerHTML = '已填区域 <b>' + filled + '/' + S.stores.length + '</b> 家 · ' +
       '本机改动 <b>' + HY.StoreEdits.count() + '</b> 家（存在浏览器里，改完记得导出）';
 
-    var h = '<thead><tr><th>门店</th><th>抖音号</th><th style="width:110px">区域</th>' +
+    var names = managerNames();
+    var used = {};
+    S.stores.forEach(function (x) { if (x.manager) used[x.manager] = (used[x.manager] || 0) + 1; });
+    $('#mgrBar').innerHTML =
+      '<span class="k">区域经理</span>' +
+      (names.length
+        ? names.map(function (m) {
+            return '<span class="chip">' + esc(m) + '<i class="n">' + (used[m] || 0) + ' 家</i>' +
+                   '<button class="x" data-m="' + esc(m) + '" title="删掉这个名字">×</button></span>';
+          }).join('')
+        : '<span class="none">还没有经理，先在右边加一个</span>') +
+      '<span class="add"><input id="mgrNew" placeholder="新名字，回车添加">' +
+      '<button class="btn sm" id="mgrAdd">添加</button>' +
+      '<button class="btn sm" id="mgrManage">分配门店…</button></span>';
+
+    var h = '<thead><tr><th style="width:52px">编号</th><th>门店</th><th>抖音号</th><th style="width:120px">区域经理</th>' +
+      '<th style="width:110px">区域</th>' +
       '<th style="width:110px">门店类型</th><th style="width:150px">客群</th>' +
       '<th style="width:170px">主推项目</th><th style="width:170px">可拍场景</th>' +
       '<th style="width:150px">出镜条件</th><th>脚本</th><th>视频</th><th></th></tr></thead><tbody>';
-    S.stores.forEach(function (st) {
+    S.stores.forEach(function (st, i) {
       h += '<tr data-id="' + st.douyinId + '">' +
+        '<td class="mono muted">' + (i + 1) + '<span class="code">' + esc(st.code || '') + '</span></td>' +
         '<td><div class="nm2">' + esc(st.storeName) + '</div>' +
         (st.brandLine ? '<div class="bl">' + esc(st.brandLine) + '</div>' : '') + '</td>' +
         '<td class="mono muted">' + st.douyinId + '</td>' +
+        cellSelect(st, 'manager', [''].concat(names)) +
         cellInput(st, 'region', '区域', 'regionList') +
         cellSelect(st, 'storeType', TYPE_OPTS) +
         cellInput(st, 'customer', '如 30-45 岁社区妈妈') +
@@ -552,6 +641,36 @@
     });
     $('#storelist').innerHTML = h + '</tbody>';
 
+    var addBtn = $('#mgrAdd'), addIn = $('#mgrNew');
+    function doAdd() {
+      var v = addIn.value.trim();
+      if (!v) return;
+      if (!HY.Managers.add(v)) { HY.toast('「' + v + '」已经在名单里了'); return; }
+      addIn.value = '';
+      fillFilters();
+      renderStoreList();
+      HY.toast('已添加 ' + v);
+    }
+    addBtn.onclick = doAdd;
+    addIn.onkeydown = function (e) { if (e.key === 'Enter') doAdd(); };
+    $('#mgrManage').onclick = openMgrModal;
+    $$('#mgrBar .chip .x').forEach(function (el) {
+      el.onclick = function () {
+        var m = el.dataset.m, n = used[m] || 0;
+        if (n && !confirm('「' + m + '」名下还有 ' + n + ' 家门店，删掉名字会把这些门店的区域经理清空。继续？')) return;
+        HY.Managers.remove(m);
+        S.stores.forEach(function (st) {
+          if (st.manager === m) { st.manager = ''; HY.StoreEdits.set(st.douyinId, 'manager', ''); }
+        });
+        fillFilters();
+        renderStoreList();
+        render();
+        HY.toast('已删除 ' + m);
+      };
+    });
+
+    $$('#storelist select[data-f]').forEach(function (s) { xsel(s); });   // 表格里的下拉也用自己那套
+
     $$('#storelist input[data-f], #storelist select[data-f]').forEach(function (el) {
       el.onchange = function () {
         var id = el.closest('tr').dataset.id, f = el.dataset.f, v = el.value.trim();
@@ -559,6 +678,8 @@
         var st = S.storeById[id];
         if (st) st[f] = f === 'scenes' ? splitList(v) : v;
         el.classList.toggle('edited', !!v);
+        if (el.__xbox) { el.__xbox.classList.toggle('picked', !!v); xsel(el); }
+        if (f === 'manager') renderStoreList();     // 重画一下管理条上的「N 家」
         refreshFiltersAfterEdit();
         $('#profileStat').innerHTML = '已填区域 <b>' +
           S.stores.filter(function (x) { return x.region; }).length + '/' + S.stores.length +
@@ -587,7 +708,7 @@
   }
 
   /** 门店档案改完重画一次（区域/门店类型的筛选器已按用户要求去掉） */
-  function refreshFiltersAfterEdit() { render(); }
+  function refreshFiltersAfterEdit() { fillFilters(); render(); }
 
   function exportStores() {
     var out = S.stores.map(function (st) {
@@ -689,21 +810,248 @@
   }
 
   /* ---------- 筛选项 ---------- */
+  /* 两个下拉都是「重建式」：经理名字在门店表里改完，这里重新灌一遍就有了 */
   function fillFilters() {
     function uniq(k) {
       var o = {};
       S.stores.forEach(function (x) { if (x[k]) o[x[k]] = 1; });
       return Object.keys(o).sort();
     }
-    function fill(sel, vals) {
+    function fill(sel, all, vals) {
+      var keep = sel.multiple ? selValues(sel) : [sel.value];
+      sel.innerHTML = '<option value="">' + all + '</option>';
       vals.forEach(function (v) {
         var o = document.createElement('option');
-        o.value = o.textContent = v;
+        o.value = v.v; o.textContent = v.t;
+        o.selected = keep.indexOf(v.v) !== -1;     // 原来选中的还在就保持
         sel.appendChild(o);
       });
-      if (!vals.length) sel.disabled = true;
+      if (!sel.multiple && selValues(sel).length === 0) sel.value = '';
+      sel.disabled = false;
     }
-    fill($('#fLine'), uniq('brandLine'));
+    fill($('#fMgr'), '全部区域经理', managerNames().map(function (m) { return { v: m, t: m }; }));
+    fill($('#fStore'), '全部门店', S.stores.slice().sort(function (a, c) {
+      return a.storeName.localeCompare(c.storeName, 'zh');
+    }).map(function (s) {
+      return { v: s.douyinId, t: s.storeName + (s.brandLine ? '（' + s.brandLine + '）' : '') };
+    }));
+    xselAll();
+  }
+
+  /* ---------- 自定义下拉（原生 select 在 Mac 上长得跟整站不搭） ----------
+     原生 select 留着当数据源和状态，藏起来；外面套一层按钮 + 菜单，样式跟按钮/日历一套：
+     直角、1px 线、选中左边一条黑竖条、hover 换浅底。改值后手动派发 change，原有逻辑不用动。 */
+  function xselAll() { ['#fMgr', '#fStore'].forEach(function (s) { xsel($(s)); }); }
+
+  function xsel(sel) {
+    if (!sel) return;
+    var box = sel.__xbox;
+    if (!box) {
+      box = document.createElement('div');
+      box.className = 'xsel' + (sel.classList.contains('cellin') ? ' mini' : '');
+      box.innerHTML = '<button type="button" class="xbtn"><span class="xv"></span><i>▾</i></button>' +
+                      '<div class="xmenu"></div>';
+      sel.parentNode.insertBefore(box, sel);
+      box.appendChild(sel);
+      sel.__xbox = box;
+      box.querySelector('.xbtn').onclick = function (e) {
+        e.stopPropagation();
+        var wasOpen = box.classList.contains('open');
+        closeAllXsel();
+        if (!wasOpen) {
+          box.classList.add('open');
+          placeMenu(box);
+          var on = box.querySelector('.xmenu a.on');
+          if (on) on.scrollIntoView({ block: 'nearest' });
+        }
+      };
+      document.addEventListener('click', closeAllXsel);
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeAllXsel(); });
+      window.addEventListener('resize', closeAllXsel);
+      document.addEventListener('scroll', closeAllXsel, true);   // 表格滚动时把菜单收掉
+    }
+    var menu = box.querySelector('.xmenu');
+    var multi = sel.multiple, vals = selValues(sel);
+    menu.innerHTML = Array.prototype.map.call(sel.options, function (o) {
+      if (o.value === '') {                                  // 「全部 xx」= 清空选择
+        return '<a data-v="" class="' + (vals.length ? '' : 'on') + '">' + esc(o.textContent) + '</a>';
+      }
+      var on = multi ? vals.indexOf(o.value) !== -1 : o.value === sel.value;
+      return '<a data-v="' + esc(o.value) + '" class="' + (on ? 'on' : '') + (multi ? ' ck' : '') + '">' +
+             (multi ? '<i class="box"></i>' : '') + esc(o.textContent) + '</a>';
+    }).join('') +
+    (sel.id === 'fMgr' ? '<a class="more" data-go="stores">＋ 新增 / 管理区域经理</a>' : '');
+
+    box.querySelector('.xv').textContent = multi
+      ? (vals.length === 0 ? sel.options[0].textContent
+         : vals.length === 1 ? labelOf(sel, vals[0])
+         : '已选 ' + vals.length + ' 家')
+      : (sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].textContent : '');
+    box.classList.toggle('picked', multi ? vals.length > 0 : !!sel.value);
+    if (box.classList.contains('open')) placeMenu(box);
+
+    Array.prototype.forEach.call(menu.children, function (a) {
+      a.onclick = function (e) {
+        e.stopPropagation();
+        if (a.dataset.go) { closeAllXsel(); openMgrModal(); return; }
+        var v = a.dataset.v;
+        if (multi) {
+          if (v === '') {                                    // 点「全部门店」= 全清
+            Array.prototype.forEach.call(sel.options, function (o) { o.selected = false; });
+          } else {
+            Array.prototype.forEach.call(sel.options, function (o) {
+              if (o.value === v) o.selected = !o.selected;
+            });
+          }
+          xsel(sel);                                         // 多选时菜单不关，接着勾
+          box.classList.add('open');
+        } else {
+          sel.value = v;
+          closeAllXsel();
+          xsel(sel);
+        }
+        sel.dispatchEvent(new Event('change'));
+      };
+    });
+  }
+  function selValues(sel) {
+    if (!sel) return [];
+    if (!sel.multiple) return sel.value ? [sel.value] : [];
+    return Array.prototype.filter.call(sel.options, function (o) { return o.selected && o.value; })
+      .map(function (o) { return o.value; });
+  }
+  function labelOf(sel, v) {
+    var hit = Array.prototype.filter.call(sel.options, function (o) { return o.value === v; })[0];
+    return hit ? hit.textContent : v;
+  }
+
+  /** 菜单是 position:fixed，开的时候按按钮位置摆，空间不够就往上开 */
+  function placeMenu(box) {
+    var btn = box.querySelector('.xbtn'), menu = box.querySelector('.xmenu');
+    var r = btn.getBoundingClientRect();
+    menu.style.minWidth = Math.max(r.width, 150) + 'px';
+    menu.style.left = Math.min(r.left, window.innerWidth - Math.max(r.width, 150) - 12) + 'px';
+    var below = window.innerHeight - r.bottom, want = Math.min(menu.scrollHeight || 260, 340);
+    if (below < want + 12 && r.top > below) {
+      menu.style.top = ''; menu.style.bottom = (window.innerHeight - r.top + 1) + 'px';
+      menu.style.maxHeight = Math.min(340, r.top - 12) + 'px';
+    } else {
+      menu.style.bottom = ''; menu.style.top = (r.bottom - 1) + 'px';
+      menu.style.maxHeight = Math.min(340, below - 12) + 'px';
+    }
+  }
+
+  function closeAllXsel() {
+    $$('.xsel.open').forEach(function (x) { x.classList.remove('open'); });
+  }
+
+  /* ---------- 区域经理管理弹窗：左边名单增删，右边勾他负责的门店 ---------- */
+  var mmPick = '';                                  // 当前选中的经理
+
+  function openMgrModal() {
+    var names = managerNames();
+    if (names.indexOf(mmPick) === -1) mmPick = names[0] || '';
+    $('#mgrModal').classList.add('open');
+    $('#backdrop').classList.add('on');
+    mmRender();
+    $('#mmNew').focus();
+  }
+  function closeMgrModal() {
+    $('#mgrModal').classList.remove('open');
+    $('#backdrop').classList.remove('on');
+    fillFilters();
+    renderStoreList();
+    render();
+  }
+
+  function mmCounts() {
+    var o = {};
+    S.stores.forEach(function (x) { if (x.manager) o[x.manager] = (o[x.manager] || 0) + 1; });
+    return o;
+  }
+
+  function mmRender() {
+    var names = managerNames(), cnt = mmCounts();
+
+    $('#mmList').innerHTML = names.length
+      ? names.map(function (m) {
+          return '<div class="row' + (m === mmPick ? ' on' : '') + '" data-m="' + esc(m) + '">' +
+            '<span class="nm">' + esc(m) + '</span>' +
+            '<span class="n">' + (cnt[m] || 0) + ' 家</span>' +
+            '<button class="x" data-del="' + esc(m) + '" title="删掉这个名字">×</button></div>';
+        }).join('')
+      : '<div class="empty">还没有经理，上面加一个</div>';
+
+    $('#mmWho').textContent = mmPick ? ('「' + mmPick + '」负责的门店' + (cnt[mmPick] ? '（' + cnt[mmPick] + ' 家）' : '')) : '先选左边一个经理';
+
+    var q = $('#mmSearch').value.trim();
+    var list = S.stores.slice().sort(function (a, c) { return a.storeName.localeCompare(c.storeName, 'zh'); });
+    if (q) list = list.filter(function (s) {
+      return (s.storeName + s.douyinId + (s.brandLine || '')).indexOf(q) !== -1;
+    });
+    $('#mmStores').innerHTML = !mmPick
+      ? '<div class="empty">选一个经理，再在这里勾门店</div>'
+      : (list.length
+          ? list.map(function (s) {
+              var mine = s.manager === mmPick, other = s.manager && !mine;
+              return '<label' + (other ? ' class="taken"' : '') + '>' +
+                '<input type="checkbox" data-id="' + s.douyinId + '"' + (mine ? ' checked' : '') + '>' +
+                '<span>' + esc(s.storeName) + (s.brandLine ? '（' + esc(s.brandLine) + '）' : '') + '</span>' +
+                '<span class="own">' + (other ? '现归 ' + esc(s.manager) : (mine ? '✓' : '')) + '</span></label>';
+            }).join('')
+          : '<div class="empty">没有匹配的门店</div>');
+
+    var noMgr = S.stores.filter(function (s) { return !s.manager; }).length;
+    $('#mmStat').textContent = '共 ' + S.stores.length + ' 家门店，' +
+      (noMgr ? '还有 ' + noMgr + ' 家没分配' : '已全部分配');
+
+    $$('#mmList .row').forEach(function (el) {
+      el.onclick = function (e) {
+        if (e.target.dataset.del) return;
+        mmPick = el.dataset.m;
+        mmRender();
+      };
+    });
+    $$('#mmList .x').forEach(function (el) {
+      el.onclick = function (e) {
+        e.stopPropagation();
+        var m = el.dataset.del, n = cnt[m] || 0;
+        if (n && !confirm('「' + m + '」名下还有 ' + n + ' 家门店，删掉名字会把这些门店的区域经理清空。继续？')) return;
+        HY.Managers.remove(m);
+        S.stores.forEach(function (st) {
+          if (st.manager === m) { st.manager = ''; HY.StoreEdits.set(st.douyinId, 'manager', ''); }
+        });
+        if (mmPick === m) mmPick = managerNames()[0] || '';
+        mmRender();
+      };
+    });
+    $$('#mmStores input[type=checkbox]').forEach(function (cb) {
+      cb.onchange = function () {
+        var st = S.storeById[cb.dataset.id];
+        if (!st) return;
+        st.manager = cb.checked ? mmPick : '';
+        HY.StoreEdits.set(st.douyinId, 'manager', st.manager);
+        mmRender();
+      };
+    });
+  }
+
+  function bindMgrModal() {
+    function add() {
+      var v = $('#mmNew').value.trim();
+      if (!v) return;
+      if (!HY.Managers.add(v)) { HY.toast('「' + v + '」已经在名单里了'); return; }
+      $('#mmNew').value = '';
+      mmPick = v;                       // 加完直接选中，接着就能勾店
+      mmRender();
+    }
+    $('#mmAdd').onclick = add;
+    $('#mmNew').onkeydown = function (e) { if (e.key === 'Enter') add(); };
+    $('#mmSearch').oninput = mmRender;
+    $('#mmDone').onclick = closeMgrModal;
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && $('#mgrModal').classList.contains('open')) closeMgrModal();
+    });
   }
 
   /* ---------- 面板切换 ---------- */
@@ -734,13 +1082,10 @@
   }
 
   /* ---------- 顶部 3D 横幅 ---------- */
-  var pagebg = null;
   function initHero() {
-    var btn = $('#fxToggle'), pg = $('#pageBg');
-    if (!pg || !window.HYBg) { if (btn) btn.style.display = 'none'; return; }
-    // 只有整页大背景这一层（深色横幅已撤，用户嫌太深）
-    pagebg = window.HYBg(pg, localStorage.getItem('hymn_bg3d_style') || 'pearl', { light: true });
-    // 改成爱马仕白底风之后，背景动效默认关，想要再点「动效」打开（状态照旧存 localStorage）
+    var btn = $('#fxToggle');
+    if (!btn) return;
+    // 背景动效现在是 CSS 的（见 style.css 的 body.fxon），跟 WebGL 没关系了
     var off = localStorage.getItem('hymn_bg3d') !== 'on';
     apply(off);
     btn.onclick = function () {
@@ -749,20 +1094,15 @@
       apply(off);
     };
     function apply(isOff) {
-      pg.dataset.on = isOff ? '0' : '1';
+      document.body.classList.toggle('fxon', !isOff);
       btn.classList.toggle('off', isOff);
       btn.textContent = isOff ? '开启动效' : '关闭动效';
-      if (isOff) { pagebg.stop(); pg.classList.add('off'); }
-      else { pg.classList.remove('off'); pagebg.start(); }
     }
   }
 
   function renderHeroSub() {
-    var d = new Date();
-    var wd = '日一二三四五六'[d.getDay()];
-    var span = S.months.length ? (HY.monthLabel(S.months[0]) + ' – ' + HY.monthLabel(S.months[S.months.length - 1])) : '';
-    $('#heroSub').textContent = S.stores.length + ' 家门店 · 每店每天 1 条 · ' + span +
-      '　|　今天 ' + S.today + ' 周' + wd + ' · 在库脚本 ' + HY.num(S.scripts.length) + ' 条';
+    var el = $('#heroSub');
+    if (el) el.remove();
   }
 
   /* ---------- 事件 ---------- */
@@ -770,7 +1110,9 @@
     $$('.nav a').forEach(function (a) {
       a.onclick = function () { showPanel(a.dataset.panel); };
     });
-    $('#btnImport').onclick = function () { showPanel('import'); };
+    bindMgrModal();
+    var bi = $('#btnImport');                  // 侧栏那个重复的「导入视频数据」按钮已删，留个保护
+    if (bi) bi.onclick = function () { showPanel('import'); };
 
     // 侧栏折叠，状态记在 localStorage，下次打开保持
     var NAVKEY = 'hymn_navhide';
@@ -783,11 +1125,20 @@
     $('#navTog').onclick = function () { setNav(!document.body.classList.contains('navhide')); };
 
     $('#dClose').onclick = closeDrawer;
-    $('#backdrop').onclick = closeDrawer;
+    $('#backdrop').onclick = function () {
+      if ($('#mgrModal').classList.contains('open')) closeMgrModal();
+      else closeDrawer();
+    };
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeDrawer(); });
 
-    ['#fLine', '#fLate'].forEach(function (s) { $(s).onchange = render; });
-    $('#fSearch').oninput = render;
+    ['#fMgr', '#fStore', '#fLate'].forEach(function (s) { $(s).onchange = render; });
+    // 搜索框：中文输入法打拼音时（compositionstart~end）先别动，输完再筛；
+    // 否则「qn」这种半截拼音也会当成关键词，整页跟着闪（用户 2026-09-17 反馈）
+    var si = $('#fSearch'), composing = false, timer = null;
+    function schedule() { clearTimeout(timer); timer = setTimeout(render, 180); }
+    si.addEventListener('compositionstart', function () { composing = true; });
+    si.addEventListener('compositionend', function () { composing = false; schedule(); });
+    si.oninput = function () { if (!composing) schedule(); };
 
     $('#drop').onclick = function () { $('#file').click(); };
     $('#file').onchange = function () { handleFile(this.files[0]); this.value = ''; };

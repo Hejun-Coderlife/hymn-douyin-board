@@ -8,11 +8,8 @@
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
     });
   }
-  var pg = document.getElementById('pageBg');
-  if (pg && window.HYBg && localStorage.getItem('hymn_bg3d') === 'on') {
-    window.HYBg(pg, localStorage.getItem('hymn_bg3d_style') || 'pearl',
-                { light: true, scale: 0.30, fps: 15 }).start();
-  } else if (pg) { pg.style.display = 'none'; }
+  // 背景动效改成纯 CSS（body.fxon，见 style.css）；门店页跟总部页共用同一个开关状态
+  if (localStorage.getItem('hymn_bg3d') === 'on') document.body.classList.add('fxon');
 
   var id = new URLSearchParams(location.search).get('store');
   var today = HY.ymd(new Date());

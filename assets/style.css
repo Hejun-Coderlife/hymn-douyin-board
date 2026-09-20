@@ -50,6 +50,7 @@
   --sans:"PingFang SC","Helvetica Neue",system-ui,-apple-system,"Microsoft YaHei",sans-serif;
   --serif:var(--sans);     /* 爱马仕站上没有衬线，这个变量留着只为兼容旧写法 */
   --nav-w:214px;
+  --nav-w-rail:58px;      /* 折叠后的图标栏宽度 */
   --radius:0px;
   --radius-s:0px;
   --shadow:none;
@@ -58,16 +59,48 @@
 }
 *{margin:0;padding:0;box-sizing:border-box}
 html{background:var(--bg)}
+/* 底色只由 html 那层给（上面一行）。body **必须是透明的**：
+   body 的背景是一个正常的盒子背景，会盖住 z-index:-1 的背景动效层
+   —— 2026-09-17 查了很久的「动效完全看不见」就是这个原因，别再给 body 加底色。 */
 body{
-  background:var(--bg);color:var(--t1);font-family:var(--sans);
+  background:transparent;color:var(--t1);font-family:var(--sans);
   font-size:14px;line-height:1.7;-webkit-font-smoothing:antialiased;
 }
-/* 背景动效画布：默认关（白底才像爱马仕），右上角「动效」按钮可以打开 */
-#pageBg{
-  position:fixed;inset:0;width:100%;height:100%;z-index:-1;display:block;
-  pointer-events:none;
+/* 背景动效：2026-09-17 从 WebGL 换成纯 CSS。
+   原来的 bg3d.js 在这台机器上死活画不出东西（读像素全 0），调参数没用；
+   CSS 渐变 + transform 动画是合成器直接跑的，一定看得见，也几乎不吃性能。
+   默认关，右上角「动效」按钮开关，状态存 localStorage.hymn_bg3d。 */
+#pageBg{display:none}
+body.fxon::before,body.fxon::after{
+  content:'';position:fixed;z-index:-1;pointer-events:none;
+  width:76vmax;height:76vmax;border-radius:50%;
+  filter:blur(0px);will-change:transform;
 }
-#pageBg.off{display:none}
+body.fxon::before{
+  left:-22vmax;top:-26vmax;
+  background:radial-gradient(circle at 50% 50%,
+    rgba(214,178,132,.42) 0%, rgba(226,199,166,.26) 38%, rgba(252,247,241,0) 70%);
+  animation:fxA 26s ease-in-out infinite alternate;
+}
+body.fxon::after{
+  right:-28vmax;bottom:-30vmax;
+  background:radial-gradient(circle at 50% 50%,
+    rgba(181,139,62,.30) 0%, rgba(224,206,178,.20) 40%, rgba(252,247,241,0) 72%);
+  animation:fxB 34s ease-in-out infinite alternate;
+}
+@keyframes fxA{
+  0%{transform:translate3d(0,0,0) scale(1)}
+  50%{transform:translate3d(26vw,12vh,0) scale(1.14)}
+  100%{transform:translate3d(8vw,26vh,0) scale(.94)}
+}
+@keyframes fxB{
+  0%{transform:translate3d(0,0,0) scale(1.05)}
+  50%{transform:translate3d(-24vw,-14vh,0) scale(.9)}
+  100%{transform:translate3d(-6vw,-28vh,0) scale(1.18)}
+}
+@media (prefers-reduced-motion:reduce){
+  body.fxon::before,body.fxon::after{animation:none}
+}
 a{color:inherit;text-decoration:none}
 button,select,input{font:inherit;color:inherit}
 .mono{font-variant-numeric:tabular-nums}
@@ -121,20 +154,34 @@ button,select,input{font:inherit;color:inherit}
   background:var(--bg);border-right:1px solid var(--line-2);
   display:flex;flex-direction:column;z-index:60;
 }
-.sidebar{transition:transform .24s cubic-bezier(.25,.1,.25,1)}
+.sidebar{transition:width .24s cubic-bezier(.25,.1,.25,1);overflow:hidden}
 .sidebar .logo{padding:30px 22px 22px;border-bottom:1px solid var(--line-2);padding-right:56px}
 
 /* 侧栏折叠按钮：展开时贴在侧栏右上角，收起后滑到页面左上角（用户 2026-09-17 要的 ChatGPT 那个）*/
 .navtog{
-  position:fixed;top:26px;left:calc(var(--nav-w) - 46px);z-index:70;
-  width:30px;height:30px;display:flex;align-items:center;justify-content:center;
+  position:fixed;top:24px;left:calc(var(--nav-w) - 48px);z-index:70;
+  width:34px;height:34px;display:flex;align-items:center;justify-content:center;
   border:1px solid var(--line-2);border-radius:0;background:var(--bg);color:var(--t2);
   cursor:pointer;padding:0;transition:left .24s cubic-bezier(.25,.1,.25,1),background .2s,color .2s;
 }
 .navtog:hover{background:var(--ink);color:#fff;border-color:var(--ink)}
-body.navhide .sidebar{transform:translateX(-100%)}
-body.navhide .main{margin-left:0}
-body.navhide .navtog{left:16px}
+/* 折叠 = 收成一条图标栏（不是整条藏起来），文字/分组/底部说明全隐藏，只留图标 */
+body.navhide .sidebar{width:var(--nav-w-rail)}
+body.navhide .main{margin-left:var(--nav-w-rail)}
+body.navhide .navtog{left:12px;top:20px}
+body.navhide .sidebar .logo{padding:62px 0 14px;text-align:center}
+body.navhide .sidebar .logo img{display:none}
+body.navhide .sidebar .logo .st{display:none}
+body.navhide .nav .grp{display:none}
+body.navhide .nav a{justify-content:center;padding:13px 0;gap:0}
+body.navhide .nav a .lb{display:none}
+body.navhide .nav a{padding:15px 0}
+body.navhide .nav a .ico{width:22px;height:22px}
+body.navhide .nav a .ico svg{width:22px;height:22px}
+body.navhide .sidedata{padding:14px 0;text-align:center}
+body.navhide .sidedata .hint{display:none}
+body.navhide .sidedata{display:none}   /* 图标栏里连数据状态也省掉，导入走导航那一项 */
+body.navhide .sidebar .foot{display:none}
 .main{transition:margin-left .24s cubic-bezier(.25,.1,.25,1)}
 .sidebar .logo img{height:18px;display:block}
 .sidebar .logo .st{font-size:11.5px;color:var(--t3);margin-top:12px;letter-spacing:.02em}
@@ -147,7 +194,11 @@ body.navhide .navtog{left:16px}
   font-size:13.5px;font-weight:400;letter-spacing:.01em;color:var(--t2);cursor:pointer;
   transition:color .2s ease, background .2s ease;
 }
-.nav a .ico{width:14px;text-align:center;font-size:12px;color:var(--t4);transition:color .2s}
+.nav a .ico{
+  width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;
+  color:var(--t3);transition:color .2s;flex-shrink:0;
+}
+.nav a .ico svg{display:block}
 .nav a .lb{position:relative}
 .nav a .lb::after{
   content:'';position:absolute;left:-6px;right:-6px;bottom:-5px;height:1px;background:currentColor;
@@ -553,6 +604,130 @@ ul.lines.warn li::before{background:var(--brick)}
   padding:4px 10px;font-size:11.5px;letter-spacing:.02em;cursor:pointer;font-family:inherit;
 }
 .btnmini:hover{background:var(--ink);color:#fff}
+/* ===== 自定义下拉（原生 select 藏在里面当状态） ===== */
+.xsel{position:relative;display:inline-block}
+.xsel > select{position:absolute;opacity:0;pointer-events:none;width:0;height:0}
+.xsel .xbtn{
+  display:flex;align-items:center;justify-content:space-between;gap:14px;
+  min-width:158px;height:38px;padding:0 12px;
+  border:1px solid var(--line-2);border-radius:0;background:var(--card);
+  font-family:inherit;font-size:13px;color:var(--t1);cursor:pointer;
+}
+.xsel .xbtn:hover,.xsel.open .xbtn{border-color:var(--ink)}
+.xsel.picked .xbtn{border-color:var(--ink);font-weight:600}
+.xsel .xbtn i{font-style:normal;font-size:10px;color:var(--t3);transition:transform .18s ease}
+.xsel.open .xbtn i{transform:rotate(180deg)}
+.xsel .xmenu{
+  display:none;position:fixed;z-index:120;max-height:340px;overflow:auto;
+  background:var(--card);border:1px solid var(--ink);
+}
+/* 表格格子里的紧凑版 */
+.xsel.mini{display:block;width:100%}
+.xsel.mini .xbtn{
+  width:100%;min-width:0;height:30px;padding:0 8px;font-size:12.5px;
+  border-color:var(--line);background:transparent;
+}
+.xsel.mini .xbtn:hover,.xsel.mini.open .xbtn{border-color:var(--ink);background:var(--card)}
+.xsel.mini.picked .xbtn{border-color:var(--ink);background:var(--card);font-weight:400}
+.xsel.open .xmenu{display:block}
+.xsel .xmenu a{
+  display:block;padding:9px 13px;font-size:13px;line-height:1.5;color:var(--t2);
+  cursor:pointer;white-space:nowrap;
+}
+.xsel .xmenu a:hover{background:var(--paper);color:var(--t1)}
+.xsel .xmenu a.on{color:var(--t1);font-weight:600;box-shadow:inset 2px 0 0 var(--ink)}
+.xsel .xmenu a.ck{display:flex;align-items:center;gap:9px}
+.xsel .xmenu a.ck .box{
+  width:12px;height:12px;flex-shrink:0;border:1px solid var(--line-2);background:var(--card);
+}
+.xsel .xmenu a.ck.on .box{background:var(--ink);border-color:var(--ink)}
+.xsel .xmenu a.more{border-top:1px solid var(--line);color:var(--t1);font-size:12.5px}
+
+table.list td .code{display:block;font-size:10.5px;color:var(--t4);margin-top:2px}
+
+/* ===== 区域经理管理弹窗 ===== */
+.mgrmodal{width:min(860px,94vw)}
+.mm{display:grid;grid-template-columns:220px 1fr;gap:0;margin-top:16px;border:1px solid var(--line-2)}
+.mm-l{border-right:1px solid var(--line-2);display:flex;flex-direction:column;min-height:340px}
+.mm-add{display:flex;gap:6px;padding:12px;border-bottom:1px solid var(--line)}
+.mm-add input{
+  flex:1;min-width:0;height:32px;padding:0 9px;border:1px solid var(--line-2);border-radius:0;
+  font-family:inherit;font-size:13px;background:var(--card);
+}
+.mm-add input:focus{outline:none;border-color:var(--ink)}
+.mm-list{flex:1;overflow:auto}
+.mm-list .row{
+  display:flex;align-items:center;gap:8px;padding:10px 12px;cursor:pointer;font-size:13.5px;
+  border-bottom:1px solid var(--line);
+}
+.mm-list .row:hover{background:var(--paper)}
+.mm-list .row.on{font-weight:600;box-shadow:inset 2px 0 0 var(--ink);background:var(--paper)}
+.mm-list .row .n{margin-left:auto;font-size:11.5px;color:var(--t3);font-weight:400}
+.mm-list .row .x{
+  border:0;background:transparent;color:var(--t4);font-size:15px;line-height:1;cursor:pointer;
+  padding:0 2px;font-family:inherit;
+}
+.mm-list .row .x:hover{color:var(--brick)}
+.mm-list .empty{padding:14px 12px;font-size:12.5px;color:var(--t4)}
+.mm-r{display:flex;flex-direction:column;min-height:340px}
+.mm-head{
+  display:flex;align-items:center;gap:10px;padding:12px;border-bottom:1px solid var(--line);
+  font-size:13px;font-weight:600;
+}
+.mm-head input{
+  margin-left:auto;height:32px;width:170px;padding:0 9px;border:1px solid var(--line-2);
+  border-radius:0;font-family:inherit;font-size:13px;background:var(--card);font-weight:400;
+}
+.mm-head input:focus{outline:none;border-color:var(--ink)}
+.mm-stores{flex:1;overflow:auto;max-height:46vh}
+.mm-stores label{
+  display:flex;align-items:center;gap:10px;padding:9px 12px;font-size:13.5px;cursor:pointer;
+  border-bottom:1px solid var(--line);
+}
+.mm-stores label:hover{background:var(--paper)}
+.mm-stores label .own{margin-left:auto;font-size:11.5px;color:var(--t3)}
+.mm-stores label.taken .own{color:var(--camel-text)}
+.mm-stores .empty{padding:14px 12px;font-size:12.5px;color:var(--t4)}
+
+/* ===== 区域经理管理条 ===== */
+.mgrbar{
+  display:flex;align-items:center;flex-wrap:wrap;gap:8px;
+  margin-top:12px;padding:12px 14px;background:var(--paper);
+}
+.mgrbar .k{font-size:12.5px;color:var(--t3);margin-right:2px}
+.mgrbar .none{font-size:12.5px;color:var(--t4)}
+.mgrbar .chip{
+  display:inline-flex;align-items:center;gap:8px;
+  background:var(--card);border:1px solid var(--line-2);padding:5px 6px 5px 11px;font-size:13px;
+}
+.mgrbar .chip .n{font-style:normal;font-size:11.5px;color:var(--t3)}
+.mgrbar .chip .x{
+  border:0;background:transparent;color:var(--t4);font-size:15px;line-height:1;
+  cursor:pointer;padding:0 4px;font-family:inherit;
+}
+.mgrbar .chip .x:hover{color:var(--brick)}
+.mgrbar .add{display:inline-flex;gap:8px;margin-left:auto}
+.mgrbar .add input{
+  height:32px;padding:0 10px;border:1px solid var(--line-2);border-radius:0;
+  font-family:inherit;font-size:13px;background:var(--card);width:150px;
+}
+.mgrbar .add input:focus{outline:none;border-color:var(--ink)}
+
+/* 柱状图悬停标签 */
+.tile{position:relative}
+.sparktip{
+  position:absolute;z-index:5;pointer-events:none;white-space:nowrap;
+  transform:translate(-50%,-130%);background:var(--ink);color:#fff;
+  font-size:11.5px;letter-spacing:.02em;padding:5px 9px;
+  opacity:0;transition:opacity .12s ease;
+}
+.sparktip.on{opacity:1}
+.spark rect.bar{transition:fill .12s ease}
+.spark rect.bar.on{fill:#B58B3E}        /* 悬停=色系里的棕（驼黄），别用黑也别用深绿（用户 2026-09-17 两次纠正）*/
+.spark rect.hot{cursor:default}
+#tiles rect.seg{transition:opacity .12s ease}
+#tiles rect.seg:hover,#tiles rect.seg.on{opacity:.75}
+
 .hashrow{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .hashrow span{cursor:pointer}
 .hashrow .tgline{margin-top:0;font-size:12.5px;padding:5px 11px}   /* 专属标签混在话题标签里，但加重 */

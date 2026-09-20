@@ -178,11 +178,10 @@ window.HY = (function () {
 
   /* ---------- 匹配引擎 ---------- */
   /**
-   * 脚本专属标签已在 2026-09-17 整个取消（用户：不指望店员记得打标签，完成情况就靠猜），
-   * 所以这里**没有精确匹配**，全是按时间推测：
-   * 1) 同抖音号 + 发布日 == 计划日            -> by:'day'（当天发的，比较可信）
-   * 2) 放宽到计划日所在自然周（周一~周日）     -> by:'week'
-   * 3) 剩下的视频 = 自由发挥
+   * 脚本专属标签已在 2026-09-17 取消（不指望店员记得打标签），同一天当天的「同周兜底」也一起砍了
+   * （用户：「当周不要，标签其实你猜不准」）。所以只剩一条规则：
+   * 1) 同抖音号 + 发布日 == 计划日 + 视频没被别的脚本占走 -> 算这条脚本发了
+   * 2) 剩下的视频 = 自由发挥；脚本过了计划日还没配到 = 逾期
    * 一条视频只匹配一个脚本；一个脚本只取一条视频。
    */
   function match(scripts, videos) {
@@ -194,7 +193,7 @@ window.HY = (function () {
       byStore[k].sort(function (a, b) { return a.pubTs - b.pubTs; });
     });
 
-    // 先找「同一天发的」，再放宽到「同一周发的」。两种都是推测，只是可信度不同。
+    // 只找「同一天发的」。放宽到一周内的兜底已经删掉：那么猜出来的数字没法用。
     var ordered = scripts.slice().sort(function (a, b) {
       return a.date < b.date ? -1 : a.date > b.date ? 1 : 0;
     });
@@ -214,26 +213,25 @@ window.HY = (function () {
           if (claimed[v.id]) continue;
           if (v.pubDate >= from && v.pubDate <= to) {
             claimed[v.id] = s.id;
-            result[s.id] = { video: v, type: 'guess', by: by };
+            result[s.id] = { video: v, type: 'day', by: by };
             break;
           }
         }
       });
     }
     fallback('day');
-    fallback('week');
 
     // 剩下的 = 自由发挥
     var free = videos.filter(function (v) { return !claimed[v.id]; });
     return { byScript: result, free: free, claimed: claimed };
   }
 
-  /** 单条脚本的状态：done（当天发的）/ guess（同周内发的）/ late / todo */
+  /** 单条脚本的状态：done（计划当天发了）/ late（过了计划日没发）/ todo（还没到日子） */
   function statusOf(script, matched, todayYmd) {
-    if (matched) return matched.by === 'day' ? 'done' : 'guess';
+    if (matched) return 'done';
     return script.date < todayYmd ? 'late' : 'todo';
   }
-  var STATUS_CN = { done: '已发布·当天', guess: '已发布·当周', late: '逾期未发', todo: '待拍' };
+  var STATUS_CN = { done: '已发布', late: '逾期未发', todo: '待拍' };
 
   /* ---------- 加载 ---------- */
   /* 门店档案的人工编辑：存 localStorage，加载时覆盖到 stores 上 */
@@ -254,7 +252,30 @@ window.HY = (function () {
     clear: function () { localStorage.removeItem(LS_STORE); }
   };
 
-  var EDITABLE = ['region', 'storeType', 'customer', 'mainService', 'scenes', 'onCamera', 'note'];
+  var EDITABLE = ['manager', 'region', 'storeType', 'customer', 'mainService', 'scenes', 'onCamera', 'note'];
+
+  /* 区域经理名单：跟门店分配分开存，这样「加了名字还没分配门店」也留得住 */
+  var LS_MGR = 'hymn_managers_v1';
+  var Managers = {
+    list: function () {
+      var a = [];
+      try { a = JSON.parse(localStorage.getItem(LS_MGR)) || []; } catch (e) { a = []; }
+      return a.filter(Boolean);
+    },
+    write: function (a) { localStorage.setItem(LS_MGR, JSON.stringify(a)); },
+    add: function (name) {
+      name = String(name || '').trim();
+      if (!name) return false;
+      var a = this.list();
+      if (a.indexOf(name) !== -1) return false;
+      a.push(name); a.sort();
+      this.write(a);
+      return true;
+    },
+    remove: function (name) {
+      this.write(this.list().filter(function (x) { return x !== name; }));
+    }
+  };
 
   function loadData() {
     // data/stores.js、data/scripts.js 会把数据挂到 window 上，这样双击 file:// 打开也能读到；
@@ -343,7 +364,7 @@ window.HY = (function () {
     parsePub: parsePub, buildWeeks: buildWeeks, buildDayGrid: buildDayGrid, DOW: DOW,
     ymOf: ymOf, monthLabel: monthLabel, buildMonthGrid: buildMonthGrid, monthsIn: monthsIn,
     Videos: Videos, rowsToVideos: rowsToVideos,
-    StoreEdits: StoreEdits, EDITABLE: EDITABLE,
+    StoreEdits: StoreEdits, EDITABLE: EDITABLE, Managers: Managers,
     match: match, statusOf: statusOf, STATUS_CN: STATUS_CN,
     loadData: loadData, loadDetail: loadDetail, loadDetails: loadDetails, detail: detail, toast: toast, num: num,
     bootDone: bootDone
