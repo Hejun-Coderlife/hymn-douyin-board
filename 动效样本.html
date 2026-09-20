@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>背景动效 · 8 个样本</title>
+<link rel="stylesheet" href="assets/style.css">
+<style>
+/* ===========================================================
+   8 个背景动效样本。规矩（2026-09-20 用户定的）：
+   动效只能待在背景层，**绝对不许盖到图表和数字上**。
+   所以每个样本都套着跟看板一样的假页面（白卡片 + 灰图块 + 柱子），
+   直接看它会不会糊到数据上。全部纯 CSS transform/opacity，合成器跑，不吃 CPU。
+   =========================================================== */
+html{background:var(--bg)}
+body{padding:26px 30px 70px}
+h1{font-size:22px;font-weight:600;letter-spacing:.01em}
+.lead{font-size:13.5px;color:var(--t3);line-height:1.9;margin:8px 0 6px;max-width:980px}
+.bar-top{display:flex;align-items:center;gap:14px;margin:16px 0 22px;flex-wrap:wrap}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(430px,1fr));gap:22px}
+
+.samp .cap{display:flex;align-items:baseline;gap:9px;margin-bottom:9px}
+.samp .cap .no{
+  width:22px;height:22px;background:var(--ink);color:#fff;font-size:12px;font-weight:600;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;align-self:center;
+}
+.samp .cap b{font-size:15px;font-weight:600}
+.samp .cap span{font-size:12.5px;color:var(--t3)}
+.samp .why{font-size:12px;color:var(--t3);line-height:1.75;margin-top:8px}
+
+/* 假页面：底色 + 动效层 + 白卡片，比例照着真看板 */
+.demo{
+  position:relative;overflow:hidden;background:var(--bg);
+  aspect-ratio:16/10;cursor:zoom-in;border:1px solid var(--line-2);
+}
+.fx{position:absolute;inset:0;z-index:0;pointer-events:none}
+.mock{position:relative;z-index:1;padding:16px 18px;display:flex;flex-direction:column;height:100%}
+.mock .eb{font-size:9.5px;color:var(--t3);letter-spacing:.06em}
+.mock .tt{font-size:15px;font-weight:600;margin:3px 0 12px}
+.mock .tiles2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mock .box2{background:var(--tile);aspect-ratio:4/3;position:relative;display:flex;
+  align-items:center;justify-content:center}
+.mock .ring2{
+  width:54%;aspect-ratio:1;border-radius:50%;
+  background:conic-gradient(var(--green) 0 43%,#CFC7BC 43% 100%);
+  -webkit-mask:radial-gradient(circle,transparent 58%,#000 59%);
+          mask:radial-gradient(circle,transparent 58%,#000 59%);
+}
+.mock .rv{position:absolute;font-size:17px;font-weight:600}
+.mock .bars2{position:absolute;inset:auto 12px 12px 12px;display:flex;gap:4px;align-items:flex-end;height:62%}
+.mock .bars2 i{flex:1;background:var(--green);display:block}
+.mock .kpi2{display:flex;background:#fff;margin-top:10px}
+.mock .kpi2 div{flex:1;padding:9px 11px;border-left:1px solid var(--line)}
+.mock .kpi2 div:first-child{border-left:0}
+.mock .kpi2 b{display:block;font-size:17px;font-weight:600;line-height:1.2}
+.mock .kpi2 b.late{color:var(--brick)}
+.mock .kpi2 b.done{color:var(--green)}
+.mock .kpi2 span{font-size:9.5px;color:var(--t3)}
+
+/* 放大看：点一下整块铺满屏幕 */
+#zoom{position:fixed;inset:0;z-index:200;background:var(--bg);display:none}
+#zoom.on{display:block}
+#zoom .demo{aspect-ratio:auto;width:100%;height:100%;border:0;cursor:zoom-out}
+#zoom .mock{padding:40px 54px}
+#zoom .mock .eb{font-size:12px}
+#zoom .mock .tt{font-size:26px;margin:6px 0 22px}
+#zoom .mock .tiles2{grid-template-columns:repeat(4,1fr);gap:18px}
+#zoom .mock .rv{font-size:30px}
+#zoom .mock .kpi2 b{font-size:28px}
+#zoom .mock .kpi2 span{font-size:11.5px}
+#zoom .zt{position:fixed;left:0;right:0;bottom:0;padding:14px 20px;background:#fff;
+  border-top:1px solid var(--line-2);font-size:13px;z-index:2}
+#zoom .zt b{font-weight:600}
+#zoom .zt span{color:var(--t3);margin-left:10px}
+
+body.frozen .fx *,body.frozen .fx,body.frozen .fx::before,body.frozen .fx::after{animation-play-state:paused !important}
+
+/* ===================== 1 暖雾漂移（现在线上这版） ===================== */
+.fx1::before,.fx1::after{
+  content:'';position:absolute;width:150%;aspect-ratio:1;border-radius:50%;will-change:transform;
+}
+.fx1::before{
+  left:-45%;top:-55%;
+  background:radial-gradient(circle,rgba(206,158,100,.58) 0%,rgba(226,196,158,.34) 36%,rgba(252,247,241,0) 68%);
+  animation:f1a 17s ease-in-out infinite alternate;
+}
+.fx1::after{
+  right:-50%;bottom:-58%;
+  background:radial-gradient(circle,rgba(181,139,62,.46) 0%,rgba(216,196,162,.28) 40%,rgba(252,247,241,0) 70%);
+  animation:f1b 23s ease-in-out infinite alternate;
+}
+@keyframes f1a{0%{transform:translate(-6%,-4%) scale(.95)}50%{transform:translate(40%,20%) scale(1.22)}100%{transform:translate(14%,42%) scale(.9)}}
+@keyframes f1b{0%{transform:translate(6%,4%) scale(1.1)}50%{transform:translate(-38%,-22%) scale(.86)}100%{transform:translate(-10%,-44%) scale(1.24)}}
+
+/* ===================== 2 丝巾斜纹（爱马仕丝巾的斜织纹，整幅极慢推移） ===================== */
+.fx2{
+  background:repeating-linear-gradient(58deg,
+    rgba(181,139,62,.10) 0 2px, rgba(181,139,62,0) 2px 13px);
+  animation:f2 26s linear infinite;will-change:transform;
+}
+@keyframes f2{from{transform:translate(0,0)}to{transform:translate(0,15.3px)}}
+
+/* ===================== 3 制图网格（1px 细格，缓慢呼吸 + 微移） ===================== */
+.fx3{
+  background:
+    repeating-linear-gradient(0deg,rgba(94,94,94,.13) 0 1px,transparent 1px 34px),
+    repeating-linear-gradient(90deg,rgba(94,94,94,.13) 0 1px,transparent 1px 34px);
+  animation:f3 19s ease-in-out infinite alternate;will-change:transform,opacity;
+}
+@keyframes f3{from{transform:translate(0,0) scale(1);opacity:.55}to{transform:translate(-17px,-17px) scale(1.06);opacity:1}}
+
+/* ===================== 4 光带斜扫（只在底色上走，被白卡片挡住，不碰数据） ===================== */
+.fx4{overflow:hidden}
+.fx4::before{
+  content:'';position:absolute;top:-40%;bottom:-40%;left:-60%;width:42%;
+  background:linear-gradient(100deg,rgba(214,178,132,0) 0%,rgba(206,158,100,.55) 50%,rgba(214,178,132,0) 100%);
+  transform:skewX(-16deg);animation:f4 9s cubic-bezier(.45,0,.55,1) infinite;will-change:transform;
+}
+@keyframes f4{0%{transform:skewX(-16deg) translateX(0)}60%,100%{transform:skewX(-16deg) translateX(420%)}}
+
+/* ===================== 5 微尘上浮（空气里的浮尘/金粉） ===================== */
+.fx5 i{
+  position:absolute;bottom:-8px;width:4px;height:4px;border-radius:50%;
+  background:rgba(181,139,62,.55);will-change:transform,opacity;
+}
+@keyframes f5{
+  0%{transform:translate3d(0,0,0);opacity:0}
+  12%{opacity:.9}
+  88%{opacity:.7}
+  100%{transform:translate3d(24px,-120%,0);opacity:0}
+}
+
+/* ===================== 6 水波等高线（从右下角一圈圈荡开，带一点墨绿） ===================== */
+.fx6 i{
+  position:absolute;right:-6%;bottom:-16%;width:36%;aspect-ratio:1;border-radius:50%;
+  border:1px solid rgba(47,93,69,.30);will-change:transform,opacity;
+  animation:f6 11s cubic-bezier(.22,.6,.3,1) infinite;
+}
+@keyframes f6{0%{transform:scale(.25);opacity:0}15%{opacity:.85}100%{transform:scale(3.4);opacity:0}}
+
+/* ===================== 7 色温呼吸（没有任何形状，整张底色慢慢变暖变凉） ===================== */
+.fx7{animation:f7 24s ease-in-out infinite alternate}
+@keyframes f7{
+  0%{background:#FCF7F1}
+  35%{background:#F7EADC}
+  70%{background:#F3EFE8}
+  100%{background:#F9EFE2}
+}
+
+/* ===================== 8 方块矩阵（对着爱马仕商品图墙，一格一格亮起来） ===================== */
+.fx8{display:grid;grid-template-columns:repeat(8,1fr);grid-auto-rows:1fr}
+.fx8 i{background:rgba(226,221,214,.85);will-change:opacity;animation:f8 7s ease-in-out infinite}
+@keyframes f8{0%,100%{opacity:0}50%{opacity:1}}
+</style>
+</head>
+<body>
+
+<h1>背景动效 · 8 个样本</h1>
+<p class="lead">
+  都套在跟看板一样的假页面上（白卡片 + 灰图块 + 绿柱子），直接看它会不会糊到数据上。<br>
+  <b>点任意一块放大到整屏</b>再看一遍（小图看不准）。看中了告诉我编号，也可以说「第 5 个但再慢一点 / 再淡一点 / 换个颜色」。
+</p>
+<div class="bar-top">
+  <button class="btn" id="freeze" type="button">全部暂停（对比静止的样子）</button>
+  <span class="note">全是 CSS transform/opacity，合成器直接跑；系统开了「减弱动态效果」的话线上会自动停。</span>
+</div>
+
+<div class="grid" id="grid"></div>
+<div id="zoom"><div class="zt" id="zt"></div></div>
+
+<script>
+var SAMPLES = [
+  { n:'暖雾漂移',   d:'现在线上这版', k:'fx1',
+    why:'两团暖色雾在底下慢慢飘。最安静，但页面九成被白卡片盖住，只能从边缝露一点——你说的「开跟不开没区别」就是它。' },
+  { n:'丝巾斜纹',   d:'整幅极慢推移', k:'fx2',
+    why:'爱马仕丝巾的斜织纹，整张纹理以 26 秒的速度往下爬。画风最贴，动得最隐蔽，属于「盯着看才发现在动」。' },
+  { n:'制图网格',   d:'细格呼吸 + 微移', k:'fx3',
+    why:'1px 细网格，像制图纸/建筑图。19 秒一轮明暗呼吸并轻微位移。理性、后台感强，跟数据看板的气质最搭。' },
+  { n:'光带斜扫',   d:'9 秒一道，走底色', k:'fx4',
+    why:'一道暖光斜着扫过页面底。跟被你否掉的那版的区别：它在白卡片**下面**，只在边缝和留白处看得见，扫不到图表上。' },
+  { n:'微尘上浮',   d:'22 粒金尘慢慢升', k:'fx5',
+    why:'空气里的浮尘/金粉往上飘。最「有生命」，也最容易显廉价——粒子一多就像抽奖页面，这里只放 22 粒、透明度压到很低。' },
+  { n:'水波等高线', d:'右下角一圈圈荡开', k:'fx6',
+    why:'从右下角一圈圈荡开的细环，带一点墨绿。八个里唯一不是暖色系的，看着凉，但会规律性地把视线往右下角拽。' },
+  { n:'色温呼吸',   d:'没有形状，只有色温', k:'fx7',
+    why:'一个形状都没有，整张底色在暖—凉之间来回走 24 秒。最克制、最不可能打扰数据，代价是「像在动」而不是「看见它在动」。' },
+  { n:'方块矩阵',   d:'一格一格亮起来', k:'fx8',
+    why:'对着爱马仕首页那排商品图做的灰方块墙，错开节奏一格格亮灭。八个里最「有设计」，也最吵，长时间看可能烦。' }
+];
+
+function mock() {
+  return '<div class="mock">' +
+    '<div class="eb">赫眉 HYMN · 全部门店</div><div class="tt">抖音拍摄脚本看板</div>' +
+    '<div class="tiles2">' +
+      '<div class="box2"><div class="ring2"></div><div class="rv">43%</div></div>' +
+      '<div class="box2"><div class="bars2">' +
+        [38,52,46,64,72,58,80,88,96,84,92,40].map(function (h) {
+          return '<i style="height:' + h + '%"></i>';
+        }).join('') +
+      '</div></div>' +
+    '</div>' +
+    '<div class="kpi2">' +
+      '<div><b class="done">355</b><span>已发布</span></div>' +
+      '<div><b class="late">462</b><span>逾期未发</span></div>' +
+      '<div><b>473</b><span>待拍</span></div>' +
+      '<div><b>43<span style="font-size:11px">/43</span></b><span>门店</span></div>' +
+    '</div></div>';
+}
+
+/* 粒子类的三个样本要生成子节点：微尘 / 水波 / 方块矩阵 */
+function fxInner(k) {
+  var h = '';
+  if (k === 'fx5') {
+    for (var i = 0; i < 22; i++) {
+      var left = (i * 4.7 + (i % 3) * 3) % 98;
+      var dur = 13 + (i % 7) * 2.5, delay = -(i * 1.7) % dur, sc = .7 + (i % 4) * .35;
+      h += '<i style="left:' + left.toFixed(1) + '%;transform:scale(' + sc + ');animation:f5 ' +
+           dur + 's linear ' + delay.toFixed(1) + 's infinite"></i>';
+    }
+  } else if (k === 'fx6') {
+    for (var j = 0; j < 4; j++) h += '<i style="animation-delay:' + (-j * 2.75) + 's"></i>';
+  } else if (k === 'fx8') {
+    for (var q = 0; q < 40; q++) {
+      h += '<i style="animation-delay:' + (-(q * 0.37) % 7).toFixed(2) + 's;animation-duration:' +
+           (6 + (q % 5)) + 's"></i>';
+    }
+  }
+  return h;
+}
+
+var grid = document.getElementById('grid');
+grid.innerHTML = SAMPLES.map(function (s, i) {
+  return '<div class="samp"><div class="cap"><span class="no">' + (i + 1) + '</span><b>' + s.n +
+    '</b><span>' + s.d + '</span></div>' +
+    '<div class="demo" data-i="' + i + '"><div class="fx ' + s.k + '">' + fxInner(s.k) + '</div>' +
+    mock() + '</div>' +
+    '<div class="why">' + s.why + '</div></div>';
+}).join('');
+
+/* 放大：把那一块原样克隆到全屏层里 */
+var zoom = document.getElementById('zoom'), zt = document.getElementById('zt');
+grid.addEventListener('click', function (e) {
+  var d = e.target.closest('.demo');
+  if (!d) return;
+  var s = SAMPLES[+d.dataset.i];
+  var big = d.cloneNode(true);
+  var old = zoom.querySelector('.demo');
+  if (old) old.remove();
+  zoom.insertBefore(big, zt);
+  zt.innerHTML = '<b>' + (+d.dataset.i + 1) + '. ' + s.n + '</b><span>' + s.why +
+                 '　（点一下关掉）</span>';
+  zoom.classList.add('on');
+});
+zoom.addEventListener('click', function () { zoom.classList.remove('on'); });
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Escape') zoom.classList.remove('on');
+});
+
+var fz = document.getElementById('freeze');
+fz.onclick = function () {
+  var on = document.body.classList.toggle('frozen');
+  fz.textContent = on ? '继续播放' : '全部暂停（对比静止的样子）';
+};
+</script>
+</body>
+</html>

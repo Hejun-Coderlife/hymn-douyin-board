@@ -546,11 +546,10 @@
     }
     h += '</div>';
 
-    h += '<div class="sechead">选题</div><div class="kvs">' +
-      kv('人群', s.audience) + kv('痛点', s.pain) + kv('成因', s.cause) +
-      kv('承诺', s.promise) + kv('对应项目', s.service) + '</div>';
-
-    h += '<div class="sechead">开头 3 秒（黄金前三秒）</div><div class="bigline">' + esc(s.hook) + '</div>';
+    // 【极简】2026-09-20 用户：「太复杂了，不适合给所有人看，要极简」。
+    // 抽屉跟门店页保持一套内容：开头 3 秒 + 分镜 + 标签，别的都不露。
+    // 砍掉的：选题（人群/痛点/成因/承诺/对应项目）、标题备选、封面、拍摄要点、避坑、现场（BGM/道具）。
+    h += '<div class="sechead">开头 3 秒</div><div class="bigline">' + esc(s.hook) + '</div>';
 
     var shots = s.shots || [];
     h += '<div class="sechead">分镜 ' + shots.length + ' 幕' + (s.duration ? ' · ' + esc(s.duration) : '') + '</div>';
@@ -560,18 +559,11 @@
         (sh.line ? '<div class="ln">' + quote(sh.line) + '</div>' : '') +
         '</div><div class="sec">' + (sh.sec || 0) + 's</div></div>';
     });
-
-    h += '<div class="sechead">结尾引导</div><div class="bigline">' + esc(ctaText(s.cta)) + '</div>';
-
-    if (s.titles && s.titles.length) {
-      h += '<div class="sechead">标题备选</div>' + list(s.titles);
+    // 结尾那句也是要念的话，并进分镜最后一行
+    if (s.cta) {
+      h += '<div class="shot end"><div class="n">尾</div><div class="bd">' +
+        '<div class="ln">' + quote(ctaText(s.cta)) + '</div></div><div class="sec"></div></div>';
     }
-    if (s.cover) h += '<div class="sechead">封面</div><div class="bigline">' + esc(s.cover) + '</div>';
-    if (s.tips && s.tips.length) h += '<div class="sechead">拍摄要点</div>' + list(s.tips);
-    if (s.avoid && s.avoid.length) h += '<div class="sechead">避坑</div>' + list(s.avoid, 'warn');
-
-    h += '<div class="sechead">现场</div><div class="kvs">' +
-      kv('BGM', s.bgm) + kv('道具', (s.props || []).join('、')) + '</div>';
 
     if (s.hashtags && s.hashtags.length) {
       h += '<div class="sechead">话题标签</div><div class="hashrow">' +

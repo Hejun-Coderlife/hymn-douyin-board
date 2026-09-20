@@ -177,11 +177,10 @@
       h += '<a class="vlink" href="' + esc(m.video.url) + '" target="_blank" rel="noopener">已发布：' +
         esc(m.video.title || '（无标题）') + ' ↗</a>';
     }
-    if (s.audience || s.pain) {
-      h += '<div class="sechead">拍给谁看</div><div class="kvs">' +
-        '<div class="k">人群</div><div>' + esc(s.audience || '—') + '</div>' +
-        '<div class="k">她的烦恼</div><div>' + esc(s.pain || '—') + '</div></div>';
-    }
+    // 【极简】2026-09-20 用户：「太复杂了，不适合给所有人看，要极简」。
+    // 屏幕上只剩：开头 3 秒 + 分镜（画面/台词/秒数）+ 标签。
+    // 砍掉的：拍给谁看（人群/烦恼）、封面、拍摄要点、避坑、现场（BGM/道具）。
+    // 数据里这些字段都还在，想找回来就是把下面几行加回去，别去动数据。
     h += '<div class="sechead">开头 3 秒</div><div class="bigline">' + esc(s.hook) + '</div>';
     h += '<div class="sechead">分镜 ' + (s.shots || []).length + ' 幕 · ' + esc(s.duration || '') + '</div>';
     (s.shots || []).forEach(function (sh, i) {
@@ -190,15 +189,12 @@
         (sh.line ? '<div class="ln">' + quote(sh.line) + '</div>' : '') +
         '</div><div class="sec">' + (sh.sec || 0) + 's</div></div>';
     });
-    h += '<div class="sechead">结尾引导</div><div class="bigline">' + esc(ctaText(s.cta)) + '</div>';
-    if (s.cover) h += '<div class="sechead">封面</div><div class="bigline">' + esc(s.cover) + '</div>';
-    if (s.tips && s.tips.length) h += '<div class="sechead">拍摄要点</div>' + list(s.tips);
-    if (s.avoid && s.avoid.length) h += '<div class="sechead">避坑</div>' + list(s.avoid, 'warn');
-    h += '<div class="sechead">现场</div><div class="kvs">' +
-      '<div class="k">BGM</div><div>' + esc(s.bgm || '—') + '</div>' +
-      '<div class="k">道具</div><div>' + esc((s.props || []).join('、') || '—') + '</div></div>';
+    // 结尾那句也是要念出来的话，所以并进分镜最后一行，不单开一块
+    if (s.cta) {
+      h += '<div class="shot end"><div class="n">尾</div><div class="bd">' +
+        '<div class="ln">' + quote(ctaText(s.cta)) + '</div></div><div class="sec"></div></div>';
+    }
     if (s.hashtags && s.hashtags.length) {
-      // 专属标签 2026-09-17 取消，s.tag 不再显示，只留普通话题标签
       var tags = s.hashtags.filter(function (t) { return t !== s.tag; });
       h += '<div class="sechead row">话题标签<button class="btnmini copyall" type="button">复制全部标签</button></div>' +
         '<div class="hashrow">' +
@@ -210,7 +206,7 @@
     return h;
   }
 
-  /** 拷进备忘录的纯文本版；顺序跟卡片上看到的一样 */
+  /** 拷进备忘录的纯文本版；内容跟屏幕上看到的一模一样，不多给也不少给 */
   function scriptText(s, storeName) {
     var L = [];
     L.push(s.date + '　' + storeName);
@@ -222,12 +218,9 @@
       L.push((i + 1) + '. 画面：' + sh.scene + '（' + (sh.sec || 0) + '秒）');
       if (sh.line) L.push('   台词：' + sh.line);
     });
-    L.push('');
-    L.push('结尾：' + ctaText(s.cta));
-    if (s.cover) L.push('封面：' + s.cover);
-    if (s.tips && s.tips.length) L.push('要点：' + s.tips.join('；'));
-    if (s.avoid && s.avoid.length) L.push('避坑：' + s.avoid.join('；'));
+    if (s.cta) L.push('尾. 台词：' + ctaText(s.cta));
     if (s.hashtags && s.hashtags.length) {
+      L.push('');
       L.push('标签：' + s.hashtags.filter(function (t) { return t !== s.tag; }).join(' '));
     }
     return L.join('\n');

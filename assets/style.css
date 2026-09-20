@@ -779,6 +779,10 @@ table.mini th{color:var(--t3);font-weight:400;font-size:12px;letter-spacing:0}
 }
 .celltip.on{opacity:1}
 
+/* 分镜最后那行「尾」= 结尾引导，跟前面几幕排在一起（极简版把独立的「结尾引导」块砍了） */
+.shot.end .n{font-size:11px;color:var(--t3)}
+.shot.end .sec{min-width:0}
+
 /* ===== 效果统计 ===== */
 /* 一句人话的结论，放在对比表下面；数字加粗，别的都不强调 */
 .verdict{
