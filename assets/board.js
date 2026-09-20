@@ -29,6 +29,16 @@
     S.byStoreDate = {};
     S.scripts.forEach(function (s) { S.byStoreDate[s.store + '|' + s.date] = s; });
 
+    // 全年总览要的是「这家店这个月 已发/逾期/待拍 各几条」。
+    // 原来是对每个格子扫一遍全量脚本（43 店 × 13 月 × 1.6 万条 ≈ 900 万次），翻到全年总览就卡住。
+    // 改成这里一次扫完，格子直接取。
+    S.monthAgg = {};
+    S.scripts.forEach(function (sc) {
+      var k = sc.store + '|' + HY.ymOf(sc.date);
+      var a = S.monthAgg[k] || (S.monthAgg[k] = { done: 0, late: 0, todo: 0, n: 0 });
+      a[statusOfScript(sc)]++; a.n++;
+    });
+
     S.freeByStoreDate = {};
     S.freeByStore = {};
     S.m.free.forEach(function (v) {
@@ -375,11 +385,13 @@
         if (sc) {
           var stt = statusOfScript(sc);
           h += '<span class="dot ' + stt + (free ? ' free' : '') + '" data-id="' + esc(sc.id) +
-               '" title="' + esc(d.date + ' ' + sc.topic + '·' + sc.format + ' — ' + HY.STATUS_CN[stt] +
-               (free ? '（当天另有 ' + free.length + ' 条自由发挥）' : '')) + '"></span>';
+               '" data-tip="' + esc(st.storeName + ' · ' + d.date + '（周' + d.dow + '）\n' +
+               sc.topic + '·' + sc.format + '\n' + HY.STATUS_CN[stt] +
+               (free ? ' · 当天另有 ' + free.length + ' 条自由发挥' : '')) + '"></span>';
         } else if (free) {
           h += '<span class="dot none free" data-free="' + st.douyinId + '|' + d.date +
-               '" title="' + free.length + ' 条自由发挥视频"></span>';
+               '" data-tip="' + esc(st.storeName + ' · ' + d.date + '（周' + d.dow + '）\n' +
+               free.length + ' 条自由发挥视频，点开看链接') + '"></span>';
         } else {
           h += '<span class="dot none"></span>';
         }
@@ -405,19 +417,16 @@
     rows.forEach(function (st) {
       h += '<tr>' + storeCell(st);
       S.months.forEach(function (ym) {
-        var c = { done: 0, late: 0, todo: 0 }, n = 0;
-        S.scripts.forEach(function (sc) {
-          if (sc.store !== st.douyinId || HY.ymOf(sc.date) !== ym) return;
-          c[statusOfScript(sc)]++; n++;
-        });
-        var ok = c.done, due = ok + c.late;
+        var c = S.monthAgg[st.douyinId + '|' + ym] || { done: 0, late: 0, todo: 0, n: 0 };
+        var n = c.n, ok = c.done, due = ok + c.late;
         h += '<td class="mcell" data-ym="' + ym + '">';
         if (!n) {
           h += '<span class="muted">—</span>';
         } else {
           var w = function (x) { return n ? (x / n * 100).toFixed(1) + '%' : '0%'; };
-          h += '<div class="bar" title="' + esc(ym + '：共 ' + n + ' 条，已发 ' + ok +
-               '，逾期 ' + c.late + '，待拍 ' + c.todo) + '">' +
+          h += '<div class="bar" data-tip="' + esc(st.storeName + ' · ' + HY.monthLabel(ym) +
+               '\n共 ' + n + ' 条：已发 ' + ok + ' · 逾期 ' + c.late + ' · 待拍 ' + c.todo +
+               '\n点一下进这个月') + '">' +
                '<i class="s-done" style="width:' + w(ok) + '"></i>' +
                '<i class="s-late" style="width:' + w(c.late) + '"></i>' +
                '<i class="s-todo" style="width:' + w(c.todo) + '"></i></div>' +
@@ -437,7 +446,33 @@
       '<a class="mob" href="store.html?store=' + st.douyinId + '" target="_blank">门店页</a></div></td>';
   }
 
+  /* 日历上的悬停提示：跟图块区一样自己画（原生 title 要等 1 秒、字还小）。
+     整张表只挂一次 mouseover，格子有几千个也不用一个个绑。 */
+  function bindBoardTip() {
+    var wrap = $('.gridwrap');
+    if (!wrap || wrap.__tipbound) return;
+    wrap.__tipbound = true;
+    var tip = document.createElement('div');
+    tip.className = 'celltip';
+    document.body.appendChild(tip);
+    function hide() { tip.classList.remove('on'); }
+    wrap.addEventListener('mouseover', function (e) {
+      var el = e.target.closest ? e.target.closest('[data-tip]') : null;
+      if (!el) { hide(); return; }
+      tip.textContent = el.dataset.tip;
+      tip.classList.add('on');
+      var r = el.getBoundingClientRect(), w = tip.offsetWidth;
+      tip.style.left = Math.min(Math.max(r.left + r.width / 2 - w / 2, 8), window.innerWidth - w - 8) + 'px';
+      var top = r.top - tip.offsetHeight - 8;
+      tip.style.top = (top < 8 ? r.bottom + 8 : top) + 'px';   // 顶到头就翻到下面去
+    });
+    wrap.addEventListener('mouseleave', hide);
+    wrap.addEventListener('scroll', hide, true);
+    window.addEventListener('scroll', hide, true);
+  }
+
   function bindCells() {
+    bindBoardTip();
     $$('#board .dot[data-id]').forEach(function (el) {
       el.onclick = function () { openScript(el.dataset.id); };
     });

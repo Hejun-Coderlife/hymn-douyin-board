@@ -765,6 +765,15 @@ table.mini th,table.mini td{border-bottom:1px solid var(--line);padding:11px 10p
 table.mini th:first-child,table.mini td:first-child{text-align:left}
 table.mini th{color:var(--t3);font-weight:400;font-size:12px;letter-spacing:0}
 
+/* 日历格子的悬停提示：自己画，跟图块区 .sparktip 一个样子；
+   表是横向滚动的，所以用 position:fixed，位置在 JS 里算 */
+.celltip{
+  position:fixed;z-index:80;pointer-events:none;opacity:0;transition:opacity .1s ease;
+  background:var(--ink);color:#fff;font-size:11.5px;line-height:1.5;letter-spacing:.02em;
+  padding:7px 11px;max-width:min(320px,90vw);white-space:pre-line;   /* 提示里有 \n，分两三行显示 */
+}
+.celltip.on{opacity:1}
+
 /* ===== 效果统计 ===== */
 /* 一句人话的结论，放在对比表下面；数字加粗，别的都不强调 */
 .verdict{
