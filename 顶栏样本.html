@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>顶栏样本 · 把 TIESTON 那条改成赫眉</title>
+<link rel="stylesheet" href="assets/style.css">
+<style>
+/* ===========================================================
+   把访客登记系统（TIESTON）那条顶栏搬到赫眉来（2026-09-20）。
+
+   原版长这样：深紫黑底 #0e0b21 + 画布光轨，logo 和标题都是**渐变填充**，
+   中间一条竖线分隔，底部一条光谱细线。
+
+   关键技术（值得留着）：**logo 不是直接贴图，而是拿 PNG 当 mask 再填渐变**——
+   `-webkit-mask:url(logo.png) no-repeat left center/contain` + `background:linear-gradient(...)`。
+   所以想让 logo 变成什么颜色/流光，都不用改图片。
+   赫眉的 logo-ink.png 是 RGBA（有透明通道），这招直接能用。
+
+   下面四种都是赫眉自己的色，差别在「深底还是浅底」「要不要流光」。
+   =========================================================== */
+html{background:var(--bg)}
+body{padding:26px 30px 70px}
+h1{font-size:22px;font-weight:600;letter-spacing:.01em}
+.lead{font-size:13.5px;color:var(--t3);line-height:1.9;margin:8px 0 22px;max-width:980px}
+.lead b{color:var(--t1);font-weight:600}
+.samp{margin-bottom:34px}
+.cap{display:flex;align-items:baseline;gap:9px;margin-bottom:10px}
+.cap .no{width:22px;height:22px;background:var(--ink);color:#fff;font-size:12px;font-weight:600;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;align-self:center}
+.cap b{font-size:15px;font-weight:600}
+.cap span{font-size:12.5px;color:var(--t3)}
+.why{font-size:12px;color:var(--t3);line-height:1.75;margin-top:8px}
+.frame{border:1px solid var(--line-2)}
+.body-mock{padding:18px 20px 22px;background:var(--bg)}
+.body-mock .l{height:9px;background:var(--line);margin-bottom:9px}
+.body-mock .l.s{width:48%}
+.body-mock .card{background:var(--card);padding:14px 16px;margin-top:12px;font-size:13px;color:var(--t3)}
+
+/* ---------- 顶栏骨架：四种共用 ---------- */
+.hdr{
+  display:flex;align-items:center;gap:11px;
+  padding:11px 18px;position:relative;overflow:hidden;
+}
+.hdr .logo{
+  width:96px;height:26px;flex:none;
+  -webkit-mask:url(assets/logo-ink.png) no-repeat left center/contain;
+          mask:url(assets/logo-ink.png) no-repeat left center/contain;
+}
+.hdr .txt{min-width:0;flex:1;padding-left:12px}
+.hdr h2{font-size:15.5px;font-weight:600;letter-spacing:.06em;line-height:1.3;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:0}
+.hdr .sub{font-size:10.5px;letter-spacing:.1em;margin-top:2px}
+
+@keyframes flow{from{background-position:0% 50%}to{background-position:280% 50%}}
+
+/* ===== 1 奶油底 · 墨黑（跟看板完全一致，最克制） ===== */
+.h1{background:var(--card);border-bottom:1px solid var(--line-2)}
+.h1 .logo{background:var(--ink)}
+.h1 .txt{border-left:1px solid var(--line-2)}
+.h1 h2{color:var(--t1)}
+.h1 .sub{color:var(--t3)}
+
+/* ===== 2 奶油底 · 金色流光（浅底，但 logo 和标题在流动） ===== */
+.h2b{background:var(--card);border-bottom:1px solid var(--line-2)}
+.h2b .logo,.h2b h2{
+  background:linear-gradient(100deg,#8A6A28 0%,#B58B3E 26%,#E3CB92 48%,#B58B3E 70%,#8A6A28 100%);
+  background-size:280% 100%;animation:flow 9s linear infinite;
+}
+.h2b h2{-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
+.h2b .txt{border-left:1px solid var(--line-2)}
+.h2b .sub{color:var(--t3)}
+
+/* ===== 3 墨黑底 · 品牌粉流光（最接近 TIESTON 的气质，换成赫眉色） ===== */
+.h3b{background:#17120F}
+.h3b .logo,.h3b h2{
+  background:linear-gradient(100deg,#EDACB2 0%,#F7E1E4 24%,#EACBA0 48%,#EDACB2 72%,#F7E1E4 100%);
+  background-size:280% 100%;animation:flow 8s linear infinite;
+}
+.h3b h2{-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
+.h3b .txt{border-left:1px solid rgba(255,255,255,.16)}
+.h3b .sub{color:rgba(255,255,255,.55)}
+/* 底部一条渐隐细线，对应原版那条光谱线 */
+.h3b::after{content:'';position:absolute;left:0;right:0;bottom:0;height:1px;
+  background:linear-gradient(90deg,transparent,#EDACB2,#EACBA0,transparent);opacity:.9}
+
+/* ===== 4 墨黑底 · 纯白 logo（不要流光，最稳） ===== */
+.h4b{background:#17120F;border-bottom:1px solid rgba(255,255,255,.14)}
+.h4b .logo{background:#fff}
+.h4b .txt{border-left:1px solid rgba(255,255,255,.16)}
+.h4b h2{color:#fff}
+.h4b .sub{color:rgba(255,255,255,.55)}
+</style>
+</head>
+<body>
+
+<h1>顶栏样本 · 把 TIESTON 那条改成赫眉</h1>
+<p class="lead">
+  原版是<b>深紫黑底 + 霓虹渐变流光</b>的科技风。下面四种都换成了赫眉自己的色，
+  差别在<b>深底还是浅底</b>、<b>要不要流光</b>。<br>
+  关键技术照搬了原版的：<b>logo 用 PNG 当遮罩再填渐变</b>，所以想让它是什么颜色都不用改图片——
+  金色、粉色、纯白都是同一个 <code>logo-ink.png</code>。<br>
+  下面每条顶栏都压着一小块假页面，看它跟奶油底的正文搭不搭。
+</p>
+
+<div class="samp">
+  <div class="cap"><span class="no">1</span><b>奶油底 · 墨黑</b><span>跟现在的看板完全一致</span></div>
+  <div class="frame">
+    <div class="hdr h1"><span class="logo"></span>
+      <div class="txt"><h2>门店拍摄计划</h2><div class="sub">每天一条 · 拍完自动核对</div></div></div>
+    <div class="body-mock"><div class="l"></div><div class="l s"></div>
+      <div class="card">正文区域（白卡片）</div></div>
+  </div>
+  <div class="why">最安静，跟现有页面一脉相承，不会有「两套设计打架」的问题。代价是没有任何记忆点，就是一条普通顶栏。</div>
+</div>
+
+<div class="samp">
+  <div class="cap"><span class="no">2</span><b>奶油底 · 金色流光</b><span>浅底，logo 和标题在缓慢流动</span></div>
+  <div class="frame">
+    <div class="hdr h2b"><span class="logo"></span>
+      <div class="txt"><h2>门店拍摄计划</h2><div class="sub">每天一条 · 拍完自动核对</div></div></div>
+    <div class="body-mock"><div class="l"></div><div class="l s"></div>
+      <div class="card">正文区域（白卡片）</div></div>
+  </div>
+  <div class="why">保留了原版「会流动的 logo」那个记忆点，但底色还是奶油，跟正文接得上。金用的是看板里本来就有的 <code>#B58B3E</code>。</div>
+</div>
+
+<div class="samp">
+  <div class="cap"><span class="no">3</span><b>墨黑底 · 品牌粉流光</b><span>最接近 TIESTON 的气质</span></div>
+  <div class="frame">
+    <div class="hdr h3b"><span class="logo"></span>
+      <div class="txt"><h2>门店拍摄计划</h2><div class="sub">每天一条 · 拍完自动核对</div></div></div>
+    <div class="body-mock"><div class="l"></div><div class="l s"></div>
+      <div class="card">正文区域（白卡片）</div></div>
+  </div>
+  <div class="why">深底 + 流光 + 底部渐隐细线，结构跟原版一一对应，只是霓虹蓝紫换成了品牌粉 <code>#EDACB2</code> 到暖金。最有分量，但它跟下面奶油白的正文是<b>两种画风</b>，要接受这个反差。</div>
+</div>
+
+<div class="samp">
+  <div class="cap"><span class="no">4</span><b>墨黑底 · 纯白 logo</b><span>深底但不要流光</span></div>
+  <div class="frame">
+    <div class="hdr h4b"><span class="logo"></span>
+      <div class="txt"><h2>门店拍摄计划</h2><div class="sub">每天一条 · 拍完自动核对</div></div></div>
+    <div class="body-mock"><div class="l"></div><div class="l s"></div>
+      <div class="card">正文区域（白卡片）</div></div>
+  </div>
+  <div class="why">深底的分量感留着，但去掉流光，最不容易出错、也最耐看。想稳就选这个。</div>
+</div>
+
+</body>
+</html>
