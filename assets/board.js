@@ -453,6 +453,13 @@
   function openDrawer() { $('#drawer').classList.add('open'); $('#backdrop').classList.add('on'); }
   function closeDrawer() { $('#drawer').classList.remove('open'); $('#backdrop').classList.remove('on'); }
   function kv(k, v) { return v ? '<div class="k">' + k + '</div><div>' + esc(v) + '</div>' : ''; }
+  /* 台词素材本身可能就带「」，外面别再套一层（会变成「「…」」） */
+  function quote(t) {
+    t = String(t == null ? '' : t);
+    return t.charAt(0) === '\u300c' ? esc(t) : '\u300c' + esc(t) + '\u300d';
+  }
+  /* 占位数据的 cta 自带「结尾引导：」前缀，跟上面的小标题重复了，剥掉 */
+  function ctaText(t) { return String(t == null ? '' : t).replace(/^\u7ed3\u5c3e\u5f15\u5bfc[:\uff1a]\s*/, ''); }
   function list(arr, cls) {
     if (!arr || !arr.length) return '';
     return '<ul class="lines ' + (cls || '') + '">' + arr.map(function (x) {
@@ -515,11 +522,11 @@
     shots.forEach(function (sh, i) {
       h += '<div class="shot"><div class="n">' + (i + 1) + '</div><div class="bd">' +
         '<div class="sc">' + esc(sh.scene) + '</div>' +
-        (sh.line ? '<div class="ln">「' + esc(sh.line) + '」</div>' : '') +
+        (sh.line ? '<div class="ln">' + quote(sh.line) + '</div>' : '') +
         '</div><div class="sec">' + (sh.sec || 0) + 's</div></div>';
     });
 
-    h += '<div class="sechead">结尾引导</div><div class="bigline">' + esc(s.cta) + '</div>';
+    h += '<div class="sechead">结尾引导</div><div class="bigline">' + esc(ctaText(s.cta)) + '</div>';
 
     if (s.titles && s.titles.length) {
       h += '<div class="sechead">标题备选</div>' + list(s.titles);

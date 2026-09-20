@@ -54,8 +54,8 @@
 
     $('#spName').textContent = st.storeName + (st.brandLine ? '（' + st.brandLine + '）' : '');
 
-    var byDate = {};
-    mine.forEach(function (s) { byDate[s.date] = s; });
+    var byDate = {}, byId = {};
+    mine.forEach(function (s) { byDate[s.date] = s; byId[s.id] = s; });
 
     var html = '';
     weeks.forEach(function (w, wi) {
@@ -71,7 +71,8 @@
       days.forEach(function (dd) {
         var s = byDate[dd.date];
         var mm = m.byScript[s.id];
-        var stt = hasVideo ? HY.statusOf(s, mm, today) : (s.date < today ? 'todo' : 'todo');
+        // 店员手机上一般没有视频数据，那就一律按「待拍」显示，不猜发没发
+        var stt = hasVideo ? HY.statusOf(s, mm, today) : 'todo';
         html += card(s, dd, mm, stt, hasVideo);
       });
       html += '</div></div>';
@@ -94,10 +95,20 @@
         copyText(t).then(function (ok) { HY.toast(ok ? '已复制 ' + t : '复制失败，长按选中'); });
       };
     });
+    $$('.card2 .copyscript').forEach(function (el) {         // 整条脚本拷成文本
+      el.onclick = function (e) {
+        e.stopPropagation();
+        var sc = byId[el.closest('.card2').dataset.id];
+        if (!sc) return;
+        copyText(scriptText(sc, st.storeName)).then(function (ok) {
+          HY.toast(ok ? '整条脚本已复制' : '复制失败，长按选中');
+        });
+      };
+    });
     $$('.card2 .copyall').forEach(function (el) {            // 一键复制这条的全部标签
       el.onclick = function (e) {
         e.stopPropagation();
-        var row = el.parentNode.nextSibling;
+        var row = el.parentNode.nextElementSibling;
         var all = Array.prototype.map.call(row.querySelectorAll('span'), function (x) {
           return x.textContent.trim();
         }).join(' ');
@@ -132,6 +143,16 @@
     }
   }
 
+  /* 素材里有些台词本身就带「」（比如「{objection}」），外面再套一层就变成「「…」」。
+     开头已经是「的就原样用。*/
+  function quote(t) {
+    t = String(t == null ? '' : t);
+    return t.charAt(0) === '\u300c' ? esc(t) : '\u300c' + esc(t) + '\u300d';
+  }
+  /* 占位数据里 cta 自带「结尾引导：」前缀，上面又有一个同名小标题，重复了。
+     生成脚本已经改掉，这里再兜一层，老数据也不会重复。*/
+  function ctaText(t) { return String(t == null ? '' : t).replace(/^\u7ed3\u5c3e\u5f15\u5bfc[:\uff1a]\s*/, ''); }
+
   function list(arr, cls) {
     if (!arr || !arr.length) return '';
     return '<ul class="lines ' + (cls || '') + '">' + arr.map(function (x) {
@@ -143,8 +164,11 @@
     var label = hasVideo ? HY.STATUS_CN[stt] : (s.date < today ? '计划日期已过' : '待拍');
     // 列表行只留四样：日期、周几、标题、完成情况（用户 2026-09-17 要求）；
     // 标签、痛点、分镜全部收进 detail，点整张卡片展开。
-    var h = '<div class="card2 ' + stt + '">' +
-      '<div class="ct"><span class="dt">' + s.date + '（周' + dd.dow + '）</span>' +
+    // 今天那条多一个普蓝「今天」角标 —— 店员点开就是来找今天拍什么的。
+    var isToday = s.date === today;
+    var h = '<div class="card2 ' + stt + (isToday ? ' istoday' : '') + '" data-id="' + esc(s.id) + '">' +
+      '<div class="ct">' + (isToday ? '<span class="now">今天</span>' : '') +
+      '<span class="dt">' + s.date + '（周' + dd.dow + '）</span>' +
       '<span class="pill ' + stt + '">' + label + '</span>' +
       '<span class="tog"><em class="o">展开</em><em class="c">收起</em><i>▾</i></span></div>' +
       '<h5>' + esc(s.title || (s.topic + '｜' + s.format)) + '</h5>' +
@@ -163,10 +187,10 @@
     (s.shots || []).forEach(function (sh, i) {
       h += '<div class="shot"><div class="n">' + (i + 1) + '</div><div class="bd">' +
         '<div class="sc">' + esc(sh.scene) + '</div>' +
-        (sh.line ? '<div class="ln">「' + esc(sh.line) + '」</div>' : '') +
+        (sh.line ? '<div class="ln">' + quote(sh.line) + '</div>' : '') +
         '</div><div class="sec">' + (sh.sec || 0) + 's</div></div>';
     });
-    h += '<div class="sechead">结尾引导</div><div class="bigline">' + esc(s.cta) + '</div>';
+    h += '<div class="sechead">结尾引导</div><div class="bigline">' + esc(ctaText(s.cta)) + '</div>';
     if (s.cover) h += '<div class="sechead">封面</div><div class="bigline">' + esc(s.cover) + '</div>';
     if (s.tips && s.tips.length) h += '<div class="sechead">拍摄要点</div>' + list(s.tips);
     if (s.avoid && s.avoid.length) h += '<div class="sechead">避坑</div>' + list(s.avoid, 'warn');
@@ -180,7 +204,32 @@
         '<div class="hashrow">' +
         tags.map(function (t) { return '<span>' + esc(t) + '</span>'; }).join('') + '</div>';
     }
+    // 店员手上只有一部手机：整条拷进备忘录，拍的时候照着念最省事
+    h += '<div class="copyrow"><button class="btnmini copyscript" type="button">复制整条脚本</button></div>';
     h += '</div></div>';
     return h;
+  }
+
+  /** 拷进备忘录的纯文本版；顺序跟卡片上看到的一样 */
+  function scriptText(s, storeName) {
+    var L = [];
+    L.push(s.date + '　' + storeName);
+    L.push(s.title || (s.topic + '｜' + s.format));
+    L.push('');
+    L.push('开头 3 秒：' + (s.hook || ''));
+    L.push('');
+    (s.shots || []).forEach(function (sh, i) {
+      L.push((i + 1) + '. 画面：' + sh.scene + '（' + (sh.sec || 0) + '秒）');
+      if (sh.line) L.push('   台词：' + sh.line);
+    });
+    L.push('');
+    L.push('结尾：' + ctaText(s.cta));
+    if (s.cover) L.push('封面：' + s.cover);
+    if (s.tips && s.tips.length) L.push('要点：' + s.tips.join('；'));
+    if (s.avoid && s.avoid.length) L.push('避坑：' + s.avoid.join('；'));
+    if (s.hashtags && s.hashtags.length) {
+      L.push('标签：' + s.hashtags.filter(function (t) { return t !== s.tag; }).join(' '));
+    }
+    return L.join('\n');
   }
 })();
