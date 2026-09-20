@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>样张 · 白底粉色系</title>
+<style>
+/* ===========================================================
+   换皮样张（2026-09-20）：米白爱马仕风 → 白底粉色系。
+
+   对标：用户给的「访客管理后台」截图（白底 + 圆角卡 + 淡阴影 + 蓝紫主色 +
+   KPI 卡左侧彩色竖条 + tab 下方彩色指示线 + 渐变折线图）。把蓝紫换成赫眉粉。
+
+   **这只是样张，没有动线上任何文件。** 定了再铺开。
+
+   跟现在线上那套的根本区别（是一整组，不能只改色号）：
+     底色   奶油 #FCF7F1        →  极浅灰 #F6F6F8 / 卡片纯白
+     圆角   0                   →  12px
+     阴影   完全没有            →  两层极淡投影
+     主色   黑（橙已弃用）       →  粉 #E0748B
+     状态   墨绿/砖红/浅灰       →  粉/橙/浅灰（墨绿砖红在粉底上打架）
+     字体   全站无衬线不变       →  不变
+
+   品牌粉 #eaa8b1 太浅，当文字和线会糊成一片，所以主色取深一档的 #E0748B，
+   #eaa8b1 只用在浅底、渐变端、进度条这些大面积的地方。
+   =========================================================== */
+:root{
+  --bg:#F6F6F8;
+  --card:#FFFFFF;
+  --line:#EFF0F3;
+  --line-2:#E4E6EB;
+
+  --t1:#1B1B21;
+  --t2:#5B5B67;
+  --t3:#8E8E9C;
+
+  --pink:#E0748B;          /* 主色：能当文字和线的深粉 */
+  --pink-2:#EDACB2;        /* 品牌粉：浅底、渐变端 */
+  --pink-3:#F7DDE2;        /* 更浅：进度条底、hover */
+  --pink-bg:rgba(224,116,139,.08);
+
+  --amber:#E8933A;         /* 待办/逾期（对应截图里的橙） */
+  --amber-bg:rgba(232,147,58,.10);
+  --gray:#D8DAE0;          /* 待拍 */
+
+  --r:12px;
+  --r-s:8px;
+  --sh:0 1px 2px rgba(22,22,40,.04), 0 6px 18px rgba(22,22,40,.05);
+  --sh-s:0 1px 2px rgba(22,22,40,.05);
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--t1);
+  font:400 15px/1.7 -apple-system,"PingFang SC",system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased}
+
+/* ---------- 顶栏：深底 + logo 遮罩填渐变（学 TIESTON 那条） ---------- */
+.hdr{
+  position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:12px;
+  padding:13px 18px;background:#1E1418;overflow:hidden;
+}
+.hdr .logo{
+  width:92px;height:25px;flex:none;
+  background:linear-gradient(100deg,#EDACB2 0%,#FBEAED 26%,#E9C79F 50%,#EDACB2 74%,#FBEAED 100%);
+  background-size:280% 100%;animation:flow 9s linear infinite;
+  -webkit-mask:url(assets/logo-ink.png) no-repeat left center/contain;
+          mask:url(assets/logo-ink.png) no-repeat left center/contain;
+}
+.hdr .sep{width:1px;height:20px;background:rgba(255,255,255,.18)}
+.hdr h1{margin:0;font-size:16px;font-weight:600;letter-spacing:.06em;color:#fff}
+.hdr::after{content:'';position:absolute;left:0;right:0;bottom:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--pink-2),#E9C79F,transparent)}
+@keyframes flow{from{background-position:0% 50%}to{background-position:280% 50%}}
+
+/* ---------- tab 导航：选中项下方一条粉线 ---------- */
+.tabs{display:flex;gap:26px;padding:0 18px;background:var(--card);
+  border-bottom:1px solid var(--line-2);overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tabs a{position:relative;padding:15px 0 13px;font-size:15px;color:var(--t3);
+  white-space:nowrap;text-decoration:none;cursor:pointer}
+.tabs a.on{color:var(--pink);font-weight:600}
+.tabs a.on::after{content:'';position:absolute;left:0;right:0;bottom:-1px;height:2.5px;
+  background:var(--pink);border-radius:2px}
+.tabs a .badge{display:inline-block;min-width:19px;height:19px;line-height:19px;
+  margin-left:6px;padding:0 5px;border-radius:19px;background:#E5484D;color:#fff;
+  font-size:11.5px;font-weight:600;text-align:center;vertical-align:middle}
+
+.wrap{padding:16px 14px 40px;max-width:760px;margin:0 auto}
+.rowtop{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.rowtop .who{font-size:13.5px;color:var(--t3)}
+.btn{border:1px solid var(--line-2);background:var(--card);color:var(--t2);
+  border-radius:var(--r-s);padding:8px 16px;font:inherit;font-size:13.5px;cursor:pointer}
+.btn:active{background:var(--pink-bg);border-color:var(--pink-2);color:var(--pink)}
+
+/* ---------- KPI 卡：左侧一条彩色竖条 ---------- */
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.kpi{background:var(--card);border-radius:var(--r);box-shadow:var(--sh);
+  padding:16px 16px 15px;position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--gray)}
+.kpi.p::before{background:linear-gradient(180deg,var(--pink-2),var(--pink))}
+.kpi.a::before{background:linear-gradient(180deg,#F3B76C,var(--amber))}
+.kpi .k{font-size:13.5px;color:var(--t3)}
+.kpi .v{margin-top:7px;font-size:31px;font-weight:700;line-height:1.1;letter-spacing:-.01em}
+.kpi .v em{font-style:normal;font-size:14px;font-weight:400;color:var(--t3);margin-left:4px}
+.kpi.p .v{color:var(--pink)}
+.kpi.a .v{color:var(--amber)}
+
+/* ---------- 图表卡 ---------- */
+.card{background:var(--card);border-radius:var(--r);box-shadow:var(--sh);
+  padding:16px;margin-top:12px}
+.card h2{margin:0 0 14px;font-size:16px;font-weight:600;display:flex;align-items:center;gap:9px}
+.card h2::before{content:'';width:4px;height:17px;border-radius:2px;
+  background:linear-gradient(180deg,var(--pink-2),var(--pink))}
+.card .note{font-size:12.5px;color:var(--t3);margin-top:10px}
+
+/* ---------- 日历格子：状态改成 粉 / 橙 / 灰 ---------- */
+.cal{display:flex;flex-direction:column;gap:4px}
+.cal .row{display:flex;gap:4px}
+.cal .row i{flex:1;aspect-ratio:1;max-height:15px;display:block;
+  background:var(--gray);border-radius:3px}
+.cal .row i.d{background:var(--pink)}
+.cal .row i.l{background:var(--amber)}
+.legend{display:flex;gap:16px;margin-top:12px;font-size:12.5px;color:var(--t3)}
+.legend span{display:flex;align-items:center;gap:6px}
+.legend b{width:11px;height:11px;border-radius:3px;display:block}
+
+/* ---------- 列表行（门店页那种） ---------- */
+.list .it{display:flex;align-items:center;gap:10px;padding:13px 0;
+  border-bottom:1px solid var(--line)}
+.list .it:last-child{border-bottom:0}
+.list .dt{font-size:12.5px;color:var(--t3);font-variant-numeric:tabular-nums}
+.pill{font-size:11.5px;padding:4px 9px;border-radius:20px;font-weight:500}
+.pill.todo{background:#F1F2F5;color:var(--t3)}
+.pill.done{background:var(--pink-bg);color:var(--pink)}
+.pill.late{background:var(--amber-bg);color:var(--amber)}
+.list .it .tog{margin-left:auto;border:1px solid var(--line-2);border-radius:20px;
+  padding:5px 12px;font-size:12px;color:var(--t2);white-space:nowrap}
+.list .ttl{font-size:15px;font-weight:600;margin:2px 0 0}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <span class="logo"></span><span class="sep"></span>
+  <h1>抖音拍摄脚本看板</h1>
+</div>
+
+<div class="tabs">
+  <a class="on">总览</a><a>脚本日历</a><a>门店列表<span class="badge">2</span></a><a>视频导入</a><a>效果统计</a>
+</div>
+
+<div class="wrap">
+  <div class="rowtop"><span class="who">赫眉 HYMN · 全部门店</span><button class="btn">导入数据</button></div>
+
+  <div class="kpis">
+    <div class="kpi p"><div class="k">已发布</div><div class="v">355<em>条</em></div></div>
+    <div class="kpi a"><div class="k">逾期未发</div><div class="v">462<em>条</em></div></div>
+    <div class="kpi"><div class="k">待拍</div><div class="v">473<em>条</em></div></div>
+    <div class="kpi"><div class="k">门店</div><div class="v">43<em>/43</em></div></div>
+  </div>
+
+  <div class="card">
+    <h2>近 13 周发布量</h2>
+    <svg viewBox="0 0 320 110" style="width:100%;height:auto;display:block">
+      <defs>
+        <linearGradient id="ln" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stop-color="#EDACB2"/><stop offset="1" stop-color="#E0748B"/>
+        </linearGradient>
+        <linearGradient id="fill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#E0748B" stop-opacity=".22"/>
+          <stop offset="1" stop-color="#E0748B" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <line x1="0" y1="30" x2="320" y2="30" stroke="#F0F1F4"/>
+      <line x1="0" y1="65" x2="320" y2="65" stroke="#F0F1F4"/>
+      <path d="M8,88 C50,86 60,70 95,68 C130,66 140,52 175,46 C210,40 220,44 250,30 C280,17 295,14 312,12"
+            fill="none" stroke="url(#ln)" stroke-width="3" stroke-linecap="round"/>
+      <path d="M8,88 C50,86 60,70 95,68 C130,66 140,52 175,46 C210,40 220,44 250,30 C280,17 295,14 312,12 L312,105 L8,105 Z"
+            fill="url(#fill)"/>
+      <circle cx="312" cy="12" r="4" fill="#E0748B"/>
+      <text x="300" y="6" font-size="11" fill="#E0748B" font-weight="600">244</text>
+    </svg>
+    <div class="note">合计 2,314 条 · 本周 69 条</div>
+  </div>
+
+  <div class="card">
+    <h2>2026 年 9 月 · 43 家门店</h2>
+    <div class="cal">
+      <div class="row"><i class="d"></i><i class="d"></i><i class="l"></i><i></i><i class="d"></i><i class="d"></i><i class="l"></i><i class="d"></i><i class="l"></i><i></i><i class="d"></i><i class="d"></i><i class="l"></i><i></i><i></i></div>
+      <div class="row"><i class="d"></i><i class="l"></i><i class="d"></i><i class="d"></i><i class="l"></i><i class="d"></i><i></i><i class="d"></i><i class="d"></i><i class="l"></i><i class="d"></i><i></i><i class="l"></i><i></i><i></i></div>
+      <div class="row"><i class="l"></i><i class="d"></i><i class="d"></i><i class="l"></i><i class="d"></i><i class="d"></i><i class="d"></i><i class="l"></i><i></i><i class="d"></i><i class="l"></i><i class="d"></i><i class="d"></i><i></i><i></i></div>
+      <div class="row"><i class="d"></i><i class="d"></i><i class="l"></i><i class="d"></i><i></i><i class="l"></i><i class="d"></i><i class="d"></i><i class="d"></i><i class="l"></i><i class="d"></i><i class="d"></i><i></i><i></i><i></i></div>
+    </div>
+    <div class="legend">
+      <span><b style="background:var(--pink)"></b>已发布</span>
+      <span><b style="background:var(--amber)"></b>逾期未发</span>
+      <span><b style="background:var(--gray)"></b>待拍</span>
+    </div>
+  </div>
+
+  <div class="card list">
+    <h2>本周 09/14–09/20</h2>
+    <div class="it"><span class="dt">09-14（周一）</span><span class="pill done">已发布</span><span class="tog">展开</span></div>
+    <div class="ttl">抗初老｜法令纹变深，不是把脸填满</div>
+    <div class="it" style="margin-top:12px"><span class="dt">09-15（周二）</span><span class="pill late">计划日期已过</span><span class="tog">展开</span></div>
+    <div class="ttl">毛孔粗大｜鼻翼两颊像橘子皮，毛孔关不掉</div>
+    <div class="it" style="margin-top:12px"><span class="dt">09-16（周三）</span><span class="pill todo">待拍</span><span class="tog">展开</span></div>
+    <div class="ttl">黄气暗沉｜素颜看着像没睡醒，不追求白三个度</div>
+  </div>
+</div>
+
+</body>
+</html>
