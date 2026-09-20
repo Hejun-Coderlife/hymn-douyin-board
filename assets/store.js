@@ -72,9 +72,13 @@
       var days = w.days.filter(function (x) { return byDate[x.date]; });
       var open = isNow || wi === 1;     // 本周和下周默认展开
       html += '<div class="wkblock' + (isNow ? ' now' : '') + (open ? ' open' : '') + '">' +
+        /* 2026-09-20 用户：「本周保留，第X周改成只显示日期」。
+           「第 5 周」这种序号对店员没意义（他们不数周次，只看几号拍什么），
+           所以非本周的那些直接拿日期当标题；本周还是「本周 + 日期」。 */
         '<div class="wh"><span class="arrow">▶</span>' +
-        (isNow ? '本周' : '第 ' + w.i + ' 周') +
-        ' <span class="rg">' + HY.md(w.monday) + '–' + HY.md(w.sunday) + '</span>' +
+        (isNow
+          ? '本周 <span class="rg">' + HY.md(w.monday) + '–' + HY.md(w.sunday) + '</span>'
+          : HY.md(w.monday) + '–' + HY.md(w.sunday)) +
         '<span class="cnt">' + days.length + ' 条</span></div><div class="wb">';
       if (!days.length) html += '<div class="emptyday">本周暂无脚本</div>';
       days.forEach(function (dd) {
