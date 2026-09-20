@@ -83,6 +83,9 @@
   --brick:#9C3B2E;   --brick-bg:rgba(156,59,46,.09);
   --navy:#A0714F;    --navy-bg:rgba(160,113,79,.12);
   --todo:#E3D8C8;
+  /* 【别叫 --track】那个名字项目里早就被字距占了（见下面 --track:.06em），
+     撞名的话后定义的会赢，圆环底轨会拿到 .06em 这个无效值。 */
+  --ring-track:#DBCEBB;   /* 完成率圆环的底轨：比待拍深一档，压在奶茶图块底上才分得出 */
   --late:#9C3B2E;   /* 砖红 */
   --late-bg:var(--brick-bg);
   --done:#D4788C;   /* 品牌粉 */

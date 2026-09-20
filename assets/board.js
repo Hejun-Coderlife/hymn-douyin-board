@@ -66,7 +66,21 @@
   /* ---------- 图块区（灰底方块 + 会动的数据图）----------
      四块：完成率圆环 / 近 13 周发布量 / 本月状态构成 / 今天要拍（线描插画）。
      颜色沿用状态色，每块都带文字标签，不靠颜色单独表意。 */
-  var TILE_C = { done:'#2F5D45', late:'#9C3B2E', todo:'#CFC7BC' };
+  /* 图块（圆环/柱子/状态构成条）的配色。
+     【坑，2026-09-20】这里原来写死成墨绿 '#2F5D45'，改整站配色时够不着 ——
+     结果 KPI 的「已发布」已经是粉了，图块里的圆环和柱子还是墨绿，
+     两套色同时在页面上（用户：「这里，色系有点不搭」）。
+     现在一律去读 CSS 变量，配色只在 style.css 一处定义，不会再脱节。 */
+  function cssVar(name, fallback) {
+    var v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    return v || fallback;
+  }
+  var TILE_C = {
+    done:  cssVar('--done',  '#D4788C'),
+    late:  cssVar('--late',  '#9C3B2E'),
+    todo:  cssVar('--todo',  '#E3D8C8'),
+    track: cssVar('--ring-track', '#DBCEBB')
+  };
 
   function renderTiles(rows) {
     var visible = {};
@@ -143,7 +157,7 @@
     var off = circ * (1 - rate / 100);
     var svg =
       '<svg viewBox="0 0 156 156" role="img" aria-label="完成率 ' + rate + '%">' +
-        '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="#D8D0C5" stroke-width="9"/>' +
+        '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="' + TILE_C.track + '" stroke-width="9"/>' +
         '<circle class="ring-val" cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" ' +
           'stroke="' + TILE_C.done + '" stroke-width="9" stroke-linecap="butt" ' +
           'transform="rotate(-90 ' + cx + ' ' + cy + ')" ' +
@@ -177,7 +191,7 @@
       var x = (bw + gap) * i, y = H - h;
       // 鼠标悬停靠 bindSparkHover() 画自己的标签（原生 <title> 要等 1 秒才出、字又小）
       return '<rect class="bar" x="' + x.toFixed(1) + '" y="' + y + '" width="' + bw + '" height="' + h + '" rx="2" ' +
-        'fill="' + (w.n ? TILE_C.done : '#D8D0C5') + '" ' +
+        'fill="' + (w.n ? TILE_C.done : TILE_C.todo) + '" ' +
         'data-lab="' + HY.md(w.from) + '–' + HY.md(w.to) + '" data-n="' + w.n + '" ' +
         'style="transform-origin:' + (x + bw / 2).toFixed(1) + 'px ' + H + 'px;animation-delay:' + (0.72 + i * 0.03).toFixed(2) + 's"></rect>';
     }).join('');
@@ -191,7 +205,7 @@
     var svg = '<svg class="spark" viewBox="-14 -22 224 152" role="img" aria-label="近 13 周发布量">' +
       '<text x="' + W + '" y="-8" text-anchor="end" font-size="11" fill="#8A6A2C">峰值 ' + max + '</text>' +
       bars + hots +
-      '<text x="' + W + '" y="' + (H + 16) + '" text-anchor="end" font-size="11" fill="#5E5E5E">本周 ' + lastN + '</text>' +
+      '<text x="' + W + '" y="' + (H + 16) + '" text-anchor="end" font-size="11" fill="#7A6E60">本周 ' + lastN + '</text>' +
       '</svg>';
     return tile(svg, '近 13 周发布量',
       total ? '合计 ' + HY.num(total) + ' 条 · 鼠标悬停看每周' : '还没导入视频数据');
