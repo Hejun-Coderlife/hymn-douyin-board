@@ -71,40 +71,35 @@ body{
    CSS 渐变 + transform 动画是合成器直接跑的，一定看得见，也几乎不吃性能。
    默认关，右上角「动效」按钮开关，状态存 localStorage.hymn_bg3d。 */
 #pageBg{display:none}
-body.fxon::before,body.fxon::after{
-  content:'';position:fixed;z-index:-1;pointer-events:none;
-  width:86vmax;height:86vmax;border-radius:50%;will-change:transform;
-}
-/* 颜色比第一版重了一档，移动幅度也大了（原来 .42 透明度 + 26s 来回摆，
-   任一秒的位移几乎是零，用户看不出开没开）。再重就不像爱马仕了，到这为止。 */
+/* 【折光面】2026-09-20 用户从第二批 10 个样本里选的第 1 个，换掉了原来的「暖雾漂移」
+   （两团径向渐变，用户评价「开跟不开没啥区别」，旧代码在 git 里，改动前最后一次提交见 CLAUDE.md）。
+
+   原理：把底色分成几道斜的明暗面，像一条丝巾折起来被光打到，整幅 28 秒来回极慢推移。
+   为什么它比之前那些管用——**块头够大**。这套画风九成面积被白卡片盖住，背景只能从边缝露一条；
+   一条细纹露在缝里看不出，但一整片明暗差露在缝里认得出来。
+
+   尺寸要点：width:230vw + left:-10vw，配合 translateX(-24%~0)（-24% 是自身宽的 24% = 55.2vw），
+   两端算下来永远盖满视口，**不会在边上露出没有渐变的空白**。改数值前先把这笔账算一遍。 */
 body.fxon::before{
-  left:-26vmax;top:-32vmax;
-  background:radial-gradient(circle at 50% 50%,
-    rgba(206,158,100,.58) 0%, rgba(226,196,158,.34) 36%, rgba(252,247,241,0) 68%);
-  animation:fxA 17s ease-in-out infinite alternate;
+  content:'';position:fixed;z-index:-1;pointer-events:none;
+  top:-20vh;bottom:-20vh;left:-10vw;width:230vw;will-change:transform;
+  background:linear-gradient(107deg,
+    rgba(181,139,62,0)    0%,  rgba(181,139,62,.16) 11%, rgba(181,139,62,.16) 19%,
+    rgba(181,139,62,0)   27%,  rgba(181,139,62,0)   41%, rgba(140,120,96,.13) 48%,
+    rgba(140,120,96,.13) 55%,  rgba(181,139,62,0)   63%, rgba(181,139,62,0)   76%,
+    rgba(181,139,62,.14) 83%,  rgba(181,139,62,.14) 90%, rgba(181,139,62,0)  100%);
+  animation:fxFold 28s ease-in-out infinite alternate;
 }
-body.fxon::after{
-  right:-30vmax;bottom:-34vmax;
-  background:radial-gradient(circle at 50% 50%,
-    rgba(181,139,62,.46) 0%, rgba(216,196,162,.28) 40%, rgba(252,247,241,0) 70%);
-  animation:fxB 23s ease-in-out infinite alternate;
-}
-@keyframes fxA{
-  0%{transform:translate3d(-6vw,-4vh,0) scale(.95)}
-  50%{transform:translate3d(40vw,20vh,0) scale(1.22)}
-  100%{transform:translate3d(14vw,42vh,0) scale(.9)}
-}
-@keyframes fxB{
-  0%{transform:translate3d(6vw,4vh,0) scale(1.1)}
-  50%{transform:translate3d(-38vw,-22vh,0) scale(.86)}
-  100%{transform:translate3d(-10vw,-44vh,0) scale(1.24)}
+@keyframes fxFold{
+  from{transform:translate3d(-24%,0,0)}
+  to{transform:translate3d(0,0,0)}
 }
 
 /* 【别再试】图块灰方块上扫斜光那版已经删了（2026-09-20 用户：「丑，而且打扰到图表了」）：
    白光扫过柱状图把柱子洗成浅色，数据都看不清了。
    **动效一律不许盖在图表/数字上**，只能待在背景层。 */
 @media (prefers-reduced-motion:reduce){
-  body.fxon::before,body.fxon::after{animation:none}
+  body.fxon::before{animation:none}
 }
 a{color:inherit;text-decoration:none}
 button,select,input{font:inherit;color:inherit}
