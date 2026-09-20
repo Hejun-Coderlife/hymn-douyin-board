@@ -203,7 +203,7 @@
     }).join('');
     var lastN = weeks[weeks.length - 1].n;
     var svg = '<svg class="spark" viewBox="-14 -22 224 152" role="img" aria-label="近 13 周发布量">' +
-      '<text x="' + W + '" y="-8" text-anchor="end" font-size="11" fill="#8A6A2C">峰值 ' + max + '</text>' +
+      '<text x="' + W + '" y="-8" text-anchor="end" font-size="11" fill="#3A3A42">峰值 ' + max + '</text>' +
       bars + hots +
       '<text x="' + W + '" y="' + (H + 16) + '" text-anchor="end" font-size="11" fill="#7A6E60">本周 ' + lastN + '</text>' +
       '</svg>';
@@ -241,7 +241,7 @@
       if (s.date < S.today && statusOfScript(s) === 'late') late++;
     });
     var svg =
-      '<svg viewBox="0 0 200 196" fill="none" stroke="#A0714F" stroke-width="1.4" ' +
+      '<svg viewBox="0 0 200 196" fill="none" stroke="#7E6849" stroke-width="1.4" ' +
         'stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="今天要拍 ' + n + ' 条">' +
         '<g class="ink-draw" transform="translate(0,-6)" style="--len:760px" stroke-dasharray="760" stroke-dashoffset="0">' +
           '<rect x="26" y="58" width="86" height="56" rx="4"/>' +

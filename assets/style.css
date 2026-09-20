@@ -26,7 +26,14 @@
      驼黄   #C99A4E  → 第三个数据色（自由发挥、峰值这类中性量）
      砖红   #9C3B2E  → 逾期，不动（红=逾期是通用语义）
      品牌粉          → 只管界面，**不再当数据色**
-     墨绿   #2F5D45  → 已发布（圆环/柱子/状态构成条/日历格子/KPI）
+     燕麦棕 #B39A7C  → 已发布（圆环/柱子/状态构成条/日历格子/KPI）
+                       挑色过程：墨绿被否 → 墨蓝被否（「还不如绿」）→ 出了 19 个样本
+                       （数据色样本.html）→ 用户选「燕麦棕」。
+                       **色块用 #B39A7C，文字用深一档的 #7E6849**：燕麦棕对白底只有 2.68，
+                       当 KPI 大数字会发虚，但当色块正好。
+     炭灰   #4A4A52  → 自由发挥（原来是驼黄，跟燕麦棕同属暖色家族，区分度只有 1.05，必须让开）
+     品牌粉          → 今天那列 / 链接（原来是焦糖棕，同样跟燕麦棕撞；
+                       今天那列只是一层 12% 的淡底，用粉正好把品牌色接回来）
 
    为什么已发布最后落在墨绿（2026-09-20 用户：「这些图我不想用粉色，配个别的适合的颜色」）：
    纯排除法 —— 粉已经是界面色，数据再用就分不清「这是品牌装饰还是数据」；
@@ -56,8 +63,8 @@
                               别"照截图取样"改回 #FDF5EF —— 那一步已经踩过了。 */
   --card:#FFFFFF;          /* 数据区白块 */
   --paper:#F8F2EA;
-  --tile:#F5EDE2;        /* 图块灰底（对应 hermes.cn 商品图的 #E2DDD6，调亮一点好压深色图形）*/         /* 次级块 / 表头 / hover */
-  --tile:#F3E9DC;          /* 图块灰（爱马仕商品图底色） */
+  --tile:#FFFFFF;        /* 图块灰底（对应 hermes.cn 商品图的 #E2DDD6，调亮一点好压深色图形）*/         /* 次级块 / 表头 / hover */
+  --tile:#FFFFFF;          /* 图块灰（爱马仕商品图底色） */
   --surface:#FBF7F1;
   --line:#EEE6DB;          /* 表格内细线 */
   --line-2:#DED2C2;        /* 分区线（实测值） */
@@ -85,17 +92,18 @@
 
   /* 状态各一色（用户 2026-09-17 选定）：墨绿=已发布、驼黄=推测、砖红=逾期、浅灰=待拍、普蓝=今天/链接。
      唯一禁区是橙色——用户明确说不喜欢，别再加回来。 */
-  --green:#2F5D45;   --green-bg:rgba(47,93,69,.10);
-  --camel:#C99A4E;   --camel-text:#8A6A2C;  --camel-bg:rgba(201,154,78,.15);
+  --green:#B39A7C;   --green-bg:rgba(179,154,124,.16);   --green-text:#7E6849;
+  --camel:#4A4A52;   --camel-text:#3A3A42;  --camel-bg:rgba(74,74,82,.10);
   --brick:#9C3B2E;   --brick-bg:rgba(156,59,46,.09);
-  --navy:#A0714F;    --navy-bg:rgba(160,113,79,.12);
+  --navy:#D4788C;    --navy-bg:rgba(212,120,140,.12);
   --todo:#E3D8C8;
   /* 【别叫 --track】那个名字项目里早就被字距占了（见下面 --track:.06em），
      撞名的话后定义的会赢，圆环底轨会拿到 .06em 这个无效值。 */
-  --ring-track:#DBCEBB;   /* 完成率圆环的底轨：比待拍深一档，压在奶茶图块底上才分得出 */
+  --ring-track:#E6E2DA;   /* 完成率圆环的底轨：比待拍深一档，压在奶茶图块底上才分得出 */
   --late:#9C3B2E;   /* 砖红 */
   --late-bg:var(--brick-bg);
-  --done:#2F5D45;   /* 墨绿 */
+  --done:#B39A7C;   /* 燕麦棕（色块用）*/
+  --done-text:#7E6849;  /* 同色深一档：KPI 大数字用，燕麦棕太淡当文字会发虚 */
   --done-bg:var(--green-bg);
   --guess:#B58B3E;  /* 驼黄 */
   --guess-bg:var(--camel-bg);
@@ -124,36 +132,19 @@ body{
    CSS 渐变 + transform 动画是合成器直接跑的，一定看得见，也几乎不吃性能。
    默认关，右上角「动效」按钮开关，状态存 localStorage.hymn_bg3d。 */
 #pageBg{display:none}
-/* 【折光面】2026-09-20 用户从第二批 10 个样本里选的第 1 个，换掉了原来的「暖雾漂移」
-   （两团径向渐变，用户评价「开跟不开没啥区别」，旧代码在 git 里，改动前最后一次提交见 CLAUDE.md）。
-
-   原理：把底色分成几道斜的明暗面，像一条丝巾折起来被光打到，整幅 28 秒来回极慢推移。
-   为什么它比之前那些管用——**块头够大**。这套画风九成面积被白卡片盖住，背景只能从边缝露一条；
-   一条细纹露在缝里看不出，但一整片明暗差露在缝里认得出来。
-
-   尺寸要点：width:230vw + left:-10vw，配合 translateX(-24%~0)（-24% 是自身宽的 24% = 55.2vw），
-   两端算下来永远盖满视口，**不会在边上露出没有渐变的空白**。改数值前先把这笔账算一遍。 */
-body.fxon::before{
-  content:'';position:fixed;z-index:-1;pointer-events:none;
-  top:-20vh;bottom:-20vh;left:-10vw;width:230vw;will-change:transform;
-  background:linear-gradient(107deg,
-    rgba(181,139,62,0)    0%,  rgba(181,139,62,.16) 11%, rgba(181,139,62,.16) 19%,
-    rgba(181,139,62,0)   27%,  rgba(181,139,62,0)   41%, rgba(140,120,96,.13) 48%,
-    rgba(140,120,96,.13) 55%,  rgba(181,139,62,0)   63%, rgba(181,139,62,0)   76%,
-    rgba(181,139,62,.14) 83%,  rgba(181,139,62,.14) 90%, rgba(181,139,62,0)  100%);
-  animation:fxFold 28s ease-in-out infinite alternate;
-}
-@keyframes fxFold{
-  from{transform:translate3d(-24%,0,0)}
-  to{transform:translate3d(0,0,0)}
-}
+/* 背景折光特效已删除（2026-09-20 用户：「原来那个折光特效也去掉」）。
+   它是一整幅 107° 的斜向明暗带，在奶油底时代是页面唯一的动效；
+   现在页面是纯白 + 顶栏有光轨，再叠一层斜带只会让白底发脏。
+   body.fxon 这个类名还在 board.js/store.js 里写着，但已经没有任何样式挂上去，
+   加不加都不影响显示。
+   （挑选过程：2026-09-20 做过两批共 18 个背景动效样本，最后选了「折光面」，
+     用了半天又整个去掉 —— 结论是这套画风的页面九成被卡片盖住，
+     背景动效注定只能从边缝露一条，不值得再折腾。）*/
 
 /* 【别再试】图块灰方块上扫斜光那版已经删了（2026-09-20 用户：「丑，而且打扰到图表了」）：
    白光扫过柱状图把柱子洗成浅色，数据都看不清了。
    **动效一律不许盖在图表/数字上**，只能待在背景层。 */
-@media (prefers-reduced-motion:reduce){
-  body.fxon::before{animation:none}
-}
+
 a{color:inherit;text-decoration:none}
 button,select,input{font:inherit;color:inherit}
 .mono{font-variant-numeric:tabular-nums}
@@ -387,8 +378,11 @@ body.booted .pagehead .fxbtn{animation:headfade .5s ease .6s both}
    「彩度偏低」那条是有意的（爱马仕色系要克制），靠每块都带文字标签做二次编码来兜。 */
 .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin:0 0 26px}
 .tile figure{margin:0}
+/* 图块底改纯白（2026-09-20 用户要求）。白底压在白页面上就没边界了，
+   所以必须补一条发丝边 —— 原来靠「米色底 vs 白页面」的色差分区，现在那个差没了。 */
 .tile .box{
   position:relative;background:var(--tile);aspect-ratio:4/3;
+  border:1px solid var(--line-2);
   display:flex;align-items:center;justify-content:center;overflow:hidden;
 }
 .tile .box svg{display:block;width:100%;height:100%}
@@ -574,7 +568,7 @@ td.cell.wknd{background:var(--paper)}
 .dot.none:hover{outline:none}
 .dot.free::after{
   content:"";position:absolute;margin:-3px 0 0 11px;width:5px;height:5px;border-radius:50%;
-  background:var(--navy);border:1px solid var(--card);
+  background:var(--camel);border:1px solid var(--card);   /* 自由发挥用炭灰，别跟「今天」的粉混 */
 }
 /* 全年总览的列 */
 th.mcol{
@@ -1256,3 +1250,6 @@ body.hasfx.focusday .emptyday{display:none}
 /* 「自由发挥视频」用驼黄 —— 它既不是完成也不是逾期，是个中性量，
    给它第三个色，页面上才不是只有粉和砖红两种数字（2026-09-20 加奶茶色系时补的）。 */
 .kpi.free .val{color:var(--camel-text)}
+
+/* KPI「已发布」用深一档的燕麦棕：色块可以淡，大数字不能淡（对白底 2.68 会发虚）*/
+.kpi.done .val{color:var(--done-text)}
