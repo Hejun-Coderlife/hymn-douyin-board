@@ -86,6 +86,10 @@
       });
       html += '</div></div>';
     });
+    /* 退出登录：店员换店/换人时用。放在列表最底下，不抢正文。
+       必须带 ?switch=1 —— login.html 认出这个参数才会清掉记忆并停下来让人重输，
+       否则它一看到本机记着门店就直接跳回来了（见 login.html）。 */
+    html += '<div class="sp-out"><a class="mob" href="login.html?switch=1">不是这家店？退出 →</a></div>';
     $('#spWeeks').innerHTML = html;
 
     $$('.wkblock .wh').forEach(function (el) {

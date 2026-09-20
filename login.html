@@ -50,6 +50,13 @@ body.loginpage{background:var(--bg)}
   HY.loadStores().then(function (d) {
     HY.bootDone();
 
+    /* ?switch=1 = 从门店页点「退出」过来的：先把记住的门店清掉，
+       不然下面那段又会把人送回原来那家店，永远换不了。 */
+    if (new URLSearchParams(location.search).get('switch')) {
+      HY.MyStore.clear();
+      history.replaceState(null, '', 'login.html');   // 地址栏里别留着这个参数
+    }
+
     /* 已经认过的人直接放行，不用再输一遍 */
     var mine = HY.MyStore.get();
     if (mine && d.storeById[mine]) {

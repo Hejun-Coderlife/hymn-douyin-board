@@ -896,6 +896,9 @@ body.storepage{--wh-h:48px}
 .sp-kpis .kpi:first-child{border-left:0}
 .sp-kpis .kpi .val{font-size:26px;margin-top:8px}
 .sp-body{padding:18px 18px 72px}
+/* 退出登录那行：压到最底下、压成次级文字，别跟脚本抢注意力 */
+.sp-out{margin-top:22px;text-align:center;font-size:12.5px;color:var(--t3)}
+.sp-out .mob{color:var(--t3)}
 /* 【别加回 overflow:hidden】2026-09-20：祖先上只要有 overflow（hidden/auto 都算），
    子元素的 position:sticky 就整个失效 —— 周头和日期行的「冻结」全靠它。
    这里本来也没东西要裁（圆角是 0）。 */
