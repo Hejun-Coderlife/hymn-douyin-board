@@ -16,13 +16,16 @@
      ② 没带参数就用记住的那家——店员把页面加到手机桌面后，点图标直接是自己店；
      ③ 都没有就送去 login.html 输手机号认人。
      这样「一进去就看到自己的页面」对三种入口都成立。 */
+  /* 登录页地址允许被覆盖：预览版要跳预览版的登录页，不然一退出就掉回旧样式。
+     没设就是 login.html，真页面行为不变。 */
+  var LOGIN = window.HY_LOGIN_PAGE || 'login.html';
   var qs = new URLSearchParams(location.search);
   var id = qs.get('store');
   if (id) {
     HY.MyStore.set(id);
   } else {
     id = HY.MyStore.get();
-    if (!id) { location.replace('login.html'); return; }
+    if (!id) { location.replace(LOGIN); return; }
   }
   var today = HY.ymd(new Date());
 
@@ -34,7 +37,7 @@
       HY.MyStore.clear();
       $('#spName').textContent = '没找到这家门店';
       $('#spSub').innerHTML = '抖音号 ' + esc(id) + ' 不在门店表里。' +
-        '<a class="mob" href="login.html">用手机号重新进入 →</a>';
+        '<a class="mob" href="' + LOGIN + '">用手机号重新进入 →</a>';
       return Promise.reject(new Error('门店不存在'));
     }
     // 脚本详情按「门店 × 月份」分片，把展示窗口覆盖到的月份都加载进来
@@ -70,7 +73,9 @@
     weeks.forEach(function (w, wi) {
       var isNow = w.days.some(function (x) { return x.today; });
       var days = w.days.filter(function (x) { return byDate[x.date]; });
-      var open = isNow || wi === 1;     // 本周和下周默认展开
+      /* 一次只展开一周（专注模式）之后，默认就只能开本周。
+         原来是「本周 + 下周」都展开，跟一次只开一周自相矛盾。 */
+      var open = isNow;
       html += '<div class="wkblock' + (isNow ? ' now' : '') + (open ? ' open' : '') + '">' +
         /* 2026-09-20 用户：「本周保留，第X周改成只显示日期」。
            「第 5 周」这种序号对店员没意义（他们不数周次，只看几号拍什么），
@@ -93,15 +98,52 @@
     /* 退出登录：店员换店/换人时用。放在列表最底下，不抢正文。
        必须带 ?switch=1 —— login.html 认出这个参数才会清掉记忆并停下来让人重输，
        否则它一看到本机记着门店就直接跳回来了（见 login.html）。 */
-    html += '<div class="sp-out"><a class="mob" href="login.html?switch=1">不是这家店？退出 →</a></div>';
+    html += '<div class="sp-out"><a class="mob" href="' + LOGIN + '?switch=1">不是这家店？退出 →</a></div>';
     $('#spWeeks').innerHTML = html;
 
     $$('.wkblock .wh').forEach(function (el) {
-      el.onclick = function () { el.parentNode.classList.toggle('open'); };
+      el.onclick = function () {
+        var blk = el.parentNode, wasOpen = blk.classList.contains('open');
+        /* 一次只开一周（2026-09-20 用户：「日期也是一样，点开后只能看到这一周的内容」）。
+           收起这一周 = 退回全部周次的列表。 */
+        $$('.wkblock.open').forEach(function (x) { x.classList.remove('open'); });
+        $$('.card2.open').forEach(function (x) { x.classList.remove('open'); });  // 换周时把展开的那天也收了
+        if (!wasOpen) blk.classList.add('open');
+        syncFocus();
+        window.scrollTo({ top: 0, behavior: 'auto' });   // 高度骤变，回到顶上最不容易迷路
+      };
     });
+    /* 展开某天 = 进入「只看这一天」（2026-09-20 用户要求）。
+       一次只允许开一条：点开新的，旧的自动收。
+       body.focusday 交给 CSS 去藏别的卡片和别的周 ——
+       **不在这里直接改样式**，因为总部抽屉复用同一套结构，
+       样式挂在 body.hasfx 上，真页面不受影响。 */
+    function syncFocus() {
+      var open = $('.card2.open');
+      document.body.classList.toggle('focusday', !!open);
+      document.body.classList.toggle('focusweek', !!$('.wkblock.open'));
+      /* 顺手标出「哪一周里有展开的卡片」。
+         本来可以用 CSS 的 :has()，但它在旧手机上不支持又不会报错，
+         会变成「其它周没藏掉」这种静默失效 —— 用类名最稳。 */
+      $$('.wkblock').forEach(function (b) {
+        b.classList.toggle('hasopen', !!open && b.contains(open));
+      });
+    }
     $$('.card2').forEach(function (el) {
-      el.onclick = function () { el.classList.toggle('open'); };
+      el.onclick = function () {
+        var wasOpen = el.classList.contains('open');
+        $$('.card2.open').forEach(function (x) { x.classList.remove('open'); });
+        if (!wasOpen) el.classList.add('open');
+        syncFocus();
+        if (!wasOpen) {
+          // 收起别的之后页面会跳，把这条滚回顶栏下面（51 顶栏 + 48 周头）
+          var y = el.getBoundingClientRect().top + window.pageYOffset - 104;
+          window.scrollTo({ top: Math.max(0, y), behavior: 'auto' });
+        }
+      };
     });
+    syncFocus();   // 默认本周是展开的，进页面就该是专注态
+
     $$('.card2 .vlink').forEach(function (el) {
       el.onclick = function (e) { e.stopPropagation(); };   // 点视频链接别把卡片收起来
     });

@@ -1,0 +1,1230 @@
+/* ===========================================================
+   白底 + 赫眉品牌粉 配色（2026-09-20）。
+
+   **这是 style.css 的副本，只改颜色，一行版式都没动。**
+   用户明确说过：「我只要你改色系，没要你改内容」——
+   在此之前我做过一版样张，把导航改成 tab、卡片加圆角、按钮重排，被否了。
+   所以这个文件跟 style.css 的 diff 只能出现在色值上，
+   要改间距/圆角/结构，先问。
+
+   改了什么：
+     --bg      奶油 #FCF7F1  →  纯白 #FFFFFF（用户：整个网页白底）
+     暖灰一族   #F2EDE7 / #E2DDD6 / #E4DED7 / #D2CFCD  →  中性灰
+                （底色从奶油变白之后，原来的暖灰会显脏发黄）
+     --ink     纯黑 #000000  →  品牌粉深一档 #D4788C
+                这个变量只用在**交互件**上：按钮、选中态竖条、focus 边框、
+                复选框、菜单选中项。正文颜色走 --t1/--t2/--t3，仍然是黑的。
+     状态色     第一版没动，结果用户问「赫眉的品牌色在哪里」——
+                因为 --ink 只挂在按钮边框和 2px 竖条上，而这页按钮很少，
+                占面积的是四个灰图块 / KPI 数字 / 日历格子，全都没碰到。
+                所以第二版把粉铺到真正占面积的地方：
+                  · 图块灰底、表头、分区线 → 极淡粉灰（整页基调立刻变粉）
+                  · 已发布（这块看板出现最多的数据色）墨绿 → 品牌粉
+                  · 今天那列 / 链接 普蓝 → 粉（普蓝在粉系里是孤立的冷色）
+                **逾期仍是砖红**：它得跟「已发布」拉开，而且红=逾期是通用语义。
+                代价是砖红和粉同属红系，日历格子上靠深浅区分（粉亮、砖红暗）。
+
+   品牌粉 #EDACB2 本身太浅，当边框和文字会糊，所以 --ink 取深一档的 #D4788C，
+   浅粉留给 hover 底色和选中底。
+   =========================================================== */
+:root{
+  /* 以下颜色是从 hermes.cn 截图上直接取样的，别凭印象改 */
+  --bg:#FFFFFF;            /* 页面底：暖奶油。注意——真站截图上量到的是 #FDF5EF，
+                              但在用户的显示器上，CSS 写 #FDF5EF 截出来会变成 #FEF3ED（偏粉 2 阶），
+                              所以这里按实测差值补偿成 #FCF7F1，让它在屏幕上跟 hermes.cn 一致。
+                              别"照截图取样"改回 #FDF5EF —— 那一步已经踩过了。 */
+  --card:#FFFFFF;          /* 数据区白块 */
+  --paper:#FBF4F6;
+  --tile:#FAF0F2;        /* 图块灰底（对应 hermes.cn 商品图的 #E2DDD6，调亮一点好压深色图形）*/         /* 次级块 / 表头 / hover */
+  --tile:#F8EDEF;          /* 图块灰（爱马仕商品图底色） */
+  --surface:#FDF8F9;
+  --line:#F0E7E9;          /* 表格内细线 */
+  --line-2:#E5D8DC;        /* 分区线（实测值） */
+  --ink:#D4788C;
+  --t1:#000000;            /* 正文/标题：纯黑 */
+  --t2:#3C3C42;
+  --t3:#5E5E5E;            /* 次级文字（实测面包屑色） */
+  --t4:#9A9AA3;
+
+  /* 橙只剩「当天另有自由发挥」那个小点在用（对应真站上唯一的一抹橙：logo）。
+     其余一律走奶油 / 暖灰 / 黑 —— 用户 2026-09-17「色系也按我发你的改」 */
+  --brand:#4A423A;   /* 橙色已弃用，变量保留只为兼容旧写法 */
+  --brand-mid:#4A423A;
+  --brand-deep:#4A423A;
+  --brand-dk:#4A423A;
+  --brand-bg:var(--navy-bg);    /* 今天那列的底：普蓝极淡 */
+  --grad-brand:#4A423A;
+  --grad-brand-v:#4A423A;
+  --gold:#5E5E5E;
+  --gold-bright:#9C9691;
+  --hairline-gold:linear-gradient(90deg,transparent,var(--line-2),transparent);
+  --glass:#FFFFFF;
+  --ink-gradient:#D4788C;
+  --ink-text:#FFFFFF;
+
+  /* 状态各一色（用户 2026-09-17 选定）：墨绿=已发布、驼黄=推测、砖红=逾期、浅灰=待拍、普蓝=今天/链接。
+     唯一禁区是橙色——用户明确说不喜欢，别再加回来。 */
+  --green:#D4788C;   --green-bg:rgba(212,120,140,.12);
+  --camel:#B58B3E;   --camel-text:#8A6A2C;  --camel-bg:rgba(181,139,62,.13);
+  --brick:#9C3B2E;   --brick-bg:rgba(156,59,46,.09);
+  --navy:#C25E77;    --navy-bg:rgba(194,94,119,.10);
+  --todo:#EDE2E5;
+  --late:#9C3B2E;   /* 砖红 */
+  --late-bg:var(--brick-bg);
+  --done:#D4788C;   /* 品牌粉 */
+  --done-bg:var(--green-bg);
+  --guess:#B58B3E;  /* 驼黄 */
+  --guess-bg:var(--camel-bg);
+
+  --sans:"PingFang SC","Helvetica Neue",system-ui,-apple-system,"Microsoft YaHei",sans-serif;
+  --serif:var(--sans);     /* 爱马仕站上没有衬线，这个变量留着只为兼容旧写法 */
+  --nav-w:214px;
+  --nav-w-rail:58px;      /* 折叠后的图标栏宽度 */
+  --radius:0px;
+  --radius-s:0px;
+  --shadow:none;
+  --shadow-hover:none;
+  --track:.06em;           /* 字距按真站收窄，别再拉到 .14em */
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{background:var(--bg)}
+/* 底色只由 html 那层给（上面一行）。body **必须是透明的**：
+   body 的背景是一个正常的盒子背景，会盖住 z-index:-1 的背景动效层
+   —— 2026-09-17 查了很久的「动效完全看不见」就是这个原因，别再给 body 加底色。 */
+body{
+  background:transparent;color:var(--t1);font-family:var(--sans);
+  font-size:14px;line-height:1.7;-webkit-font-smoothing:antialiased;
+}
+/* 背景动效：2026-09-17 从 WebGL 换成纯 CSS。
+   原来的 bg3d.js 在这台机器上死活画不出东西（读像素全 0），调参数没用；
+   CSS 渐变 + transform 动画是合成器直接跑的，一定看得见，也几乎不吃性能。
+   默认关，右上角「动效」按钮开关，状态存 localStorage.hymn_bg3d。 */
+#pageBg{display:none}
+/* 【折光面】2026-09-20 用户从第二批 10 个样本里选的第 1 个，换掉了原来的「暖雾漂移」
+   （两团径向渐变，用户评价「开跟不开没啥区别」，旧代码在 git 里，改动前最后一次提交见 CLAUDE.md）。
+
+   原理：把底色分成几道斜的明暗面，像一条丝巾折起来被光打到，整幅 28 秒来回极慢推移。
+   为什么它比之前那些管用——**块头够大**。这套画风九成面积被白卡片盖住，背景只能从边缝露一条；
+   一条细纹露在缝里看不出，但一整片明暗差露在缝里认得出来。
+
+   尺寸要点：width:230vw + left:-10vw，配合 translateX(-24%~0)（-24% 是自身宽的 24% = 55.2vw），
+   两端算下来永远盖满视口，**不会在边上露出没有渐变的空白**。改数值前先把这笔账算一遍。 */
+body.fxon::before{
+  content:'';position:fixed;z-index:-1;pointer-events:none;
+  top:-20vh;bottom:-20vh;left:-10vw;width:230vw;will-change:transform;
+  background:linear-gradient(107deg,
+    rgba(181,139,62,0)    0%,  rgba(181,139,62,.16) 11%, rgba(181,139,62,.16) 19%,
+    rgba(181,139,62,0)   27%,  rgba(181,139,62,0)   41%, rgba(140,120,96,.13) 48%,
+    rgba(140,120,96,.13) 55%,  rgba(181,139,62,0)   63%, rgba(181,139,62,0)   76%,
+    rgba(181,139,62,.14) 83%,  rgba(181,139,62,.14) 90%, rgba(181,139,62,0)  100%);
+  animation:fxFold 28s ease-in-out infinite alternate;
+}
+@keyframes fxFold{
+  from{transform:translate3d(-24%,0,0)}
+  to{transform:translate3d(0,0,0)}
+}
+
+/* 【别再试】图块灰方块上扫斜光那版已经删了（2026-09-20 用户：「丑，而且打扰到图表了」）：
+   白光扫过柱状图把柱子洗成浅色，数据都看不清了。
+   **动效一律不许盖在图表/数字上**，只能待在背景层。 */
+@media (prefers-reduced-motion:reduce){
+  body.fxon::before{animation:none}
+}
+a{color:inherit;text-decoration:none}
+button,select,input{font:inherit;color:inherit}
+.mono{font-variant-numeric:tabular-nums}
+.muted{color:var(--t3)}
+
+
+
+/* ===== 刷新过场：logo 从左往右揭出来，下面再滑出一条线 =====
+   跟 hermes.cn 刷新时居中那匹马是同一个位置和作用。渲染完 core.js 调 HY.bootDone() 淡出；
+   3 秒保险丝在 core.js 里，出错也不会把页面盖死。
+   2026-09-17 整体提速：揭字 .85s→.38s、划线 .7s→.3s、淡出 .55s→.25s，
+   配合 core.js 的 BOOT_MIN 850→420，整套从约 1.4s 压到约 0.7s（用户嫌太久）。 */
+#boot{
+  position:fixed;inset:0;z-index:300;background:var(--bg);
+  display:flex;align-items:center;justify-content:center;
+  transition:opacity .25s ease;
+}
+#boot.off{opacity:0;pointer-events:none}
+#boot .bmark{position:relative}
+#boot .bmark img{
+  display:block;width:min(210px,44vw);
+  -webkit-clip-path:inset(0 100% 0 0);clip-path:inset(0 100% 0 0);
+  animation:bootwipe .38s cubic-bezier(.25,.1,.25,1) 0s forwards;
+}
+#boot .bmark::after{
+  content:'';position:absolute;left:0;right:0;bottom:-14px;height:1px;background:var(--t1);
+  transform:scaleX(0);transform-origin:left center;
+  animation:bootline .3s cubic-bezier(.25,.1,.25,1) .18s forwards;
+}
+@keyframes bootwipe{to{-webkit-clip-path:inset(0 0 0 0);clip-path:inset(0 0 0 0)}}
+@keyframes bootline{to{transform:scaleX(1)}}
+@media (prefers-reduced-motion:reduce){
+  #boot .bmark img{animation:none;-webkit-clip-path:none;clip-path:none}
+  #boot .bmark::after{animation:none;transform:scaleX(1)}
+}
+
+/* ===== hover 下划线：从左往右滑出来，移开时向右收走 =====
+   抄 hermes.cn 顶部导航（2026-09-17 用户录屏，逐帧量的：1px、文字下方 5px、展开约 .25s）。
+   要点是两个 transform-origin：hover 时 left（从左长出），非 hover 是 right（向右收回）。 */
+.uline{position:relative}
+.uline::after{
+  content:'';position:absolute;left:0;right:0;bottom:-5px;height:1px;background:currentColor;
+  transform:scaleX(0);transform-origin:right center;
+  transition:transform .26s cubic-bezier(.25,.1,.25,1);
+}
+.uline:hover::after,a:hover > .uline::after{transform:scaleX(1);transform-origin:left center}
+
+/* ===== 左侧导航：纯白 + 一条发丝线，选中用橙色小竖条 ===== */
+.sidebar{
+  position:fixed;left:0;top:0;bottom:0;width:var(--nav-w);
+  background:var(--bg);border-right:1px solid var(--line-2);
+  display:flex;flex-direction:column;z-index:60;
+}
+/* 折叠侧栏要**瞬间切换**，不要过渡（2026-09-20 用户：「要瞬间变化，不要像翻书一样能看到划过去」）*/
+.sidebar{overflow:hidden}
+.sidebar .logo{padding:30px 22px 22px;border-bottom:1px solid var(--line-2);padding-right:56px}
+
+/* 侧栏折叠按钮：展开时贴在侧栏右上角，收起后滑到页面左上角（用户 2026-09-17 要的 ChatGPT 那个）*/
+.navtog{
+  position:fixed;top:24px;left:calc(var(--nav-w) - 48px);z-index:70;
+  width:34px;height:34px;display:flex;align-items:center;justify-content:center;
+  border:1px solid var(--line-2);border-radius:0;background:var(--bg);color:var(--t2);
+  cursor:pointer;padding:0;transition:background .2s,color .2s;   /* left 不做过渡，跟侧栏一起瞬移 */
+}
+.navtog:hover{background:var(--ink);color:#fff;border-color:var(--ink)}
+/* 折叠 = 收成一条图标栏（不是整条藏起来），文字/分组/底部说明全隐藏，只留图标 */
+body.navhide .sidebar{width:var(--nav-w-rail)}
+body.navhide .main{margin-left:var(--nav-w-rail)}
+body.navhide .navtog{left:12px;top:20px}
+body.navhide .sidebar .logo{padding:62px 0 14px;text-align:center}
+body.navhide .sidebar .logo img{display:none}
+body.navhide .sidebar .logo .st{display:none}
+body.navhide .nav .grp{display:none}
+body.navhide .nav a{justify-content:center;padding:13px 0;gap:0}
+body.navhide .nav a .lb{display:none}
+body.navhide .nav a{padding:15px 0}
+body.navhide .nav a .ico{width:22px;height:22px}
+body.navhide .nav a .ico svg{width:22px;height:22px}
+body.navhide .sidedata{padding:14px 0;text-align:center}
+body.navhide .sidedata .hint{display:none}
+body.navhide .sidedata{display:none}   /* 图标栏里连数据状态也省掉，导入走导航那一项 */
+body.navhide .sidebar .foot{display:none}
+/* .main 的 margin-left 也不做过渡，否则侧栏瞬间收了、内容还在慢慢挪 */
+.main{}
+.sidebar .logo img{height:18px;display:block}
+.sidebar .logo .st{font-size:11.5px;color:var(--t3);margin-top:12px;letter-spacing:.02em}
+
+.nav{padding:10px 0;flex:1;overflow:auto}
+.nav .grp{font-size:11px;font-weight:400;letter-spacing:.02em;color:var(--t4);padding:22px 22px 9px}
+.nav a{
+  position:relative;display:flex;align-items:center;gap:12px;
+  padding:11px 22px;border-radius:0;
+  font-size:13.5px;font-weight:400;letter-spacing:.01em;color:var(--t2);cursor:pointer;
+  transition:color .2s ease, background .2s ease;
+}
+.nav a .ico{
+  width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;
+  color:var(--t3);transition:color .2s;flex-shrink:0;
+}
+.nav a .ico svg{display:block}
+.nav a .lb{position:relative}
+.nav a .lb::after{
+  content:'';position:absolute;left:-6px;right:-6px;bottom:-5px;height:1px;background:currentColor;
+  transform:scaleX(0);transform-origin:right center;
+  transition:transform .26s cubic-bezier(.25,.1,.25,1);
+}
+.nav a:hover .lb::after{transform:scaleX(1);transform-origin:left center}
+.nav a.on .lb::after{transform:scaleX(1);transform-origin:left center}
+.nav a:hover{background:transparent;color:var(--t1)}
+.nav a:hover .ico{color:var(--t3)}
+/* 选中态：黑色竖条 + 加粗（真站上 UI 强调色是黑，不是橙） */
+.nav a.on{color:var(--t1);font-weight:600;background:transparent}
+.nav a.on::before{
+  content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);
+  width:2px;height:16px;background:var(--ink);
+}
+.nav a.on .ico{color:var(--t1)}
+
+/* 数据状态 + 导入入口 */
+.sidedata{padding:18px 22px;border-top:1px solid var(--line-2)}
+.sidedata .hint{font-size:11.5px;color:var(--t3);line-height:1.8;margin-bottom:12px}
+.sidedata .hint b{color:var(--t1);font-weight:600}
+.btn.block{width:100%;justify-content:center;text-align:center}
+.sidedata .btn{
+  background:transparent;border-color:var(--ink);color:var(--ink);
+  min-height:38px;font-size:12.5px;
+}
+.sidedata .btn:hover{background:var(--ink);border-color:var(--ink);color:#fff}
+.sidebar .foot{
+  padding:16px 22px 20px;border-top:1px solid var(--line-2);
+  font-size:11.5px;color:var(--t4);line-height:1.9;
+}
+
+/* ===== 主区 ===== */
+.main{margin-left:var(--nav-w);min-height:100vh;display:flex;flex-direction:column}
+.topbar{ /* 顶栏早就删了，样式留个壳 */
+  background:var(--card);border-bottom:1px solid var(--line-2);padding:16px 26px;
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  position:fixed;top:0;left:var(--nav-w);right:0;z-index:50;
+}
+.topbar h1{font-family:var(--serif);font-size:19px;font-weight:500;letter-spacing:.12em}
+.topbar .sp{flex:1}
+.topbar .hint{font-size:12.5px;color:var(--t3);text-align:right;line-height:1.6}
+.topbar .hint b{color:var(--t2);font-weight:600}
+.content{padding:34px 38px 72px;flex:1}
+.panel{display:none}
+.panel.on{display:block}
+
+/* ===== 按钮：直角 + 细黑边 + 宽字距，hover 整块填充 ===== */
+.btn{
+  position:relative;border:1px solid var(--ink);border-radius:0;
+  background:transparent;min-height:40px;
+  padding:10px 20px;font-size:12.5px;font-weight:400;letter-spacing:var(--track);
+  cursor:pointer;white-space:nowrap;color:var(--t1);
+  transition:background .2s ease, color .2s ease, border-color .2s ease;
+}
+.btn:hover{border-color:var(--ink);background:var(--ink);color:#fff}
+.btn:active{background:#000;border-color:#000}
+.btn.primary{border-color:var(--ink);background:var(--ink);color:#fff;font-weight:400}
+.btn.primary:hover{background:#333;border-color:#333;color:#fff}
+.btn.primary:active{background:#000;border-color:#000}
+.btn.ink{border-color:var(--ink);background:var(--ink);color:#fff}
+.btn.ink:hover{background:#000;border-color:#000;color:#fff}
+.btn.sm{padding:7px 14px;font-size:11.5px;min-height:32px}
+.btn.danger:hover{background:var(--brick);border-color:var(--brick);color:#fff}
+
+/* ===== 卡片：白底 + 一条发丝边，不要阴影不要圆角 ===== */
+.card{
+  background:var(--card);border:0;border-radius:0;
+  padding:24px 26px;margin-bottom:22px;
+}
+.card > h3{
+  font-size:16px;font-weight:600;letter-spacing:.01em;
+  margin-bottom:8px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;
+}
+.card > h3 .tag{font-size:12px;color:var(--t3);font-weight:400;letter-spacing:0}
+.card .note{font-size:12.5px;color:var(--t3);line-height:1.85}
+.card .note b{color:var(--t1);font-weight:600}
+
+/* ===== 深色 3D 横幅（早就不用了，留着以防要恢复） ===== */
+.hero{position:relative;overflow:hidden;margin:2px 0 20px;height:176px;background:#16130f}
+.hero canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.hero.nogl canvas{display:none}
+.hero .hero-in{position:relative;z-index:2;padding:28px 32px;pointer-events:none}
+.hero .hero-in h2{font-family:var(--serif);font-size:30px;font-weight:500;letter-spacing:.12em;color:#fff}
+.hero .fxbtn{position:absolute;right:16px;bottom:14px;z-index:3}
+
+/* ===== 页面标题区 ===== */
+.pagehead{
+  position:relative;display:flex;align-items:flex-start;gap:16px;
+  margin:0 0 28px;padding-bottom:18px;
+}
+.pagehead::after{
+  content:'';position:absolute;left:0;right:0;bottom:0;height:1px;background:var(--line-2);
+  transform:scaleX(1);transform-origin:left center;
+}
+
+/* ===== 标题区进场动效 =====
+   过场淡出时（core.js 给 body 加 .booted）依次跑：眉标淡入 → 大标题从左往右揭出 →
+   底线从左画到右 → 副标题淡入。全部是 transform/opacity，不吃性能。 */
+body.booted .pagehead .eyebrow{animation:headfade .5s ease .04s both}
+body.booted .pagehead h2{animation:headwipe .78s cubic-bezier(.25,.1,.25,1) .1s both}
+body.booted .pagehead::after{animation:headrule .72s cubic-bezier(.25,.1,.25,1) .34s both}
+body.booted .pagehead p{animation:headfade .55s ease .46s both}
+body.booted .pagehead .fxbtn{animation:headfade .5s ease .6s both}
+@keyframes headfade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+@keyframes headwipe{
+  from{-webkit-clip-path:inset(0 100% 0 0);clip-path:inset(0 100% 0 0)}
+  to{-webkit-clip-path:inset(0 -2% 0 0);clip-path:inset(0 -2% 0 0)}
+}
+@keyframes headrule{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@media (prefers-reduced-motion:reduce){
+  body.booted .pagehead .eyebrow,body.booted .pagehead h2,
+  body.booted .pagehead::after,body.booted .pagehead p,
+  body.booted .pagehead .fxbtn{animation:none}
+}
+.eyebrow{font-size:12px;font-weight:400;letter-spacing:0;color:var(--t3);margin-bottom:6px}
+.pagehead h2{font-size:22px;line-height:1.35;font-weight:600;letter-spacing:.01em;color:var(--t1)}
+.pagehead p{font-size:12.5px;color:var(--t3);margin-top:10px;letter-spacing:0}
+.fxbtn{
+  margin-left:auto;border:1px solid var(--line-2);background:transparent;color:var(--t3);
+  border-radius:0;padding:8px 16px;font-size:11.5px;letter-spacing:var(--track);cursor:pointer;
+  transition:background .2s ease,color .2s ease,border-color .2s ease;
+}
+.fxbtn:hover{background:var(--ink);border-color:var(--ink);color:#fff}
+.fxbtn.off{opacity:.55}
+
+/* ===== 图块区（对着 hermes.cn 首页那排灰底商品图做的）=====
+   四块灰底方块，里面是会动的数据图 + 一张线描插画。
+   配色沿用状态色，已过 dataviz 校验：CVD 分离 ΔE 17.7 / 正常视觉 20.5 / 对比度全过；
+   「彩度偏低」那条是有意的（爱马仕色系要克制），靠每块都带文字标签做二次编码来兜。 */
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin:0 0 26px}
+.tile figure{margin:0}
+.tile .box{
+  position:relative;background:var(--tile);aspect-ratio:4/3;
+  display:flex;align-items:center;justify-content:center;overflow:hidden;
+}
+.tile .box svg{display:block;width:100%;height:100%}
+.tile figcaption{margin-top:10px;font-size:13px;color:var(--t1);letter-spacing:.01em}
+.tile figcaption span{display:block;font-size:11.5px;color:var(--t3);margin-top:2px}
+.tile .tval{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;pointer-events:none;background:transparent;
+}
+.tile .tval b{font-size:30px;font-weight:600;letter-spacing:-.01em;line-height:1;color:var(--t1)}
+.tile .tval b small{font-size:14px;font-weight:500;margin-left:2px}
+.tile .tval i{font-style:normal;font-size:11px;color:var(--t3);margin-top:5px;letter-spacing:.04em}
+/* 堆叠条下面的直接标注（图例 + 数值，不靠颜色单独表意） */
+.tile .keys{position:absolute;left:14px;right:14px;bottom:12px;display:flex;flex-wrap:wrap;gap:4px 12px}
+.tile .keys em{font-style:normal;font-size:10.5px;color:var(--t2);display:flex;align-items:center;gap:5px}
+.tile .keys em u{text-decoration:none;width:7px;height:7px;display:inline-block}
+.tile .keys em b{font-weight:600;font-variant-numeric:tabular-nums}
+.tile .note{position:absolute;left:14px;top:12px;font-size:10.5px;color:var(--t3);letter-spacing:.04em}
+
+/* 进场：图块跟标题区同一套节奏，逐块推迟 60ms。
+   注意别给 .tile 设默认 opacity:0——万一 .booted 没加上（JS 出错）图块就永远不见了；
+   过场层本来就盖着页面，直接用动画的起始态就够。 */
+body.booted .tiles .tile{animation:headfade .55s ease both}
+body.booted .tiles .tile:nth-child(1){animation-delay:.50s}
+body.booted .tiles .tile:nth-child(2){animation-delay:.56s}
+body.booted .tiles .tile:nth-child(3){animation-delay:.62s}
+body.booted .tiles .tile:nth-child(4){animation-delay:.68s}
+/* 图形本身的绘制动画 */
+body.booted .tile .ring-val{animation:ringdraw 1.1s cubic-bezier(.25,.1,.25,1) .7s both}
+body.booted .tile .spark rect{animation:sparkgrow .5s cubic-bezier(.25,.1,.25,1) both}
+body.booted .tile .seg{animation:segopen .8s cubic-bezier(.25,.1,.25,1) .8s both}
+body.booted .tile .ink-draw{animation:inkdraw 1.6s ease .75s both}
+@keyframes ringdraw{from{stroke-dashoffset:var(--dash)}to{stroke-dashoffset:var(--off)}}
+@keyframes sparkgrow{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+@keyframes segopen{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes inkdraw{from{stroke-dashoffset:var(--len)}to{stroke-dashoffset:0}}
+@media (prefers-reduced-motion:reduce){
+  body.booted .tiles .tile,body.booted .tile .ring-val,body.booted .tile .spark rect,
+  body.booted .tile .seg,body.booted .tile .ink-draw{animation:none}
+}
+@media (max-width:1180px){.tiles{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:640px){.tiles{grid-template-columns:1fr}}
+
+/* ===== KPI：四格白板，靠发丝线分隔 ===== */
+.kpirow{display:flex;gap:0;margin-bottom:24px;flex-wrap:wrap;background:var(--card)}
+.kpi{
+  background:var(--card);border-radius:0;border:0;border-left:1px solid var(--line);
+  padding:22px 26px;flex:1;min-width:160px;
+}
+.kpi:first-child{border-left:0}
+.kpi .lab{font-size:12px;font-weight:400;letter-spacing:0;color:var(--t3)}
+.kpi .val{
+  font-size:30px;font-weight:600;line-height:1.2;margin-top:10px;
+  font-variant-numeric:tabular-nums;letter-spacing:0;
+}
+.kpi .val small{font-size:14px;color:var(--t3);font-weight:400;margin-left:4px}
+.kpi .sub{font-size:11.5px;color:var(--t4);margin-top:6px}
+.kpi.late .val{color:var(--brick)}
+.kpi.done .val{color:var(--green)}
+
+/* ===== 排行 ===== */
+.rank{display:flex;gap:8px;flex-wrap:wrap}
+.rank .it{
+  display:flex;align-items:center;gap:8px;border-radius:0;
+  background:var(--paper);border:0;padding:8px 14px;
+  font-size:12.5px;letter-spacing:0;cursor:pointer;
+  transition:border-color .2s ease,color .2s ease;
+}
+.rank .it:hover{background:#E9E2DA}
+.rank .it b{color:var(--brick);font-weight:600}
+.rank .empty{color:var(--t3);font-size:12.5px}
+
+/* ===== 筛选 ===== */
+.filters{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:20px}
+.filters select,.filters input[type=search]{
+  background:var(--card);border:1px solid var(--line-2);border-radius:0;
+  padding:9px 12px;font-size:12.5px;letter-spacing:0;
+}
+.filters select:focus,.filters input[type=search]:focus{outline:none;border-color:var(--ink)}
+.filters input[type=search]{width:200px}
+.filters label.chk{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--t2);cursor:pointer}
+.filters label.chk input{accent-color:var(--ink)}
+.legend{display:flex;gap:18px;margin-left:auto;font-size:11.5px;color:var(--t2);flex-wrap:wrap;align-items:center}
+.legend i{display:inline-block;width:11px;height:11px;border-radius:0;margin-right:7px;vertical-align:-1px}
+
+/* ===== 月份选择条：做成爱马仕导航那种「下划线选中」 ===== */
+.monthbar{
+  display:flex;align-items:center;gap:6px;margin-bottom:18px;
+  background:transparent;border:0;   /* 不要贯穿整行的长横线（用户 2026-09-17 明确说去掉） */
+  padding:0;border-radius:0;
+}
+.mscroll{display:flex;gap:0;overflow-x:auto;flex:1 1 auto;min-width:0;scrollbar-width:thin}
+/* 月份按钮等分撑满整行：右边不留空白（用户 2026-09-17 要求），窄屏时退回可横向滚 */
+.mscroll .mchip{flex:1 1 0;min-width:max-content}
+.mchip{
+  border:0;border-bottom:2px solid transparent;background:transparent;
+  padding:12px 10px;font-size:14px;font-weight:400;letter-spacing:.01em;color:var(--t3);
+  cursor:pointer;white-space:nowrap;flex:0 0 auto;position:relative;
+  transition:color .2s ease,border-color .2s ease;
+}
+.mchip::after{
+  content:'';position:absolute;left:0;right:0;bottom:0;height:1px;background:currentColor;   /* 比文字宽（= 整个按钮宽），跟选中那条 2px 线对齐 */
+  transform:scaleX(0);transform-origin:right center;
+  transition:transform .26s cubic-bezier(.25,.1,.25,1);
+}
+.mchip:hover::after{transform:scaleX(1);transform-origin:left center}
+.mchip.on::after{display:none}
+.mchip:hover{color:var(--t1)}
+.mchip.past{color:var(--t4)}
+.mchip.thismonth{color:var(--t2)}
+.mchip.thismonth i{font-style:normal;font-size:12px;color:var(--navy);margin-left:5px}
+.mchip.on{
+  /* 选中态不用下划线了（会跟 hover 的滑线撞车）：改成 1px 黑描边的方框，
+     对应真站上「即将上市」那种细边标签。用 inset box-shadow 画，避免占位跳动。 */
+  color:var(--t1);font-weight:600;border-bottom-color:transparent;
+  box-shadow:inset 0 0 0 1px var(--ink);
+}
+.mchip.on i{color:var(--t3)}
+.mchip.nav{padding:12px 14px;font-size:16px;line-height:1;flex:0 0 auto}
+.mchip.nav::after{left:0;right:0}
+.mchip.year{font-weight:400;flex:0 0 auto;padding-left:18px}
+
+/* ===== 日历大表 ===== */
+.gridcard{background:var(--card);border:0;border-radius:0;overflow:hidden}
+.gridwrap{overflow:auto;max-height:calc(100vh - 320px)}
+table.board{border-collapse:separate;border-spacing:0;width:max-content;min-width:100%}
+table.board th,table.board td{border-bottom:1px solid var(--line)}
+
+table.board thead th{position:sticky;background:var(--card);z-index:20;font-weight:400}
+table.board thead tr.r1 th{top:0;height:36px}
+table.board thead tr.r2 th{top:36px;height:30px}
+table.board thead tr.r2:first-child th{top:0}   /* 全年总览只有一行表头 */
+th.wk{
+  font-size:11.5px;color:var(--t3);border-left:1px solid var(--line);white-space:nowrap;
+  padding:0 8px;letter-spacing:0;
+}
+th.wk.now{color:var(--navy);font-weight:600;background:var(--brand-bg)}
+th.day{
+  font-size:11px;color:var(--t4);width:30px;min-width:30px;text-align:center;
+  padding:0;line-height:1.3;
+}
+th.day .d{display:block;font-size:11.5px;color:var(--t2);font-variant-numeric:tabular-nums}
+th.day.wknd{background:var(--paper)}
+th.day.wknd .d{color:var(--t3)}
+th.day.today{background:var(--brand-bg)}
+th.day.today .d{color:var(--navy);font-weight:700}
+th.day.wstart,td.cell.wstart{border-left:1px solid var(--line)}
+
+th.stcol,td.stcol{
+  position:sticky;left:0;z-index:30;background:var(--card);
+  min-width:250px;max-width:250px;width:250px;text-align:left;padding:9px 16px;
+  border-right:1px solid var(--line);
+}
+table.board thead th.stcol{z-index:40}
+td.stcol .nm{font-size:13.5px;font-weight:400;letter-spacing:0}
+td.stcol .meta{font-size:11px;color:var(--t3);margin-top:2px;display:flex;gap:8px;align-items:center;white-space:nowrap}
+td.stcol .meta .bl{color:var(--t3)}
+td.stcol a.mob{color:var(--t3);position:relative}
+td.stcol a.mob::after{
+  content:'';position:absolute;left:0;right:0;bottom:-3px;height:1px;background:currentColor;
+  transform:scaleX(0);transform-origin:right center;
+  transition:transform .26s cubic-bezier(.25,.1,.25,1);
+}
+td.stcol a.mob:hover::after{transform:scaleX(1);transform-origin:left center}
+td.stcol a.mob:hover{color:var(--ink);border-bottom-color:var(--ink)}
+tbody tr:hover td.stcol{background:var(--paper)}
+tbody tr:hover td.cell{background:var(--paper)}
+
+td.cell{width:30px;min-width:30px;padding:0;text-align:center;vertical-align:middle;height:38px;position:relative}
+td.cell.wknd{background:var(--paper)}
+.dot{
+  /* 不用描边、不用纯黑：描边在 30px 格子里显得很粗，黑块又太硬（用户 2026-09-17）。
+     改成实心柔色块，深浅本身就是信息：越深越要管。 */
+  display:inline-block;width:13px;height:13px;border-radius:0;cursor:pointer;
+  border:0;vertical-align:middle;transition:.12s;
+}
+.dot:hover{outline:1px solid var(--t2);outline-offset:2px}
+.dot.todo{background:var(--todo)}    /* 待拍 */
+.dot.late{background:var(--late)} /* 逾期：整张表唯一要跳出来的 */
+.dot.done{background:var(--done)}    /* 已发布·精确：墨绿 */
+.dot.guess{background:var(--guess)}  /* 已发布·推测：驼黄 */
+.dot.none{width:4px;height:4px;background:var(--t4);cursor:default}
+.dot.none:hover{outline:none}
+.dot.free::after{
+  content:"";position:absolute;margin:-3px 0 0 11px;width:5px;height:5px;border-radius:50%;
+  background:var(--navy);border:1px solid var(--card);
+}
+/* 全年总览的列 */
+th.mcol{
+  font-size:11.5px;color:var(--t2);min-width:76px;width:76px;text-align:center;
+  border-left:1px solid var(--line);line-height:1.3;
+}
+th.mcol .d{display:block;font-size:10.5px;color:var(--t4)}
+th.mcol.today{background:var(--brand-bg);color:var(--navy);font-weight:600}
+td.mcell{
+  min-width:76px;width:76px;padding:9px 10px;text-align:center;cursor:pointer;
+  border-left:1px solid var(--line);
+}
+td.mcell:hover{background:var(--brand-bg)}
+td.mcell .bar{display:flex;height:6px;border-radius:0;overflow:hidden;background:var(--paper)}
+td.mcell .bar i{display:block;height:100%}
+td.mcell .bar .s-done{background:var(--done)}
+td.mcell .bar .s-late{background:var(--late)}
+td.mcell .bar .s-todo{background:var(--todo)}
+td.mcell .bnum{font-size:11px;color:var(--t3);margin-top:5px;font-variant-numeric:tabular-nums}
+
+.emptyrow{padding:48px;text-align:center;color:var(--t3);font-size:13px}
+
+/* ===== 侧栏详情 ===== */
+.backdrop{position:fixed;inset:0;background:rgba(28,27,26,.28);z-index:80;display:none}
+.backdrop.on{display:block}
+.drawer{
+  position:fixed;top:0;right:0;height:100%;width:min(540px,96vw);background:var(--card);
+  border-left:1px solid var(--line-2);
+  transform:translateX(100%);transition:transform .28s cubic-bezier(.2,.8,.2,1);
+  z-index:90;display:flex;flex-direction:column;
+}
+.drawer.open{transform:none}
+.drawer .dh{padding:24px 28px;border-bottom:1px solid var(--line);display:flex;gap:12px;align-items:flex-start}
+.drawer .dh h3{font-size:18px;font-weight:600;line-height:1.45;letter-spacing:.01em}
+.drawer .dh .sub{font-size:12px;color:var(--t3);margin-top:6px}
+.drawer .close{margin-left:auto;background:none;border:none;font-size:22px;line-height:1;cursor:pointer;color:var(--t3)}
+.drawer .close:hover{color:var(--ink)}
+.drawer .db{overflow:auto;padding:24px 28px 72px;flex:1}
+
+.pill{
+  display:inline-flex;align-items:center;gap:6px;border-radius:0;padding:5px 12px;
+  font-size:11.5px;font-weight:400;letter-spacing:0;border:1px solid transparent;
+}
+.pill.todo{background:var(--paper);color:var(--t2);border-color:var(--line)}
+.pill.late{background:var(--brick-bg);color:var(--brick);border-color:rgba(156,59,46,.3)}
+.pill.done{background:var(--green-bg);color:var(--green);border-color:rgba(47,93,69,.28)}
+.pill.guess{background:var(--camel-bg);color:var(--camel-text);border-color:rgba(181,139,62,.35)}
+
+.tagbox{
+  display:flex;align-items:center;gap:12px;border-radius:0;padding:14px 16px;margin:18px 0;
+  background:var(--card);border:1px solid var(--ink);
+}
+.tagbox .tg{font-size:17px;font-weight:600;letter-spacing:0;color:var(--t1)}
+.tagbox .ds{font-size:12px;color:var(--t3);flex:1}
+
+.sechead{
+  font-size:13px;font-weight:600;color:var(--t1);margin:26px 0 12px;
+  letter-spacing:.01em;padding-left:12px;border-left:2px solid var(--ink);
+}
+.kvs{display:grid;grid-template-columns:86px 1fr;gap:9px 14px;font-size:13.5px}
+.kvs .k{color:var(--t3);font-size:12.5px}
+.bigline{font-size:15px;line-height:1.8;background:var(--paper);border-radius:0;padding:14px 16px}
+.shot{display:flex;gap:10px;padding:14px 0;border-bottom:1px solid var(--line)}
+.shot:last-child{border-bottom:none}
+.shot .n{
+  /* 不要实心黑方块（用户 2026-09-17：「颜色太重」）。只留一个灰数字，靠右对齐当页码用。 */
+  width:20px;height:22px;background:transparent;color:var(--t4);
+  font-size:13px;font-weight:500;display:flex;align-items:center;justify-content:flex-end;
+  flex-shrink:0;font-variant-numeric:tabular-nums;letter-spacing:.02em;
+}
+.shot .bd{flex:1;padding-left:12px;border-left:1px solid var(--line)}
+.shot .sc{font-size:13.5px;font-weight:500;line-height:1.6}
+.shot .ln{font-size:13.5px;color:var(--t2);margin-top:5px;line-height:1.75}
+.shot .sec{font-size:11.5px;color:var(--t4);flex-shrink:0;font-variant-numeric:tabular-nums}
+ul.lines{list-style:none;font-size:13.5px;line-height:1.85}
+ul.lines li{padding-left:18px;position:relative;margin-bottom:5px;color:var(--t2)}
+ul.lines li::before{content:"";position:absolute;left:4px;top:11px;width:4px;height:4px;background:var(--t4)}
+ul.lines.warn li::before{background:var(--brick)}
+.sechead.row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.sechead .meta{font-size:12.5px;font-weight:400;color:var(--t3);margin-left:9px;letter-spacing:0}
+/* 手机端（门店页）的「开头 3 秒 / 分镜 / 话题标签」要更显眼（2026-09-20 用户要求）。
+   只放大门店页的，总部抽屉里那套保持原样——电脑上本来就看得清，放大反而松散。
+   手段限于字号 / 竖条 / 留白 / 发丝线：这套画风里**实心深色块只留给日历格子的状态**，
+   标题不能做成黑底白字的标签。 */
+body.storepage .sechead{
+  font-size:17px;line-height:1.45;
+  margin:32px 0 14px;padding:0 0 10px 13px;
+  border-left:3px solid var(--ink);
+  border-bottom:1px solid var(--line-2);
+}
+body.storepage .sechead .meta{font-size:13px;margin-left:10px}
+body.storepage .sechead.row{padding-bottom:10px}
+.btnmini{
+  border:1px solid var(--ink);border-radius:0;background:transparent;color:var(--t1);
+  padding:4px 10px;font-size:11.5px;letter-spacing:.02em;cursor:pointer;font-family:inherit;
+}
+.btnmini:hover{background:var(--ink);color:#fff}
+/* ===== 自定义下拉（原生 select 藏在里面当状态） ===== */
+.xsel{position:relative;display:inline-block}
+.xsel > select{position:absolute;opacity:0;pointer-events:none;width:0;height:0}
+.xsel .xbtn{
+  display:flex;align-items:center;justify-content:space-between;gap:14px;
+  min-width:158px;height:38px;padding:0 12px;
+  border:1px solid var(--line-2);border-radius:0;background:var(--card);
+  font-family:inherit;font-size:13px;color:var(--t1);cursor:pointer;
+}
+.xsel .xbtn:hover,.xsel.open .xbtn{border-color:var(--ink)}
+.xsel.picked .xbtn{border-color:var(--ink);font-weight:600}
+.xsel .xbtn i{font-style:normal;font-size:10px;color:var(--t3);transition:transform .18s ease}
+.xsel.open .xbtn i{transform:rotate(180deg)}
+.xsel .xmenu{
+  display:none;position:fixed;z-index:120;max-height:340px;overflow:auto;
+  background:var(--card);border:1px solid var(--ink);
+}
+/* 表格格子里的紧凑版 */
+.xsel.mini{display:block;width:100%}
+.xsel.mini .xbtn{
+  width:100%;min-width:0;height:30px;padding:0 8px;font-size:12.5px;
+  border-color:var(--line);background:transparent;
+}
+.xsel.mini .xbtn:hover,.xsel.mini.open .xbtn{border-color:var(--ink);background:var(--card)}
+.xsel.mini.picked .xbtn{border-color:var(--ink);background:var(--card);font-weight:400}
+.xsel.open .xmenu{display:block}
+.xsel .xmenu a{
+  display:block;padding:9px 13px;font-size:13px;line-height:1.5;color:var(--t2);
+  cursor:pointer;white-space:nowrap;
+}
+.xsel .xmenu a:hover{background:var(--paper);color:var(--t1)}
+.xsel .xmenu a.on{color:var(--t1);font-weight:600;box-shadow:inset 2px 0 0 var(--ink)}
+.xsel .xmenu a.ck{display:flex;align-items:center;gap:9px}
+.xsel .xmenu a.ck .box{
+  width:12px;height:12px;flex-shrink:0;border:1px solid var(--line-2);background:var(--card);
+}
+.xsel .xmenu a.ck.on .box{background:var(--ink);border-color:var(--ink)}
+.xsel .xmenu a.more{border-top:1px solid var(--line);color:var(--t1);font-size:12.5px}
+
+table.list td .code{display:block;font-size:10.5px;color:var(--t4);margin-top:2px}
+
+/* ===== 区域经理管理弹窗 ===== */
+.mgrmodal{width:min(860px,94vw)}
+.mm{display:grid;grid-template-columns:220px 1fr;gap:0;margin-top:16px;border:1px solid var(--line-2)}
+.mm-l{border-right:1px solid var(--line-2);display:flex;flex-direction:column;min-height:340px}
+.mm-add{display:flex;gap:6px;padding:12px;border-bottom:1px solid var(--line)}
+.mm-add input{
+  flex:1;min-width:0;height:32px;padding:0 9px;border:1px solid var(--line-2);border-radius:0;
+  font-family:inherit;font-size:13px;background:var(--card);
+}
+.mm-add input:focus{outline:none;border-color:var(--ink)}
+.mm-list{flex:1;overflow:auto}
+.mm-list .row{
+  display:flex;align-items:center;gap:8px;padding:10px 12px;cursor:pointer;font-size:13.5px;
+  border-bottom:1px solid var(--line);
+}
+.mm-list .row:hover{background:var(--paper)}
+.mm-list .row.on{font-weight:600;box-shadow:inset 2px 0 0 var(--ink);background:var(--paper)}
+.mm-list .row .n{margin-left:auto;font-size:11.5px;color:var(--t3);font-weight:400}
+.mm-list .row .x{
+  border:0;background:transparent;color:var(--t4);font-size:15px;line-height:1;cursor:pointer;
+  padding:0 2px;font-family:inherit;
+}
+.mm-list .row .x:hover{color:var(--brick)}
+.mm-list .empty{padding:14px 12px;font-size:12.5px;color:var(--t4)}
+.mm-r{display:flex;flex-direction:column;min-height:340px}
+.mm-head{
+  display:flex;align-items:center;gap:10px;padding:12px;border-bottom:1px solid var(--line);
+  font-size:13px;font-weight:600;
+}
+.mm-head input{
+  margin-left:auto;height:32px;width:170px;padding:0 9px;border:1px solid var(--line-2);
+  border-radius:0;font-family:inherit;font-size:13px;background:var(--card);font-weight:400;
+}
+.mm-head input:focus{outline:none;border-color:var(--ink)}
+.mm-stores{flex:1;overflow:auto;max-height:46vh}
+.mm-stores label{
+  display:flex;align-items:center;gap:10px;padding:9px 12px;font-size:13.5px;cursor:pointer;
+  border-bottom:1px solid var(--line);
+}
+.mm-stores label:hover{background:var(--paper)}
+.mm-stores label .own{margin-left:auto;font-size:11.5px;color:var(--t3)}
+.mm-stores label.taken .own{color:var(--camel-text)}
+.mm-stores .empty{padding:14px 12px;font-size:12.5px;color:var(--t4)}
+
+/* ===== 区域经理管理条 ===== */
+.mgrbar{
+  display:flex;align-items:center;flex-wrap:wrap;gap:8px;
+  margin-top:12px;padding:12px 14px;background:var(--paper);
+}
+.mgrbar .k{font-size:12.5px;color:var(--t3);margin-right:2px}
+.mgrbar .none{font-size:12.5px;color:var(--t4)}
+.mgrbar .chip{
+  display:inline-flex;align-items:center;gap:8px;
+  background:var(--card);border:1px solid var(--line-2);padding:5px 6px 5px 11px;font-size:13px;
+}
+.mgrbar .chip .n{font-style:normal;font-size:11.5px;color:var(--t3)}
+.mgrbar .chip .x{
+  border:0;background:transparent;color:var(--t4);font-size:15px;line-height:1;
+  cursor:pointer;padding:0 4px;font-family:inherit;
+}
+.mgrbar .chip .x:hover{color:var(--brick)}
+.mgrbar .add{display:inline-flex;gap:8px;margin-left:auto}
+.mgrbar .add input{
+  height:32px;padding:0 10px;border:1px solid var(--line-2);border-radius:0;
+  font-family:inherit;font-size:13px;background:var(--card);width:150px;
+}
+.mgrbar .add input:focus{outline:none;border-color:var(--ink)}
+
+/* 柱状图悬停标签 */
+.tile{position:relative}
+.sparktip{
+  position:absolute;z-index:5;pointer-events:none;white-space:nowrap;
+  transform:translate(-50%,-130%);background:var(--ink);color:#fff;
+  font-size:11.5px;letter-spacing:.02em;padding:5px 9px;
+  opacity:0;transition:opacity .12s ease;
+}
+.sparktip.on{opacity:1}
+.spark rect.bar{transition:fill .12s ease}
+.spark rect.bar.on{fill:#B58B3E}        /* 悬停=色系里的棕（驼黄），别用黑也别用深绿（用户 2026-09-17 两次纠正）*/
+.spark rect.hot{cursor:default}
+#tiles rect.seg{transition:opacity .12s ease}
+#tiles rect.seg:hover,#tiles rect.seg.on{opacity:.75}
+
+.hashrow{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.hashrow span{cursor:pointer}
+.hashrow .tgline{margin-top:0;font-size:12.5px;padding:5px 11px}   /* 专属标签混在话题标签里，但加重 */
+.hashrow span{
+  background:#fff;border:1px solid var(--line-2);border-radius:0;
+  padding:5px 11px;font-size:11px;font-weight:400;letter-spacing:.06em;color:var(--t2);
+}
+.statusbox{border:1px solid var(--line);border-radius:0;padding:16px;margin-top:14px}
+.vlink{display:block;font-size:13px;color:var(--navy);margin-top:8px;word-break:break-all;line-height:1.7;text-decoration:underline;text-underline-offset:3px}
+.vlink:hover{text-decoration:underline}
+.vmeta{font-size:12px;color:var(--t3);margin-top:5px}
+
+/* ===== 弹窗 ===== */
+.modal{
+  position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:95;
+  width:min(680px,94vw);max-height:86vh;overflow:auto;background:#fff;
+  border:1px solid var(--line-2);border-radius:0;
+  box-shadow:0 24px 70px rgba(28,27,26,.14);padding:28px;display:none;
+}
+.modal.open{display:block}
+.modal h3{font-size:17px;font-weight:600;letter-spacing:.01em;margin-bottom:8px}
+.drop{
+  border:1px dashed var(--line-2);border-radius:0;padding:36px;text-align:center;
+  background:var(--paper);cursor:pointer;font-size:12.5px;color:var(--t3);
+  transition:border-color .2s ease,color .2s ease,background .2s ease;
+}
+.drop:hover,.drop.over{border-color:var(--navy);color:var(--navy);background:var(--navy-bg)}
+.rowbtns{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap;align-items:center}
+.log{font-size:12.5px;margin-top:16px;max-height:200px;overflow:auto;border-top:1px solid var(--line);padding-top:12px}
+.log div{padding:3px 0;color:var(--t2)}
+.log div.ok{color:var(--green)}
+.log div.err{color:var(--late)}
+table.mini{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:14px}
+table.mini th,table.mini td{border-bottom:1px solid var(--line);padding:11px 10px;text-align:right}
+table.mini th:first-child,table.mini td:first-child{text-align:left}
+table.mini th{color:var(--t3);font-weight:400;font-size:12px;letter-spacing:0}
+
+/* 日历格子的悬停提示：自己画，跟图块区 .sparktip 一个样子；
+   表是横向滚动的，所以用 position:fixed，位置在 JS 里算 */
+.celltip{
+  position:fixed;z-index:80;pointer-events:none;opacity:0;transition:opacity .1s ease;
+  background:var(--ink);color:#fff;font-size:11.5px;line-height:1.5;letter-spacing:.02em;
+  padding:7px 11px;max-width:min(320px,90vw);white-space:pre-line;   /* 提示里有 \n，分两三行显示 */
+}
+.celltip.on{opacity:1}
+
+/* 分镜最后那行「尾」= 结尾引导，跟前面几幕排在一起（极简版把独立的「结尾引导」块砍了） */
+.shot.end .n{font-size:11px;color:var(--t3)}
+.shot.end .sec{min-width:0}
+
+/* ===== 效果统计 ===== */
+/* 一句人话的结论，放在对比表下面；数字加粗，别的都不强调 */
+.verdict{
+  margin:14px 0 0;padding:12px 14px;background:var(--paper);
+  font-size:13.5px;line-height:1.8;color:var(--t1);
+}
+.verdict b{font-weight:600}
+
+/* 维度切换：三个方框按钮连成一条，选中填黑（跟站里其它按钮一个脾气） */
+.effbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:14px 0 2px}
+.effbar .note{flex:1 1 220px}
+.segbtns{display:flex}
+.segbtn{
+  appearance:none;background:transparent;border:1px solid var(--ink);border-right:0;
+  padding:8px 15px;font:inherit;font-size:12.5px;color:var(--t1);cursor:pointer;
+  transition:background .14s ease,color .14s ease;
+}
+.segbtn:last-child{border-right:1px solid var(--ink)}
+.segbtn:hover{background:var(--paper)}
+.segbtn.on{background:var(--ink);color:#fff}
+.effbar .xsel .xbtn{height:35px}
+
+/* 可排序表头 */
+table.mini th.s{cursor:pointer;user-select:none;white-space:nowrap}
+table.mini th.s:hover{color:var(--t1)}
+table.mini th.s i{font-style:normal;opacity:0;margin-left:4px}
+table.mini th.s:hover i{opacity:.4}
+table.mini th.s.on{color:var(--t1)}
+table.mini th.s.on i{opacity:1}
+table.mini td.dim{color:var(--t4)}          /* 样本不够的行整行压灰 */
+table.mini .few{color:var(--t4);font-size:11px;margin-left:8px;font-weight:400}
+table.mini tbody tr:hover{background:var(--paper)}
+
+/* 平均播放对比条：只是让眼睛一眼看出长短，数字还在左边那列 */
+table.mini th.barh{width:132px;text-align:left}
+table.mini td.barc{width:132px;text-align:left}
+table.mini .track{display:block;height:6px;background:var(--line);width:110px}
+table.mini .track i{display:block;height:6px;background:var(--green)}
+
+/* ===== 门店列表面板 ===== */
+table.list{width:100%;border-collapse:collapse;font-size:13px}
+table.list th,table.list td{border-bottom:1px solid var(--line);padding:11px 10px;text-align:left}
+table.list th{
+  color:var(--t3);font-weight:400;font-size:12px;letter-spacing:0;
+  position:sticky;top:0;background:var(--card);z-index:5;white-space:nowrap;
+}
+/* 门店名 / 抖音号两列要给够宽度，不然字距一拉宽就被挤成竖排 */
+table.list th:nth-child(1),table.list td:nth-child(1){min-width:104px}
+table.list th:nth-child(2),table.list td:nth-child(2){min-width:112px;white-space:nowrap}
+table.list td:nth-child(1) .nm2{white-space:nowrap}
+table.list td .bl{color:var(--t3)}
+table.list tr:hover td{background:var(--paper)}
+table.list td{vertical-align:middle}
+table.list .nm2{font-weight:500}
+table.list .bl{font-size:11px;color:var(--t3)}
+.cellin{
+  width:100%;border:1px solid transparent;border-radius:0;padding:6px 8px;
+  font-size:12.5px;background:transparent;color:var(--t1);
+}
+.cellin::placeholder{color:var(--t4);font-size:12px}
+.cellin:hover{border-color:var(--line)}
+.cellin:focus{border-color:var(--ink);background:#fff;outline:none}
+.cellin.edited{background:var(--navy-bg);border-color:rgba(44,74,110,.3)}
+select.cellin{cursor:pointer}
+
+/* ===== 门店页（手机） ===== */
+body.storepage{background:var(--bg)}
+.sp-head{background:var(--card);padding:24px 18px 20px;border-bottom:1px solid var(--line-2)}
+.sp-head img{height:18px;margin-bottom:18px}
+.sp-head h1{font-size:21px;font-weight:600;letter-spacing:.01em}
+.sp-head .sub{font-size:12.5px;color:var(--t3);margin-top:8px;line-height:1.7}
+/* 头部一行（2026-09-20 用户：「太宽了，窄到只有一行，文字上下排列改成左右」）。
+   第一版做成了 @media(min-width:600px) 只在宽屏生效，用户在手机上看还是三行
+   ——「手机里怎么还是上下3行」。**要的是任何宽度都一行**，所以断点去掉了，别再加回来。
+   2026-09-20 用户又说「赫眉HYMN·门店拍摄计划：不要」—— 那行眉批已经从 store.html 里删了，
+   logo 本身就写着赫眉 HYMN，再写一遍是重复。**别加回来。**
+   现在头部只有两样：**店名在最左、logo 靠最右**（2026-09-20 用户指定），
+   横着排，整行 nowrap 保证不折行。DOM 顺序仍是 img → h1，靠 order 调过来。 */
+/* --wh-h = 周头 .wh 的高度（padding 14+14 + 行高约 20），日期行按它往下让 */
+body.storepage{--wh-h:48px}
+.sp-head{
+  display:flex;align-items:center;flex-wrap:wrap;gap:0 12px;
+  padding:13px 18px;
+}
+/* flex:1 1 0 —— basis 必须是 0，不能是 auto。
+   basis:auto 时店名的"基础宽度"= 文字实际宽度，店名一长（海曙龙湖天街店）
+   就会把 logo 顶到第二行去。basis:0 则店名永远不参与换行判断，
+   只负责吃掉剩下的空间，真放不下才用省略号截断。 */
+.sp-head h1{
+  order:1;font-size:19px;flex:1 1 0;min-width:0;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+/* logo 靠右：margin-left:auto 顶到最右边。
+   【坑，2026-09-20 踩过】这里**必须写死 width**，不能只写 height:16px ——
+   logo-ink.png 原图是 1200×298，flex 算基础尺寸时用的是图片的**原始宽度 1200px**
+   （不是按比例缩完的 64px），整行被撑爆，能收缩的店名就被压成了「丈...」。
+   64px = 16 × 1200/298，height:auto 让它按比例走，不会变形。 */
+.sp-head img{order:2;width:64px;height:auto;margin:0 0 0 auto;flex:0 0 64px}
+/* 【坑，2026-09-20 踩过】.sub 是「缺少门店参数」那条报错信息的容器，平时是**空的**。
+   当时给它写了 flex-basis:100%（想让它换到第二行），可容器是 nowrap ——
+   一个空 div 也照样按「我要占满整行」参与空间分配，整行溢出，
+   能收缩的店名被压成「丈...」，logo 被挤得贴在它旁边，看起来像右对齐失效了。
+   修法：容器改回 wrap（让它真的能换行）+ 空的时候直接不显示。 */
+.sp-head .sub{order:3;flex-basis:100%;margin-top:6px}
+.sp-head .sub:empty{display:none}
+/* 防御：眉批那行已经从 store.html 里删了，但手机/微信会缓存旧 HTML，
+   旧 DOM 里它还在、又没了样式规则，就会退回 order:0 排到最前面、自己折三行，
+   把店名挤成「丈.」（2026-09-20 真在微信里出过这个）。这里兜底藏掉。 */
+.sp-head .eyebrow{display:none}
+@media (min-width:600px){
+  .sp-head{padding:14px 22px;gap:0 14px}
+  .sp-head h1{font-size:20px}
+}
+.sp-kpis{display:flex;gap:0;padding:0;flex-wrap:wrap;background:var(--card);border-bottom:1px solid var(--line-2)}
+.sp-kpis .kpi{min-width:0;flex:1 1 0;padding:16px 14px;border-left:1px solid var(--line)}
+.sp-kpis .kpi:first-child{border-left:0}
+.sp-kpis .kpi .val{font-size:26px;margin-top:8px}
+.sp-body{padding:18px 18px 72px}
+/* 退出登录那行：压到最底下、压成次级文字，别跟脚本抢注意力 */
+.sp-out{margin-top:22px;text-align:center;font-size:12.5px;color:var(--t3)}
+.sp-out .mob{color:var(--t3)}
+/* 【别加回 overflow:hidden】2026-09-20：祖先上只要有 overflow（hidden/auto 都算），
+   子元素的 position:sticky 就整个失效 —— 周头和日期行的「冻结」全靠它。
+   这里本来也没东西要裁（圆角是 0）。 */
+.wkblock{background:var(--card);border:0;border-radius:0;margin-bottom:14px}
+/* 冻结（2026-09-20 用户：「日期、本周这种日期的展开、收起功能，冻结，随时能点到」）：
+   周头钉在视口顶上，滚多远都点得到。--wh-h 是它的高度，下面日期行要按这个数往下让。 */
+.wkblock .wh{
+  display:flex;align-items:center;gap:8px;padding:14px 16px;cursor:pointer;
+  font-size:14px;font-weight:600;letter-spacing:0;
+  position:sticky;top:0;z-index:3;background:var(--card);
+  box-shadow:0 1px 0 var(--line-2);   /* 发丝线，不是投影：钉住时跟下面的内容分开 */
+}
+.wkblock .wh .rg{font-size:11.5px;color:var(--t3);font-weight:400}
+.wkblock .wh .cnt{margin-left:auto;font-size:11.5px;color:var(--t3);font-weight:400}
+.wkblock .wh .arrow{color:var(--t4);font-size:11px;transition:.2s}
+.wkblock.open .wh .arrow{transform:rotate(90deg)}
+.wkblock.now .wh{color:var(--navy)}
+.wkblock.now{box-shadow:inset 2px 0 0 var(--navy)}
+.wkblock .wb{display:none;padding:0 16px 10px}
+.wkblock.open .wb{display:block}
+.card2{border-top:1px solid var(--line);padding:14px 0;cursor:pointer}
+/* 展开那一条要一眼看出边界，不然详情末尾和下一天的日期粘成一坨（用户 2026-09-17 反馈）：
+   左边 2px 黑竖条 + 上下换成深一号的分区线 + 上下留空，整块从清单里「拎」出来 */
+.card2.open{
+  background:var(--paper);                     /* 展开=换底色，收起的行是白底（用户 2026-09-17 要求「颜色上做个区分」）*/
+  box-shadow:inset 2px 0 0 var(--ink);
+  border-top:1px solid var(--line-2);border-bottom:1px solid var(--line-2);
+  margin:10px -16px;padding:16px 16px 22px 30px; /* 负边距把浅底铺满整行宽 */
+}
+/* 底色换成浅灰之后，里面原本也用 --paper 的块要翻成白，不然糊成一片 */
+.card2.open .bigline,
+.card2.open .tgline,
+.card2.open .pill.todo,
+.card2.open .hashrow span{background:var(--card)}
+.card2.open .shot{border-bottom-color:var(--line-2)}
+.card2.open .detail{border-top-color:var(--line-2)}
+.card2.open + .card2{border-top:0}
+/* 展开/收起按钮：站内标准方框按钮（1px 黑边），展开后翻成黑底白字，
+   一眼能找到（用户 2026-09-17：「打开/收起的按钮，着重突出」）*/
+.card2 .ct .tog{
+  margin-left:auto;display:inline-flex;align-items:center;gap:6px;flex-shrink:0;
+  border:1px solid var(--ink);border-radius:0;padding:5px 10px;
+  font-size:12px;letter-spacing:.02em;color:var(--t1);background:transparent;
+}
+.card2 .ct .tog em{font-style:normal}
+.card2 .ct .tog .c{display:none}
+.card2 .ct .tog i{font-style:normal;font-size:10px;line-height:1;transition:transform .2s}
+.card2.open .ct .tog{background:var(--ink);color:#fff}
+.card2.open .ct .tog .o{display:none}
+.card2.open .ct .tog .c{display:inline}
+.card2.open .ct .tog i{transform:rotate(180deg)}
+.emptyday{border-top:1px solid var(--line);padding:14px 0;font-size:12.5px;color:var(--t3)}
+.card2 .ct{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+/* 展开的那一条：日期 + 「收起」按钮钉在周头正下方。
+   只钉 .open 的：收起状态的行本来就短，全钉会一路互相顶替，晃眼。
+   背景必须给（--paper 跟展开态一致），否则详情会从底下透出来。
+   不用负边距铺满：详情内容本来就在内容盒里，左右 padding 那两条边上不会有东西滚过去，
+   留着反而保住了左边那条 2px 竖条。 */
+.card2.open .ct{
+  position:sticky;top:var(--wh-h);z-index:2;
+  background:var(--paper);padding:10px 0;margin-top:-10px;
+}
+/* 今天那条：普蓝角标 + 左边一条竖线，店员打开就是来找今天拍什么的 */
+.card2 .ct .now{
+  background:var(--navy);color:#fff;font-size:11px;letter-spacing:.06em;
+  padding:3px 8px;line-height:1.3;
+}
+.card2.istoday{box-shadow:inset 2px 0 0 var(--navy);padding-left:12px}
+.card2 .copyrow{margin-top:16px}
+.card2 .copyrow .btnmini{width:100%;padding:11px 0;font-size:13px}
+.card2 .ct .dt{font-size:12.5px;color:var(--t3);font-variant-numeric:tabular-nums}
+.card2 h5{font-size:15.5px;font-weight:600;margin:8px 0 0;line-height:1.55}
+.card2 .fmt{font-size:12.5px;color:var(--t3)}
+.card2 .tgline{
+  display:inline-block;background:transparent;color:var(--t1);border:1px solid var(--ink);
+  border-radius:0;padding:6px 12px;font-size:14px;font-weight:600;margin-top:10px;cursor:pointer;
+}
+.card2 .more{font-size:12.5px;color:var(--t1);margin-top:12px;cursor:pointer;display:inline-block;
+  position:relative}
+.card2 .more::after{
+  content:'';position:absolute;left:0;right:0;bottom:-3px;height:1px;background:currentColor;
+  transform:scaleX(0);transform-origin:right center;
+  transition:transform .26s cubic-bezier(.25,.1,.25,1);
+}
+.card2 .more:hover::after{transform:scaleX(1);transform-origin:left center}
+.card2 .more:hover{color:var(--ink)}
+.card2 .detail{display:none;margin-top:16px;border-top:1px solid var(--line);padding-top:4px}
+.card2 .detail .sechead:first-child,.card2 .detail .vlink{margin-top:18px}
+.card2.open .detail{display:block}
+
+.toast{
+  position:fixed;left:50%;bottom:34px;transform:translateX(-50%);background:var(--ink);
+  color:#fff;padding:11px 20px;border-radius:0;font-size:12.5px;z-index:200;opacity:0;
+  pointer-events:none;transition:.2s;
+}
+.toast.on{opacity:1}
+
+@media (max-width:900px){
+  .sidebar{position:static;width:auto;flex-direction:row;align-items:center;flex-wrap:wrap;
+    border-right:none;border-bottom:1px solid var(--line)}
+  .sidebar .logo{border-bottom:none;padding:14px 16px}
+  .sidebar .logo .st{display:none}
+  .nav{display:flex;gap:2px;padding:8px;flex:1 1 auto}
+  .nav .grp{display:none}
+  .nav a{padding:10px 12px;font-size:12.5px}
+  .nav a.on::before{top:auto;bottom:0;transform:none;left:12px;right:12px;width:auto;height:2px}
+  .sidedata{padding:10px 16px;border-top:1px solid var(--line);display:flex;align-items:center;gap:10px;width:100%}
+  .sidedata .hint{display:none}
+  .btn.block{width:auto}
+  .sidebar .foot{display:none}
+  .main{margin-left:0}
+  .navtog{display:none}
+  .content{padding:18px 16px 60px}
+  .pagehead{margin-bottom:22px;padding-bottom:16px}
+  .pagehead h2{font-size:23px}
+  .kpirow{flex-wrap:wrap}
+  .kpi{min-width:44%}
+}
+
+/* ===== 顶栏光轨（2026-09-20，搬自访客登记系统那条 TIESTON 顶栏）===== */
+/* 冻结在顶上（2026-09-20 用户：「最上面这个流光效果冻结，不要随页面划动」）。
+   z-index 要压过表格里那些 sticky 表头（它们是 20/30），所以给 50。
+   position:sticky 能用的前提是祖先链上没有 overflow —— .main 上没有，别加。 */
+/* 冻结：position:fixed，不是 sticky。
+   先用的 sticky，用户反馈「划到最下面还是会动」—— sticky 的参照系是祖先容器，
+   祖先一到底它就跟着走；fixed 参照视口，滚到哪儿都不动，不用逐层排查祖先。
+   left 跟着侧栏宽度走（侧栏能折叠成 58px 图标栏）。
+   **不加 transition** —— 折叠是瞬间完成的，顶栏也得瞬间跟上，
+   否则侧栏已经收好了、顶栏还在慢慢滑。 */
+.hdrfx{
+  position:fixed;top:0;left:var(--nav-w);right:0;z-index:50;
+  overflow:hidden;display:flex;align-items:center;gap:12px;
+  padding:13px 20px;background:#EDACB2;   /* 品牌粉，WebGL 拿不到时也靠它兜着 */
+}
+body.navhide .hdrfx{left:var(--nav-w-rail)}
+/* 顶栏脱离文档流了，主区得空出它的高度（13+25+13 = 51px），否则内容被盖住 */
+body.hasfx .main{padding-top:51px}
+/* 门店页没有侧栏，顶栏从左边缘开始，宽度也就不用跟着变 */
+body.storepage .hdrfx{left:0}
+body.storepage.hasfx .sp-body{padding-top:51px}
+.hdrfx > *:not(canvas){position:relative;z-index:1}
+.hdrfx canvas{position:absolute!important;inset:0;width:100%!important;height:100%!important;
+  z-index:0;display:block;pointer-events:none}
+/* logo：品牌原件就是**粉底白字**，所以这里填纯白，不要渐变不要金。
+   用 PNG 当遮罩，所以不用另存一张白色图。
+   【坑】类名原来叫 .lg，跟登录页的主容器 .lg 撞了 —— logo 继承了容器的
+   padding:calc(51px+10vh)，顶栏在手机上被撑到 400 多像素高。改名 .hdlogo。 */
+.hdrfx .hdlogo{
+  width:92px;height:25px;flex:none;background:#FFFFFF;
+  -webkit-mask:url(logo-ink.png) no-repeat left center/contain;
+          mask:url(logo-ink.png) no-repeat left center/contain;
+}
+.hdrfx .sp{width:1px;height:20px;background:rgba(255,255,255,.55);flex:none}
+.hdrfx h2{margin:0;font-size:16px;font-weight:600;letter-spacing:.06em;color:#fff;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hdrfx::after{content:'';position:absolute;left:0;right:0;bottom:0;height:1px;z-index:2;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.85),transparent)}
+@keyframes hdrflow{from{background-position:0% 50%}to{background-position:280% 50%}}
+@media (prefers-reduced-motion:reduce){.hdrfx .hdlogo{animation:none}}
+
+/* ===== 固定顶栏之后，所有「钉在视口顶上」的东西都要往下让 51px =====
+   2026-09-20：顶栏改成 position:fixed（z-index 50）之后，
+   门店页的周头原本钉在 top:0，正好躲进粉条底下 —— 用户：「往上划了以后，本周怎么没了」。
+   凡是参照**视口**的 sticky 都得加这 51px；参照容器的不用
+   （比如日历大表的表头在 .gridwrap{overflow:auto} 里，钉的是容器，跟顶栏无关）。 */
+body.hasfx .wkblock .wh{top:51px}
+body.hasfx .card2.open .ct{top:calc(51px + var(--wh-h))}
+body.hasfx table.list th{top:51px}
+
+/* ===== 侧栏顶上那块 logo + 标题隐掉（2026-09-20 用户：「这个重复的不要了」）=====
+   加了固定顶栏之后，侧栏顶上的「logo + 视频脚本看板」跟顶栏一模一样，重复了。
+   用 CSS 隐藏而不是删 HTML：预览文件是 index.html 的逐字副本，
+   改 HTML 就对不上了，也不好回退。
+   折叠按钮 .navtog 是 fixed 的（top:24px，34px 高），原来靠 logo 那块占位；
+   logo 一藏，导航会顶上去被按钮压住，所以给 nav 补 66px 的上边距。 */
+body.hasfx .sidebar .logo{display:none}
+body.hasfx .sidebar .nav{padding-top:66px}
+
+/* 侧栏收窄（2026-09-20 用户：「没了 logo 以后，这里现在太宽了」）。
+   214px 当初是为了装下 logo 和「视频脚本看板」那行字；logo 移到顶栏之后，
+   里面最长的一项是「视频数据导入」6 个字 —— 图标 18 + 间距 + 6×14px ≈ 130，
+   加左右内边距取 168px。
+   注意 --nav-w 同时被 .main 的 margin-left 和固定顶栏的 left 引用，改这一个值就够。 */
+body.hasfx{--nav-w:168px}
+
+/* ===== 顶栏通栏 + 折叠按钮下移（2026-09-20）=====
+   用户：「让动效做到最左边，折叠按钮下移一点」。
+   顶栏原来从侧栏右边开始（left:var(--nav-w)），光轨被侧栏截掉一截；
+   改成 left:0 通栏，粉条和光轨横穿整个窗口。
+
+   连带三件事，少一件都会错位：
+     · 顶栏盖住侧栏顶上 51px → 侧栏补 padding-top，导航不会被压在粉条下面
+     · 折叠按钮（fixed，原来 top:24px）正好在粉条里 → 下移到 65px，落在顶栏下方
+     · 导航再往下让开按钮占的 65~99px */
+body.hasfx .hdrfx{left:0}
+body.hasfx .sidebar{padding-top:51px}
+body.hasfx .navtog{top:65px}
+body.hasfx .sidebar .nav{padding-top:54px}
+
+/* 侧栏第一个分组标题「运营」去掉（2026-09-20 用户要求）。
+   它是 .nav 的第一个子节点，所以 :first-child 就能精准命中，
+   不会误伤下面那个「数据」。 */
+body.hasfx .sidebar .nav .grp:first-child{display:none}
+
+/* 右上角「开启动效 / 关闭动效」按钮去掉（2026-09-20 用户：「不要了」）。
+   那是背景折光面的开关。按钮藏了，开关逻辑还在 board.js 里，
+   背景动效开不开只由 localStorage.hymn_bg3d 决定，页面上不再露出入口。 */
+body.hasfx .fxbtn{display:none}
+
+/* 顶栏要压过侧栏（2026-09-20 用户：「挡住了」）。
+   层级现状：侧栏 60、折叠按钮 70、顶栏原本只有 50 —— 侧栏那 168px 白底
+   直接盖在粉条上，把 logo 切掉一半。顶栏通栏之后必须爬到最上面。
+   折叠按钮已经下移到 65px、落在顶栏下方，空间上不重叠，所以 80 > 70 不会有副作用。 */
+body.hasfx .hdrfx{z-index:80}
+
+/* ===== logo 和标题也要流光（2026-09-20 用户：「让 logo 和字能变光」）=====
+   做法跟 TIESTON 原版一样：一条比元素宽得多的渐变，慢慢横移。
+     logo —— 它是用 PNG 当遮罩的，所以直接把 background 换成渐变就行，不用另做图；
+     标题 —— background-clip:text + 文字透明，让渐变透过字显出来。
+   渐变本身是「白 → 淡粉 → 白」：底色是品牌粉，白字上扫过一道偏粉的带子，
+   读起来就是一道光划过。**别做成彩虹渐变**，那跟这套画风不搭。
+   两者用同一个动画、同一个周期，扫过的节奏才对得上。 */
+@keyframes hdrsheen{from{background-position:0% 50%}to{background-position:280% 50%}}
+body.hasfx .hdrfx .hdlogo,
+body.hasfx .hdrfx h2{
+  background:linear-gradient(100deg,
+    #FFFFFF 0%, #FFFFFF 30%, #FFD3DE 42%, #FFFFFF 54%, #FFFFFF 78%, #FFE6EC 88%, #FFFFFF 100%);
+  background-size:280% 100%;
+  animation:hdrsheen 6s linear infinite;
+}
+body.hasfx .hdrfx h2{
+  -webkit-background-clip:text;background-clip:text;
+  color:transparent;-webkit-text-fill-color:transparent;
+}
+@media (prefers-reduced-motion:reduce){
+  body.hasfx .hdrfx .hdlogo,body.hasfx .hdrfx h2{animation:none}
+}
+
+/* logo 和标题的发光已去掉（2026-09-20 用户：「发光去掉吧」）。
+   只保留 hdrsheen 那道横扫的流光。
+   如果以后又要发光：**用 filter:drop-shadow()，不要用 text-shadow** ——
+   标题是 background-clip:text + 文字透明做的，text-shadow 会从透明的字里透出来糊成一团。 */
+
+/* ===== 周头钉在顶上（2026-09-20，来回改过两版，记下结论）=====
+   先把「本周」做成了 position:fixed，想让它永不消失 —— 方向错了。
+   用户澄清：「本周只是其中一周，我选了别的周，那个周的按键就不能消失，
+   只是把我选中的周的那个带箭头的开关钉死」。
+   也就是说要钉的是**你正在看的那一周**，不是固定某一周。这正好就是 sticky 的语义：
+   滚到哪一周，哪一周的头就顶在上面，滚出去自动让给下一周。fixed 反而会把
+   「本周」焊死在屏幕上，换了别的周更乱。
+
+   所以：所有周头统一 sticky 在顶栏下方（51px）。
+   本周不做特殊处理，它只是恰好在最前面。 */
+body.hasfx .wkblock .wh{top:51px}
+body.hasfx .card2.open .ct{top:calc(51px + var(--wh-h))}
+
+/* ===== 展开态改白底，小标题换品牌粉（2026-09-20 用户：「正文部分都要白底，改标题之类的颜色」）=====
+   原设计是「展开=浅色底、里面的小块翻白」来做层次；底色一改白，这套就得**整个对调**：
+   展开态用白，里面的小块（开头3秒、标签、待拍药丸）改用淡粉底。
+   只改一边会全糊成一片白 —— 这是 CLAUDE.md 里记过的坑，换底色时必须一起动。
+   钉住的日期条背景也要跟着白，否则滚动时能看到一条粉的横杠。 */
+body.hasfx .card2.open{background:var(--card)}
+body.hasfx .card2.open .ct{background:var(--card)}
+body.hasfx .card2.open .bigline,
+body.hasfx .card2.open .tgline,
+body.hasfx .card2.open .pill.todo,
+body.hasfx .card2.open .hashrow span{background:var(--paper)}
+
+/* 小标题（开头 3 秒 / 分镜 / 话题标签）：黑 → 品牌粉，左边那条竖条本来就是 --ink，
+   现在文字跟它同色，整组更像一个整体。附注「7 幕 · 30-40 秒」保持灰，别抢。 */
+body.hasfx .sechead{color:var(--ink)}
+body.hasfx .sechead .meta{color:var(--t3)}
+
+/* ===== 只看这一天（2026-09-20 用户：「打开某天的脚本以后，只能看到这一天的」）=====
+   展开某条时，store.js 会给 body 加 focusday，这里负责把无关的都藏掉：
+     · 同一周里其它日期的卡片
+     · 其它周次整块（连周头一起，否则屏幕上挂着一排没用的日期条）
+   周头保留 —— 它是收起这一周、退回列表的入口。
+   全部挂在 body.hasfx 下，所以**只影响预览版**，真页面行为不变。 */
+/* 展开某一周 → 只剩这一周（其余周次连头一起藏） */
+body.hasfx.focusweek .wkblock:not(.open){display:none}
+/* 再展开某一天 → 连同一周里其它日期也藏掉，只剩这一条 */
+body.hasfx.focusday .wkblock .card2:not(.open){display:none}
+body.hasfx.focusday .wkblock:not(.hasopen){display:none}
+body.hasfx.focusday .emptyday{display:none}

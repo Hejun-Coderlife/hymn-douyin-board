@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>赫眉 HYMN · 视频脚本看板</title>
+<link rel="stylesheet" href="assets/style-pink.css">
+<!-- 白底粉色系预览：跟 index.html 完全一样，只换了配色文件 assets/style-pink.css -->
+</head>
+<body>
+<div id="boot"><div class="bmark"><img src="assets/logo-ink.png" alt="赫眉 HYMN"></div></div>
+
+
+<button class="navtog" id="navTog" type="button" title="收起 / 展开侧栏" aria-label="收起侧栏">
+  <svg viewBox="0 0 20 20" width="17" height="17" aria-hidden="true">
+    <rect x="1.5" y="3.5" width="17" height="13" fill="none" stroke="currentColor"></rect>
+    <line x1="7.5" y1="3.5" x2="7.5" y2="16.5" stroke="currentColor"></line>
+  </svg>
+</button>
+<aside class="sidebar">
+  <div class="logo">
+    <img src="assets/logo-ink.png" alt="赫眉 HYMN">
+    <div class="st">视频脚本看板</div>
+  </div>
+  <nav class="nav">
+    <div class="grp">运营</div>
+    <a class="on" data-panel="board" title="脚本日历"><span class="ico"><svg viewBox="0 0 22 22" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><rect x="2.5" y="4.5" width="17" height="15"/><line x1="2.5" y1="9" x2="19.5" y2="9"/><line x1="7" y1="2.5" x2="7" y2="6"/><line x1="15" y1="2.5" x2="15" y2="6"/><rect x="6" y="12" width="4" height="3.5" fill="currentColor" stroke="none"/></svg></span><span class="lb">脚本日历</span></a>
+    <a data-panel="stores" title="门店列表"><span class="ico"><svg viewBox="0 0 22 22" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><path d="M3 8.5 L5 3.5 L17 3.5 L19 8.5 Z"/><path d="M4 8.5 V19.5 H18 V8.5"/><path d="M9 19.5 V13 H13 V19.5"/></svg></span><span class="lb">门店列表</span></a>
+    <div class="grp">数据</div>
+    <a data-panel="import" title="视频数据导入"><span class="ico"><svg viewBox="0 0 22 22" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><line x1="11" y1="2.5" x2="11" y2="13"/><path d="M6.5 8.5 L11 13 L15.5 8.5"/><path d="M3.5 14.5 V19 H18.5 V14.5"/></svg></span><span class="lb">视频数据导入</span></a>
+    <a data-panel="effect" title="效果统计"><span class="ico"><svg viewBox="0 0 22 22" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><line x1="2.5" y1="19" x2="19.5" y2="19"/><rect x="5" y="11" width="3.4" height="8"/><rect x="10.3" y="6.5" width="3.4" height="12.5"/><rect x="15.6" y="13.5" width="3.4" height="5.5"/></svg></span><span class="lb">效果统计</span></a>
+  </nav>
+  <div class="sidedata">
+    <div class="hint" id="datahint">未导入视频数据</div>
+  </div>
+</aside>
+
+<div class="main">
+<div class="hdrfx" id="hdrfx">
+  <span class="hdlogo"></span><span class="sp"></span>
+  <h2>视频脚本看板</h2>
+</div>
+
+  <div class="content">
+
+    <!-- 脚本日历 -->
+    <section class="panel on" id="p-board">
+
+      <header class="pagehead">
+        <div>
+          <div class="eyebrow">赫眉 HYMN · 全部门店</div>
+          <h2>视频脚本看板</h2>
+          <p id="heroSub"></p>
+        </div>
+        <button class="fxbtn" id="fxToggle" title="关掉/打开背景动效">动效</button>
+      </header>
+
+      <div class="tiles" id="tiles"></div>
+
+      <div class="kpirow" id="kpis"></div>
+
+      <div class="card">
+        <h3>逾期未发排行</h3>
+        <div class="rank" id="ranks"></div>
+      </div>
+
+      <div class="filters">
+        <select id="fMgr"><option value="">全部区域经理</option></select>
+        <select id="fStore" multiple><option value="">全部门店</option></select>
+        <input type="search" id="fSearch" placeholder="搜门店 / 抖音号">
+        <label class="chk"><input type="checkbox" id="fLate"> 只看有逾期</label>
+        <div class="legend">
+          <span><i style="background:#EDE2E5"></i>待拍</span>
+          <span><i style="background:#9C3B2E"></i>逾期未发</span>
+          <span><i style="background:#D4788C"></i>已发布</span>
+          <span><i style="background:#C25E77;border-radius:50%;width:7px;height:7px"></i>当天另有自由发挥</span>
+        </div>
+      </div>
+
+      <div class="monthbar" id="monthbar"></div>
+
+      <div class="gridcard">
+        <div class="gridwrap">
+          <table class="board" id="board"><tbody><tr><td class="emptyrow">加载中…</td></tr></tbody></table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 门店列表 -->
+    <section class="panel" id="p-stores">
+      <div class="card">
+        <h3>门店档案 <span class="tag">直接在表里改，改完自动生效（筛选器、脚本生成都会用）</span></h3>
+        <p class="note" id="profileStat"></p>
+        <div class="rowbtns" style="margin-top:10px">
+          <button class="btn primary" id="btnExportStores">导出 stores.json</button>
+          <button class="btn danger" id="btnResetStores">还原本机修改</button>
+          <span class="note" style="margin-left:4px">
+            改动先存在浏览器里，看板立刻生效；要固化到项目里就点「导出」，把文件放回 data/ 覆盖。
+          </span>
+        </div>
+        <div class="mgrbar" id="mgrBar"></div>
+        <datalist id="regionList"></datalist>
+        <div class="tablewrap" style="max-height:calc(100vh - 340px);overflow:auto;margin-top:12px">
+          <table class="list" id="storelist"></table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 视频数据 -->
+    <section class="panel" id="p-import">
+      <div class="card">
+        <h3>导入抖音来客视频数据</h3>
+        <p class="note">
+          在浏览器本地解析，<b>不上传任何服务器</b>。按「视频ID」去重累积合并，多次导出可以反复导入。
+          品牌号「赫眉美妆护肤连锁」会自动忽略。
+        </p>
+        <div class="drop" id="drop" style="margin-top:14px">点击选择 .xlsx，或把文件拖到这里</div>
+        <div class="rowbtns">
+          <button class="btn" id="btnExportBak">导出备份 JSON</button>
+          <button class="btn" id="btnImportBak">导入备份 JSON</button>
+          <input type="file" id="fileBak" accept=".json" hidden>
+          <input type="file" id="file" accept=".xlsx,.xls" hidden>
+          <div style="flex:1"></div>
+          <button class="btn danger" id="btnClear">清空视频数据</button>
+        </div>
+        <div class="log" id="log"></div>
+      </div>
+    </section>
+
+    <!-- 效果统计 -->
+    <section class="panel" id="p-effect">
+      <div class="card">
+        <h3>按脚本拍 vs 自由发挥</h3>
+        <p class="note">
+          <b>只纳入发布时间落在导出「数据日期范围」内的视频</b> —— 范围外的老视频播放数大量为 0，混进来会把均值压垮。
+          平均值容易被一条爆款拉高，所以每行都另给一个<b>中位播放</b>：两个数差得远，说明是个别视频撑起来的。
+        </p>
+        <div id="effectBody"></div>
+      </div>
+
+      <div class="card" id="effDimCard">
+        <h3>拆开看</h3>
+        <div class="effbar">
+          <div class="segbtns" id="effDims">
+            <button type="button" class="segbtn on" data-dim="store">按门店</button>
+            <button type="button" class="segbtn" data-dim="topic">按内容方向</button>
+            <button type="button" class="segbtn" data-dim="format">按拍摄形式</button>
+          </div>
+          <select id="eMgr"><option value="">全部区域经理</option></select>
+          <span class="note" id="effDimNote"></span>
+        </div>
+        <div id="effDimBody"></div>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<div class="backdrop" id="backdrop"></div>
+
+<!-- 区域经理管理：左边名单（可增删），右边勾选他负责的门店 -->
+<div class="modal mgrmodal" id="mgrModal">
+  <h3>区域经理</h3>
+  <p class="note">左边加名字，右边勾门店。一家店只能属于一个经理，勾给新的人就从原来那个名下移走。</p>
+  <div class="mm">
+    <div class="mm-l">
+      <div class="mm-add">
+        <input id="mmNew" placeholder="新名字，回车添加">
+        <button class="btn sm" id="mmAdd">添加</button>
+      </div>
+      <div class="mm-list" id="mmList"></div>
+    </div>
+    <div class="mm-r">
+      <div class="mm-head">
+        <span id="mmWho">先选左边一个经理</span>
+        <input type="search" id="mmSearch" placeholder="搜门店">
+      </div>
+      <div class="mm-stores" id="mmStores"></div>
+    </div>
+  </div>
+  <div class="rowbtns">
+    <button class="btn primary" id="mmDone">完成</button>
+    <span class="note" id="mmStat"></span>
+  </div>
+</div>
+<aside class="drawer" id="drawer">
+  <div class="dh">
+    <div>
+      <h3 id="dTitle">—</h3>
+      <div class="sub" id="dSub"></div>
+    </div>
+    <button class="close" id="dClose">×</button>
+  </div>
+  <div class="db" id="dBody"></div>
+</aside>
+
+<script src="data/stores.js?v=20260920-1537"></script>
+<script src="data/scripts-index.js?v=20260920-1537"></script>
+<script src="vendor/xlsx.full.min.js"></script>
+<script src="assets/core.js?v=20260920-1537"></script>
+<script src="assets/fx-header.js"></script>
+<script src="assets/board.js?v=20260920-1537"></script>
+<script>
+(function(){
+  document.body.classList.add("hasfx");   // 顶栏是 fixed，主区要空出 51px
+  var why = hymnHeaderFx(document.getElementById("hdrfx"), {count:800});
+  if (why) {   /* 失败就在顶栏上直接写出来，别让人对着一条纯色底猜 */
+    var t=document.createElement("div");
+    t.style.cssText="position:relative;z-index:3;margin-left:auto;font-size:11px;color:#F3B0BA";
+    t.textContent="光轨没起来："+why;
+    document.getElementById("hdrfx").appendChild(t);
+    console.warn("[顶栏光轨] "+why);
+  } else { console.log("[顶栏光轨] 正在运行"); }
+})();
+</script>
+</body>
+</html>
