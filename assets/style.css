@@ -73,33 +73,54 @@ body{
 #pageBg{display:none}
 body.fxon::before,body.fxon::after{
   content:'';position:fixed;z-index:-1;pointer-events:none;
-  width:76vmax;height:76vmax;border-radius:50%;
-  filter:blur(0px);will-change:transform;
+  width:86vmax;height:86vmax;border-radius:50%;will-change:transform;
 }
+/* 颜色比第一版重了一档，移动幅度也大了（原来 .42 透明度 + 26s 来回摆，
+   任一秒的位移几乎是零，用户看不出开没开）。再重就不像爱马仕了，到这为止。 */
 body.fxon::before{
-  left:-22vmax;top:-26vmax;
+  left:-26vmax;top:-32vmax;
   background:radial-gradient(circle at 50% 50%,
-    rgba(214,178,132,.42) 0%, rgba(226,199,166,.26) 38%, rgba(252,247,241,0) 70%);
-  animation:fxA 26s ease-in-out infinite alternate;
+    rgba(206,158,100,.58) 0%, rgba(226,196,158,.34) 36%, rgba(252,247,241,0) 68%);
+  animation:fxA 17s ease-in-out infinite alternate;
 }
 body.fxon::after{
-  right:-28vmax;bottom:-30vmax;
+  right:-30vmax;bottom:-34vmax;
   background:radial-gradient(circle at 50% 50%,
-    rgba(181,139,62,.30) 0%, rgba(224,206,178,.20) 40%, rgba(252,247,241,0) 72%);
-  animation:fxB 34s ease-in-out infinite alternate;
+    rgba(181,139,62,.46) 0%, rgba(216,196,162,.28) 40%, rgba(252,247,241,0) 70%);
+  animation:fxB 23s ease-in-out infinite alternate;
 }
 @keyframes fxA{
-  0%{transform:translate3d(0,0,0) scale(1)}
-  50%{transform:translate3d(26vw,12vh,0) scale(1.14)}
-  100%{transform:translate3d(8vw,26vh,0) scale(.94)}
+  0%{transform:translate3d(-6vw,-4vh,0) scale(.95)}
+  50%{transform:translate3d(40vw,20vh,0) scale(1.22)}
+  100%{transform:translate3d(14vw,42vh,0) scale(.9)}
 }
 @keyframes fxB{
-  0%{transform:translate3d(0,0,0) scale(1.05)}
-  50%{transform:translate3d(-24vw,-14vh,0) scale(.9)}
-  100%{transform:translate3d(-6vw,-28vh,0) scale(1.18)}
+  0%{transform:translate3d(6vw,4vh,0) scale(1.1)}
+  50%{transform:translate3d(-38vw,-22vh,0) scale(.86)}
+  100%{transform:translate3d(-10vw,-44vh,0) scale(1.24)}
+}
+
+/* 光扫：页面九成被白卡片盖住，背景那两团只能从边缝露一点，光靠它「看不出开没开」。
+   所以把动效也放到真正看得见的地方 —— 图块区那四块灰底方块上扫一道斜光
+   （`.tile .box` 本来就是 overflow:hidden 的灰方块）。纯 transform，合成器跑，不吃 CPU。 */
+body.fxon .tile .box::after{
+  content:'';position:absolute;top:-30%;bottom:-30%;left:-70%;width:60%;
+  background:linear-gradient(100deg,
+    rgba(255,255,255,0) 0%, rgba(255,255,255,.62) 50%, rgba(255,255,255,0) 100%);
+  transform:skewX(-14deg) translate3d(0,0,0);
+  pointer-events:none;will-change:transform;
+  animation:sheen 6.5s cubic-bezier(.5,0,.5,1) infinite;
+}
+body.fxon .tiles .tile:nth-child(2) .box::after{animation-delay:1.1s}
+body.fxon .tiles .tile:nth-child(3) .box::after{animation-delay:2.2s}
+body.fxon .tiles .tile:nth-child(4) .box::after{animation-delay:3.3s}
+@keyframes sheen{
+  0%{transform:skewX(-14deg) translate3d(0,0,0)}
+  55%,100%{transform:skewX(-14deg) translate3d(330%,0,0)}   /* 扫完停一会儿再来，别像跑马灯 */
 }
 @media (prefers-reduced-motion:reduce){
-  body.fxon::before,body.fxon::after{animation:none}
+  body.fxon::before,body.fxon::after,body.fxon .tile .box::after{animation:none}
+  body.fxon .tile .box::after{display:none}
 }
 a{color:inherit;text-decoration:none}
 button,select,input{font:inherit;color:inherit}
