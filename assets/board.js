@@ -770,43 +770,191 @@
   }
 
   /* ---------- 效果统计 ---------- */
-  function renderEffect() {
-    if (!S.videos.length) {
-      $('#effectBody').innerHTML = '<div class="emptyrow">还没有视频数据，先去「视频数据导入」。</div>';
-      return;
-    }
+  /* ---------- 效果统计 ----------
+     口径陷阱：播放数只统计导出的「数据日期范围」内，范围外的老视频大量为 0，
+     混进来会把均值压垮 —— 所以先按发布时间筛一遍。
+     另一个陷阱：平均值会被一条爆款整个带飞，每行都同时给中位数，两个数差得远就说明是个别视频撑的。 */
+  var EFF = { dim: 'store', sort: 'avgPlay', desc: true };
+  var FEW = 5;                       // 少于这么多条就标「样本少」，别拿它下结论
+
+  function median(a) {
+    if (!a.length) return 0;
+    var b = a.slice().sort(function (x, y) { return x - y; }), n = b.length, h = n >> 1;
+    return n % 2 ? b[h] : Math.round((b[h - 1] + b[h]) / 2);
+  }
+  function aggV(arr) {
+    var play = 0, gmv = 0, plays = [];
+    arr.forEach(function (v) { play += v.play; gmv += v.gmv; plays.push(v.play); });
+    return { n: arr.length,
+             avgPlay: arr.length ? Math.round(play / arr.length) : 0,
+             medPlay: median(plays),
+             maxPlay: plays.length ? Math.max.apply(null, plays) : 0,
+             gmv: gmv, avgGmv: arr.length ? gmv / arr.length : 0 };
+  }
+  /** 所有导出文件「数据日期范围」的并集：20260817 -> 2026-08-17 */
+  function effRange() {
     var from = null, to = null;
     S.videos.forEach(function (v) {
       if (v.rangeFrom && (!from || v.rangeFrom < from)) from = v.rangeFrom;
       if (v.rangeTo && (!to || v.rangeTo > to)) to = v.rangeTo;
     });
     function dash(x) { return x ? x.slice(0, 4) + '-' + x.slice(4, 6) + '-' + x.slice(6, 8) : null; }
-    var f = dash(from) || '0000-00-00', t = dash(to) || '9999-99-99';
+    return { f: dash(from) || '0000-00-00', t: dash(to) || '9999-99-99' };
+  }
+  function effVideos() {
+    var r = effRange();
+    return S.videos.filter(function (v) { return v.pubDate >= r.f && v.pubDate <= r.t; });
+  }
+  function pct(a, b) { return b ? Math.round((a - b) / b * 100) : 0; }
+  function signed(n) { return (n >= 0 ? '高 ' : '低 ') + Math.abs(n) + '%'; }
 
-    var claimed = S.m.claimed;
-    var inRange = S.videos.filter(function (v) { return v.pubDate >= f && v.pubDate <= t; });
-    var a = agg(inRange.filter(function (v) { return claimed[v.id]; }));
-    var b = agg(inRange.filter(function (v) { return !claimed[v.id]; }));
-
-    function agg(arr) {
-      var play = 0, gmv = 0;
-      arr.forEach(function (v) { play += v.play; gmv += v.gmv; });
-      return { n: arr.length, avgPlay: arr.length ? Math.round(play / arr.length) : 0,
-               gmv: gmv, avgGmv: arr.length ? gmv / arr.length : 0 };
+  function renderEffect() {
+    if (!S.videos.length) {
+      $('#effectBody').innerHTML = '<div class="emptyrow">还没有视频数据，先去「视频数据导入」。</div>';
+      $('#effDimBody').innerHTML = '';
+      $('#effDimNote').textContent = '';
+      return;
     }
-    function row(name, x) {
-      return '<tr><td>' + name + '</td><td class="mono">' + HY.num(x.n) + '</td><td class="mono">' +
-        HY.num(x.avgPlay) + '</td><td class="mono">¥' + HY.num(Math.round(x.gmv)) +
+    var r = effRange(), inRange = effVideos(), claimed = S.m.claimed;
+    var a = aggV(inRange.filter(function (v) { return claimed[v.id]; }));
+    var b = aggV(inRange.filter(function (v) { return !claimed[v.id]; }));
+
+    function row(name, x, sub) {
+      return '<tr><td>' + name + (sub ? '<span class="few">' + sub + '</span>' : '') +
+        '</td><td class="mono">' + HY.num(x.n) + '</td><td class="mono">' + HY.num(x.avgPlay) +
+        '</td><td class="mono">' + HY.num(x.medPlay) + '</td><td class="mono">' + HY.num(x.maxPlay) +
+        '</td><td class="mono">¥' + HY.num(Math.round(x.gmv)) +
         '</td><td class="mono">¥' + x.avgGmv.toFixed(1) + '</td></tr>';
     }
 
+    // 一句人话的结论；两边样本都够才敢说
+    var verdict;
+    if (a.n < FEW || b.n < FEW) {
+      verdict = '两边各要够 ' + FEW + ' 条才好比，现在是「按脚本」' + a.n + ' 条 vs「自由发挥」' +
+                b.n + ' 条，先别下结论。';
+    } else {
+      var dAvg = pct(a.avgPlay, b.avgPlay), dMed = pct(a.medPlay, b.medPlay);
+      verdict = '按脚本拍的<b>平均播放' + signed(dAvg) + '</b>，<b>中位播放' + signed(dMed) + '</b>。' +
+        ((dAvg >= 0) !== (dMed >= 0)
+          ? '两个方向不一致 —— 均值是被个别爆款带的，<b>以中位数为准</b>。'
+          : '');
+    }
+
     $('#effectBody').innerHTML =
-      '<div class="kvs" style="margin-bottom:10px"><div class="k">统计范围</div><div class="mono">' + f + ' ~ ' + t +
-      '</div><div class="k">纳入对比</div><div>' + HY.num(S.videos.length) + ' 条里有 ' +
-      HY.num(inRange.length) + ' 条发布于范围内</div></div>' +
-      '<table class="mini"><thead><tr><th>口径</th><th>视频数</th><th>平均播放</th><th>总成交价值</th>' +
-      '<th>篇均成交</th></tr></thead><tbody>' + row('按脚本拍', a) + row('自由发挥', b) + '</tbody></table>' +
-      '<p class="note" style="margin-top:12px">第一版只做到这里；后续可以再拆到门店 / 内容方向 / 拍摄形式维度。</p>';
+      '<div class="kvs" style="margin-bottom:10px"><div class="k">统计范围</div><div class="mono">' +
+      r.f + ' ~ ' + r.t + '</div><div class="k">纳入对比</div><div>' + HY.num(S.videos.length) +
+      ' 条里有 ' + HY.num(inRange.length) + ' 条发布于范围内</div></div>' +
+      '<table class="mini"><thead><tr><th>口径</th><th>视频数</th><th>平均播放</th><th>中位播放</th>' +
+      '<th>最高播放</th><th>总成交价值</th><th>篇均成交</th></tr></thead><tbody>' +
+      row('按脚本拍', a, '计划当天发的') + row('自由发挥', b, '没对上任何脚本') +
+      '</tbody></table>' +
+      '<p class="verdict">' + verdict + '</p>';
+
+    renderEffDim();
+  }
+
+  /* 拆维度：按门店 / 按内容方向 / 按拍摄形式。
+     内容方向和拍摄形式只有脚本视频才有，自由发挥的直接不进这两张表。 */
+  var EFF_COLS = {
+    store: [
+      { k: 'lab', t: '门店', txt: 1 },
+      { k: 'n', t: '视频数' }, { k: 'ns', t: '按脚本' }, { k: 'nf', t: '自由发挥' },
+      { k: 'avgPlay', t: '平均播放' }, { k: 'medPlay', t: '中位播放' },
+      { k: 'gmv', t: '总成交价值', money: 1 }
+    ],
+    topic: [
+      { k: 'lab', t: '内容方向', txt: 1 },
+      { k: 'n', t: '视频数' }, { k: 'avgPlay', t: '平均播放' }, { k: 'medPlay', t: '中位播放' },
+      { k: 'maxPlay', t: '最高播放' }, { k: 'gmv', t: '总成交价值', money: 1 },
+      { k: 'avgGmv', t: '篇均成交', money: 1, dec: 1 }
+    ]
+  };
+  EFF_COLS.format = EFF_COLS.topic.map(function (c) {
+    return c.k === 'lab' ? { k: 'lab', t: '拍摄形式', txt: 1 } : c;
+  });
+
+  function renderEffDim() {
+    var body = $('#effDimBody');
+    if (!body || !S.videos.length) return;
+    var dim = EFF.dim;
+    var mgrSel = $('#eMgr'), mgr = mgrSel ? mgrSel.value : '';
+    var ok = {};
+    S.stores.forEach(function (st) { if (!mgr || (st.manager || '') === mgr) ok[st.douyinId] = st; });
+
+    var claimed = S.m.claimed, groups = {};
+    effVideos().forEach(function (v) {
+      var st = ok[v.store];
+      if (!st) return;
+      var sid = claimed[v.id], sc = sid ? S.scriptById[sid] : null;
+      var key;
+      if (dim === 'store') key = v.store;
+      else if (!sc) return;                              // 自由发挥没有方向/形式
+      else key = sc[dim] || '（未填）';
+      var g = groups[key] || (groups[key] = {
+        lab: dim === 'store' ? (st.storeName || v.store) : key, scripted: [], free: [], all: []
+      });
+      g.all.push(v);
+      (sc ? g.scripted : g.free).push(v);
+    });
+
+    // 门店那张表统计全部视频（脚本 + 自由），另外两张只统计脚本视频
+    var rows = Object.keys(groups).map(function (k) {
+      var g = groups[k], x = aggV(dim === 'store' ? g.all : g.scripted);
+      x.lab = g.lab; x.ns = g.scripted.length; x.nf = g.free.length;
+      return x;
+    }).filter(function (x) { return x.n > 0; });
+
+    $('#effDimNote').innerHTML = dim === 'store'
+      ? '这张表统计全部视频（脚本 + 自由发挥）'
+      : '只统计「按脚本拍」的视频 —— 自由发挥没有内容方向 / 拍摄形式';
+
+    if (!rows.length) {
+      body.innerHTML = '<div class="emptyrow">这个范围里没有可比的视频。</div>';
+      return;
+    }
+
+    var cols = EFF_COLS[dim];
+    if (!cols.some(function (c) { return c.k === EFF.sort; })) EFF.sort = 'avgPlay';
+    var sk = EFF.sort, dir = EFF.desc ? 1 : -1;
+    rows.sort(function (p, q) {
+      if (sk === 'lab') return p.lab.localeCompare(q.lab, 'zh') * -dir;
+      return (q[sk] - p[sk]) * dir;
+    });
+
+    var maxAvg = rows.reduce(function (m, x) { return Math.max(m, x.avgPlay); }, 0);
+    var head = cols.map(function (c) {
+      return '<th class="s' + (c.k === sk ? ' on' : '') + '" data-k="' + c.k + '">' + c.t +
+        '<i>' + (c.k === sk ? (EFF.desc ? '▾' : '▴') : '▾') + '</i></th>';
+    }).join('') + '<th class="barh">平均播放对比</th>';
+
+    var tb = rows.map(function (x) {
+      var tds = cols.map(function (c) {
+        if (c.txt) {
+          return '<td>' + esc(x.lab) +
+            (x.n < FEW ? '<span class="few">样本 ' + x.n + ' 条</span>' : '') + '</td>';
+        }
+        var v = x[c.k];
+        var txt = c.money ? '¥' + (c.dec ? v.toFixed(1) : HY.num(Math.round(v))) : HY.num(v);
+        return '<td class="mono' + (x.n < FEW ? ' dim' : '') + '">' + txt + '</td>';
+      }).join('');
+      var w = maxAvg ? Math.round(x.avgPlay / maxAvg * 100) : 0;
+      return '<tr>' + tds + '<td class="barc"><span class="track"><i style="width:' + w +
+             '%"></i></span></td></tr>';
+    }).join('');
+
+    body.innerHTML = '<table class="mini eff"><thead><tr>' + head + '</tr></thead><tbody>' +
+      tb + '</tbody></table>' +
+      '<p class="note" style="margin-top:12px">点表头换排序。' +
+      '灰掉的行不到 ' + FEW + ' 条视频，平均值意义不大，别拿来排优劣。</p>';
+
+    $$('#effDimBody th.s').forEach(function (th) {
+      th.onclick = function () {
+        var k = th.dataset.k;
+        if (EFF.sort === k) EFF.desc = !EFF.desc;
+        else { EFF.sort = k; EFF.desc = k !== 'lab'; }
+        renderEffDim();
+      };
+    });
   }
 
   /* ---------- 筛选项 ---------- */
@@ -829,7 +977,9 @@
       if (!sel.multiple && selValues(sel).length === 0) sel.value = '';
       sel.disabled = false;
     }
-    fill($('#fMgr'), '全部区域经理', managerNames().map(function (m) { return { v: m, t: m }; }));
+    var mgrOpts = managerNames().map(function (m) { return { v: m, t: m }; });
+    fill($('#fMgr'), '全部区域经理', mgrOpts);
+    if ($('#eMgr')) fill($('#eMgr'), '全部区域经理', mgrOpts);   // 效果统计那张表也按经理筛
     fill($('#fStore'), '全部门店', S.stores.slice().sort(function (a, c) {
       return a.storeName.localeCompare(c.storeName, 'zh');
     }).map(function (s) {
@@ -841,7 +991,7 @@
   /* ---------- 自定义下拉（原生 select 在 Mac 上长得跟整站不搭） ----------
      原生 select 留着当数据源和状态，藏起来；外面套一层按钮 + 菜单，样式跟按钮/日历一套：
      直角、1px 线、选中左边一条黑竖条、hover 换浅底。改值后手动派发 change，原有逻辑不用动。 */
-  function xselAll() { ['#fMgr', '#fStore'].forEach(function (s) { xsel($(s)); }); }
+  function xselAll() { ['#fMgr', '#fStore', '#eMgr'].forEach(function (s) { xsel($(s)); }); }
 
   function xsel(sel) {
     if (!sel) return;
@@ -1132,6 +1282,17 @@
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeDrawer(); });
 
     ['#fMgr', '#fStore', '#fLate'].forEach(function (s) { $(s).onchange = render; });
+
+    // 效果统计：维度切换 + 按经理筛（只重画那张表，别惊动日历）
+    $$('#effDims .segbtn').forEach(function (b) {
+      b.onclick = function () {
+        EFF.dim = b.dataset.dim;
+        EFF.sort = 'avgPlay'; EFF.desc = true;
+        $$('#effDims .segbtn').forEach(function (x) { x.classList.toggle('on', x === b); });
+        renderEffDim();
+      };
+    });
+    if ($('#eMgr')) $('#eMgr').onchange = renderEffDim;
     // 搜索框：中文输入法打拼音时（compositionstart~end）先别动，输完再筛；
     // 否则「qn」这种半截拼音也会当成关键词，整页跟着闪（用户 2026-09-17 反馈）
     var si = $('#fSearch'), composing = false, timer = null;

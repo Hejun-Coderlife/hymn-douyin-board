@@ -765,6 +765,45 @@ table.mini th,table.mini td{border-bottom:1px solid var(--line);padding:11px 10p
 table.mini th:first-child,table.mini td:first-child{text-align:left}
 table.mini th{color:var(--t3);font-weight:400;font-size:12px;letter-spacing:0}
 
+/* ===== 效果统计 ===== */
+/* 一句人话的结论，放在对比表下面；数字加粗，别的都不强调 */
+.verdict{
+  margin:14px 0 0;padding:12px 14px;background:var(--paper);
+  font-size:13.5px;line-height:1.8;color:var(--t1);
+}
+.verdict b{font-weight:600}
+
+/* 维度切换：三个方框按钮连成一条，选中填黑（跟站里其它按钮一个脾气） */
+.effbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:14px 0 2px}
+.effbar .note{flex:1 1 220px}
+.segbtns{display:flex}
+.segbtn{
+  appearance:none;background:transparent;border:1px solid var(--ink);border-right:0;
+  padding:8px 15px;font:inherit;font-size:12.5px;color:var(--t1);cursor:pointer;
+  transition:background .14s ease,color .14s ease;
+}
+.segbtn:last-child{border-right:1px solid var(--ink)}
+.segbtn:hover{background:var(--paper)}
+.segbtn.on{background:var(--ink);color:#fff}
+.effbar .xsel .xbtn{height:35px}
+
+/* 可排序表头 */
+table.mini th.s{cursor:pointer;user-select:none;white-space:nowrap}
+table.mini th.s:hover{color:var(--t1)}
+table.mini th.s i{font-style:normal;opacity:0;margin-left:4px}
+table.mini th.s:hover i{opacity:.4}
+table.mini th.s.on{color:var(--t1)}
+table.mini th.s.on i{opacity:1}
+table.mini td.dim{color:var(--t4)}          /* 样本不够的行整行压灰 */
+table.mini .few{color:var(--t4);font-size:11px;margin-left:8px;font-weight:400}
+table.mini tbody tr:hover{background:var(--paper)}
+
+/* 平均播放对比条：只是让眼睛一眼看出长短，数字还在左边那列 */
+table.mini th.barh{width:132px;text-align:left}
+table.mini td.barc{width:132px;text-align:left}
+table.mini .track{display:block;height:6px;background:var(--line);width:110px}
+table.mini .track i{display:block;height:6px;background:var(--green)}
+
 /* ===== 门店列表面板 ===== */
 table.list{width:100%;border-collapse:collapse;font-size:13px}
 table.list th,table.list td{border-bottom:1px solid var(--line);padding:11px 10px;text-align:left}

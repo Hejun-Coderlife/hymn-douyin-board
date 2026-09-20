@@ -127,8 +127,23 @@
         <h3>按脚本拍 vs 自由发挥</h3>
         <p class="note">
           <b>只纳入发布时间落在导出「数据日期范围」内的视频</b> —— 范围外的老视频播放数大量为 0，混进来会把均值压垮。
+          平均值容易被一条爆款拉高，所以每行都另给一个<b>中位播放</b>：两个数差得远，说明是个别视频撑起来的。
         </p>
         <div id="effectBody"></div>
+      </div>
+
+      <div class="card" id="effDimCard">
+        <h3>拆开看</h3>
+        <div class="effbar">
+          <div class="segbtns" id="effDims">
+            <button type="button" class="segbtn on" data-dim="store">按门店</button>
+            <button type="button" class="segbtn" data-dim="topic">按内容方向</button>
+            <button type="button" class="segbtn" data-dim="format">按拍摄形式</button>
+          </div>
+          <select id="eMgr"><option value="">全部区域经理</option></select>
+          <span class="note" id="effDimNote"></span>
+        </div>
+        <div id="effDimBody"></div>
       </div>
     </section>
 
