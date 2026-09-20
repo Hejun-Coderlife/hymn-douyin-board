@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>赫眉 HYMN · 进入我的门店</title>
-<link rel="stylesheet" href="assets/style.css?v=20260920-1641">
+<link rel="stylesheet" href="assets/style.css?v=20260920-1643">
 <style>
 /* 入口页：店员输手机号进自己店。**认人，不是鉴权**（见 core.js 里 phoneHash 那段注释）。 */
 body.loginpage{background:#FFFFFF}
@@ -19,7 +19,7 @@ canvas.fx-bg{position:fixed;inset:0;width:100%;height:100%;z-index:0;display:blo
    logo 回到页面中间、210px 居中 —— 跟加顶栏之前一样。 */
 .lg{max-width:420px;margin:0 auto;padding:18vh 24px 40px;position:relative;z-index:1}
 .lg img.logo{width:210px;height:auto;display:block;margin:0 auto 54px}
-.lg label{display:block;font-size:14px;color:var(--ink);font-weight:400;letter-spacing:.06em;margin-bottom:10px}
+.lg label{display:block;font-size:14px;color:var(--t3);font-weight:400;letter-spacing:.06em;margin-bottom:10px}
 /* 门店列表（2026-09-20 用户：「输手机号太麻烦，反正也没什么隐私，拿到网址就能用」）。
    手机号那条路留着没删：已经发出去的号码还能用，而且有人就是习惯输号码。
    一个输入框兼两用 —— 输汉字筛门店，输满 11 位数字就按手机号直接进。 */
@@ -30,9 +30,9 @@ canvas.fx-bg{position:fixed;inset:0;width:100%;height:100%;z-index:0;display:blo
 .lg .field{position:relative}
 .lg .list{
   display:none;position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:30;
-  background:var(--card);border:1.5px solid var(--ink);
+  background:var(--card);border:1.5px solid var(--t1);
   max-height:46vh;overflow-y:auto;-webkit-overflow-scrolling:touch;
-  box-shadow:0 8px 24px rgba(212,120,140,.18);   /* 浮层要跟底下的内容分开，这层投影是必要的 */
+  box-shadow:0 8px 24px rgba(40,34,32,.14);   /* 浮层要跟底下的内容分开，这层投影是必要的 */
 }
 .lg .list.on{display:block}
 .lg .list a{padding:13px 14px}
@@ -45,16 +45,17 @@ canvas.fx-bg{position:fixed;inset:0;width:100%;height:100%;z-index:0;display:blo
 .lg .list a b{font-size:16px;font-weight:600}
 .lg .list a i{font-style:normal;font-size:11.5px;color:var(--t3)}
 .lg .list .none{padding:22px 4px;font-size:13px;color:var(--t3)}
-/* 输入框和下拉都走品牌粉（2026-09-20 用户要求）：
-   平时是淡粉边 + 极淡粉底，聚焦时边框变成品牌粉并加一圈同色描边。
-   不用阴影，这套画风里投影只给浮层。 */
+/* 输入框走黑（2026-09-20 用户：「登录页，输入框，黑色吧」）。
+   中间试过粉边粉底，粉太多反而糊；黑边 + 白底最清楚，
+   也跟「这是要填东西的地方」这个认知一致。
+   聚焦时加粗黑边 —— 不用粉描边，那圈粉在白底上显脏。 */
 .lg input{
-  width:100%;box-sizing:border-box;border:1.5px solid var(--pink-line, #EFC9D1);border-radius:0;
-  background:#FFF8FA;padding:16px 14px;font-size:19px;letter-spacing:.06em;
+  width:100%;box-sizing:border-box;border:1.5px solid var(--t1);border-radius:0;
+  background:#FFFFFF;padding:16px 14px;font-size:19px;letter-spacing:.06em;
   font-variant-numeric:tabular-nums;color:var(--t1);
 }
-.lg input::placeholder{color:#C9A0AA}
-.lg input:focus{outline:none;border-color:var(--ink);box-shadow:0 0 0 3px rgba(212,120,140,.14)}
+.lg input::placeholder{color:#9A9AA0}
+.lg input:focus{outline:none;border-width:2px;border-color:var(--t1)}
 .lg .msg{margin-top:14px;font-size:13px;line-height:1.8;min-height:1.8em}
 .lg .msg.err{color:var(--brick)}
 .lg .msg.ok{color:var(--green)}
@@ -77,9 +78,9 @@ canvas.fx-bg{position:fixed;inset:0;width:100%;height:100%;z-index:0;display:blo
   <div class="ver">试用版</div>
 </div>
 
-<script src="data/stores.js?v=20260920-1641"></script>
-<script src="assets/core.js?v=20260920-1641"></script>
-<script src="assets/fx-header.js?v=20260920-1641"></script>
+<script src="data/stores.js?v=20260920-1643"></script>
+<script src="assets/core.js?v=20260920-1643"></script>
+<script src="assets/fx-header.js?v=20260920-1643"></script>
 <script>
 (function () {
   'use strict';
