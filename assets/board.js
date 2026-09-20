@@ -652,6 +652,7 @@
       '<button class="btn sm" id="mgrManage">分配门店…</button></span>';
 
     var h = '<thead><tr><th style="width:52px">编号</th><th>门店</th><th>抖音号</th><th style="width:120px">区域经理</th>' +
+      '<th style="width:130px">店铺手机号</th>' +
       '<th style="width:110px">区域</th>' +
       '<th style="width:110px">门店类型</th><th style="width:150px">客群</th>' +
       '<th style="width:170px">主推项目</th><th style="width:170px">可拍场景</th>' +
@@ -663,6 +664,7 @@
         (st.brandLine ? '<div class="bl">' + esc(st.brandLine) + '</div>' : '') + '</td>' +
         '<td class="mono muted">' + st.douyinId + '</td>' +
         cellSelect(st, 'manager', [''].concat(names)) +
+        cellInput(st, 'phone', '店铺手机号（只存本机）') +
         cellInput(st, 'region', '区域', 'regionList') +
         cellSelect(st, 'storeType', TYPE_OPTS) +
         cellInput(st, 'customer', '如 30-45 岁社区妈妈') +
@@ -745,11 +747,24 @@
   function refreshFiltersAfterEdit() { fillFilters(); render(); }
 
   function exportStores() {
+    /* 【重要】手机号原文**绝不进导出文件**：它会被提交到公开仓库、发布到 GitHub Pages。
+       这里统一换成 phoneHash（见 core.js 的 phoneHash），login.html 比对的就是这个。
+       原文只留在你本机 localStorage 的 StoreEdits 里，换台电脑要重新填。 */
+    var bad = [];
     var out = S.stores.map(function (st) {
       var o = {};
-      Object.keys(st).forEach(function (k) { o[k] = st[k]; });
+      Object.keys(st).forEach(function (k) { if (k !== 'phone') o[k] = st[k]; });
+      if (st.phone) {
+        var hx = HY.phoneHash(st.phone);
+        if (hx) o.phoneHash = hx;
+        else bad.push(st.storeName + '（' + st.phone + '）');
+      }
       return o;
     });
+    if (bad.length) {
+      HY.toast('这 ' + bad.length + ' 家的手机号不是 11 位，没导出：' + bad.slice(0, 3).join('、') +
+               (bad.length > 3 ? ' 等' : ''));
+    }
     var blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
     var a = document.createElement('a');
     a.href = URL.createObjectURL(blob);

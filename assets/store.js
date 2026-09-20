@@ -11,21 +11,30 @@
   // 背景动效改成纯 CSS（body.fxon，见 style.css）；门店页跟总部页共用同一个开关状态
   if (localStorage.getItem('hymn_bg3d') === 'on') document.body.classList.add('fxon');
 
-  var id = new URLSearchParams(location.search).get('store');
-  var today = HY.ymd(new Date());
-
-  if (!id) {
-    $('#spName').textContent = '缺少门店参数';
-    $('#spSub').innerHTML = '链接应形如 <code>store.html?store=抖音号</code>';
-    HY.bootDone();
-    return;
+  /* 门店从哪来（2026-09-20 加「记住门店」）：
+     ① URL 上带 ?store= 就用它，并**记下来**——店员第一次是从二维码/链接/login.html 进来的；
+     ② 没带参数就用记住的那家——店员把页面加到手机桌面后，点图标直接是自己店；
+     ③ 都没有就送去 login.html 输手机号认人。
+     这样「一进去就看到自己的页面」对三种入口都成立。 */
+  var qs = new URLSearchParams(location.search);
+  var id = qs.get('store');
+  if (id) {
+    HY.MyStore.set(id);
+  } else {
+    id = HY.MyStore.get();
+    if (!id) { location.replace('login.html'); return; }
   }
+  var today = HY.ymd(new Date());
 
   HY.loadData().then(function (d) {
     var st = d.storeById[id];
     if (!st) {
+      /* 记住的门店可能失效（店关了、抖音号换了）。不能让店员卡死在这一屏，
+         把记忆清掉并给一个重新认人的入口。 */
+      HY.MyStore.clear();
       $('#spName').textContent = '没找到这家门店';
-      $('#spSub').textContent = '抖音号 ' + id + ' 不在门店表里';
+      $('#spSub').innerHTML = '抖音号 ' + esc(id) + ' 不在门店表里。' +
+        '<a class="mob" href="login.html">用手机号重新进入 →</a>';
       return Promise.reject(new Error('门店不存在'));
     }
     // 脚本详情按「门店 × 月份」分片，把展示窗口覆盖到的月份都加载进来

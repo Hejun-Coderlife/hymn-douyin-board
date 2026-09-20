@@ -252,7 +252,9 @@ window.HY = (function () {
     clear: function () { localStorage.removeItem(LS_STORE); }
   };
 
-  var EDITABLE = ['manager', 'region', 'storeType', 'customer', 'mainService', 'scenes', 'onCamera', 'note'];
+  /* 'phone' = 店铺手机号，**只存在本机 localStorage**，导出 stores.json 时会被换成
+     phoneHash（见 board.js 的 exportStores），原文永远不进仓库、不上线。 */
+  var EDITABLE = ['manager', 'region', 'storeType', 'customer', 'mainService', 'scenes', 'onCamera', 'note', 'phone'];
 
   /* 区域经理名单：跟门店分配分开存，这样「加了名字还没分配门店」也留得住 */
   var LS_MGR = 'hymn_managers_v1';
@@ -276,6 +278,28 @@ window.HY = (function () {
       this.write(this.list().filter(function (x) { return x !== name; }));
     }
   };
+
+  /* 只要门店表，不碰脚本索引（login.html 用）。
+     【为什么单独做一个】loadData() 要求 HY_STORES 和 HY_SCRIPTS **都**在，
+     缺一个就退回 fetch —— 而 file:// 下 fetch 一律失败，登录页会直接白掉。
+     登录页也犯不上为了比对一个手机号去加载 2MB 的脚本索引（手机上尤其亏）。 */
+  function loadStores() {
+    var pre = window.HY_STORES
+      ? Promise.resolve(window.HY_STORES)
+      : fetch('data/stores.json').then(function (r) { return r.json(); });
+    return pre.then(function (raw) {
+      var stores = raw.map(function (x) { return JSON.parse(JSON.stringify(x)); });
+      var edits = StoreEdits.read();
+      stores.forEach(function (s) {
+        var e = edits[s.douyinId];
+        if (!e) return;
+        EDITABLE.forEach(function (k) { if (e[k] !== undefined) s[k] = e[k]; });
+      });
+      var byId = {};
+      stores.forEach(function (s) { byId[s.douyinId] = s; });
+      return { stores: stores, storeById: byId };
+    });
+  }
 
   function loadData() {
     // data/stores.js、data/scripts.js 会把数据挂到 window 上，这样双击 file:// 打开也能读到；
@@ -358,6 +382,86 @@ window.HY = (function () {
 
   function num(n) { return (n || 0).toLocaleString('zh-CN'); }
 
+  /* ===================== 手机号 → 门店 =====================
+     店员在 login.html 输手机号进自己店。性质是**认人，不是鉴权**：
+     静态站没有后端，发不了验证码、校验不了密码，任何"验证"都在浏览器里，翻代码就能绕过。
+     页面上的脚本本来也不算机密（拿到链接谁都能看），所以够用——但别当成安全措施。
+
+     号码**存哈希不存原文**：上线的 stores.json 里只有 phoneHash，
+     真实号码留在你本机的 localStorage 里，不进 git。
+
+     为什么自己写 SHA-256 而不用 crypto.subtle：
+     **`crypto.subtle` 只在安全上下文里存在**（https 和 localhost），
+     file:// 和局域网 http://192.168.x.x 下**它是 undefined**——
+     而这两个恰恰是本地调试和手机预览的主力场景。 */
+  var PHONE_SALT = 'hymn-douyin-board-2026';
+
+  function sha256(str) {
+    function rotr(x, n) { return (x >>> n) | (x << (32 - n)); }
+    var K = [
+      0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
+      0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
+      0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
+      0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
+      0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
+      0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+      0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
+      0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+    var H = [0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
+    // UTF-8 编码（手机号是纯数字，但盐里有字母，统一按 UTF-8 走）
+    var u = unescape(encodeURIComponent(str)), bytes = [];
+    for (var i = 0; i < u.length; i++) bytes.push(u.charCodeAt(i) & 0xff);
+    var bitLen = bytes.length * 8;
+    bytes.push(0x80);
+    while (bytes.length % 64 !== 56) bytes.push(0);
+    for (var b = 7; b >= 0; b--) bytes.push((b < 4 ? Math.floor(bitLen / Math.pow(2, 8 * b)) : 0) & 0xff);
+    var w = new Array(64);
+    for (var off = 0; off < bytes.length; off += 64) {
+      for (i = 0; i < 16; i++) {
+        w[i] = (bytes[off + i * 4] << 24) | (bytes[off + i * 4 + 1] << 16) |
+               (bytes[off + i * 4 + 2] << 8) | bytes[off + i * 4 + 3];
+      }
+      for (i = 16; i < 64; i++) {
+        var s0 = rotr(w[i-15],7) ^ rotr(w[i-15],18) ^ (w[i-15] >>> 3);
+        var s1 = rotr(w[i-2],17) ^ rotr(w[i-2],19) ^ (w[i-2] >>> 10);
+        w[i] = (w[i-16] + s0 + w[i-7] + s1) | 0;
+      }
+      var a=H[0],bb=H[1],c=H[2],d=H[3],e=H[4],f=H[5],g=H[6],h=H[7];
+      for (i = 0; i < 64; i++) {
+        var S1 = rotr(e,6) ^ rotr(e,11) ^ rotr(e,25);
+        var ch = (e & f) ^ (~e & g);
+        var t1 = (h + S1 + ch + K[i] + w[i]) | 0;
+        var S0 = rotr(a,2) ^ rotr(a,13) ^ rotr(a,22);
+        var mj = (a & bb) ^ (a & c) ^ (bb & c);
+        var t2 = (S0 + mj) | 0;
+        h=g; g=f; f=e; e=(d+t1)|0; d=c; c=bb; bb=a; a=(t1+t2)|0;
+      }
+      H[0]=(H[0]+a)|0; H[1]=(H[1]+bb)|0; H[2]=(H[2]+c)|0; H[3]=(H[3]+d)|0;
+      H[4]=(H[4]+e)|0; H[5]=(H[5]+f)|0; H[6]=(H[6]+g)|0; H[7]=(H[7]+h)|0;
+    }
+    return H.map(function (x) { return ('00000000' + (x >>> 0).toString(16)).slice(-8); }).join('');
+  }
+
+  /* 手机号归一：去掉空格/横杠/+86，只留 11 位数字。
+     店员填号码的写法五花八门（138 0000 0000 / 138-0000-0000），不归一就永远对不上。 */
+  function normPhone(v) {
+    var d = String(v == null ? '' : v).replace(/\D/g, '');
+    if (d.length === 13 && d.slice(0, 2) === '86') d = d.slice(2);
+    return d;
+  }
+  function phoneHash(v) {
+    var d = normPhone(v);
+    return d.length === 11 ? sha256(PHONE_SALT + d).slice(0, 16) : '';
+  }
+
+  /* 记住「我是哪家店」——店员第一次进来之后，以后打开就直接是自己店 */
+  var LS_MINE = 'hymn_my_store';
+  var MyStore = {
+    get: function () { try { return localStorage.getItem(LS_MINE) || ''; } catch (e) { return ''; } },
+    set: function (id) { try { localStorage.setItem(LS_MINE, id); } catch (e) {} },
+    clear: function () { try { localStorage.removeItem(LS_MINE); } catch (e) {} }
+  };
+
   return {
     BRAND_ID: BRAND_ID, LS_KEY: LS_KEY, WEEKS: WEEKS, COL: COL,
     ymd: ymd, parseYmd: parseYmd, monday: monday, addDays: addDays, md: md,
@@ -365,8 +469,9 @@ window.HY = (function () {
     ymOf: ymOf, monthLabel: monthLabel, buildMonthGrid: buildMonthGrid, monthsIn: monthsIn,
     Videos: Videos, rowsToVideos: rowsToVideos,
     StoreEdits: StoreEdits, EDITABLE: EDITABLE, Managers: Managers,
+    sha256: sha256, normPhone: normPhone, phoneHash: phoneHash, MyStore: MyStore,
     match: match, statusOf: statusOf, STATUS_CN: STATUS_CN,
-    loadData: loadData, loadDetail: loadDetail, loadDetails: loadDetails, detail: detail, toast: toast, num: num,
+    loadData: loadData, loadStores: loadStores, loadDetail: loadDetail, loadDetails: loadDetails, detail: detail, toast: toast, num: num,
     bootDone: bootDone
   };
 })();

@@ -849,15 +849,64 @@ body.storepage{background:var(--bg)}
 .sp-head img{height:18px;margin-bottom:18px}
 .sp-head h1{font-size:21px;font-weight:600;letter-spacing:.01em}
 .sp-head .sub{font-size:12.5px;color:var(--t3);margin-top:8px;line-height:1.7}
+/* 头部一行（2026-09-20 用户：「太宽了，窄到只有一行，文字上下排列改成左右」）。
+   第一版做成了 @media(min-width:600px) 只在宽屏生效，用户在手机上看还是三行
+   ——「手机里怎么还是上下3行」。**要的是任何宽度都一行**，所以断点去掉了，别再加回来。
+   2026-09-20 用户又说「赫眉HYMN·门店拍摄计划：不要」—— 那行眉批已经从 store.html 里删了，
+   logo 本身就写着赫眉 HYMN，再写一遍是重复。**别加回来。**
+   现在头部只有两样：**店名在最左、logo 靠最右**（2026-09-20 用户指定），
+   横着排，整行 nowrap 保证不折行。DOM 顺序仍是 img → h1，靠 order 调过来。 */
+/* --wh-h = 周头 .wh 的高度（padding 14+14 + 行高约 20），日期行按它往下让 */
+body.storepage{--wh-h:48px}
+.sp-head{
+  display:flex;align-items:center;flex-wrap:wrap;gap:0 12px;
+  padding:13px 18px;
+}
+/* flex:1 1 0 —— basis 必须是 0，不能是 auto。
+   basis:auto 时店名的"基础宽度"= 文字实际宽度，店名一长（海曙龙湖天街店）
+   就会把 logo 顶到第二行去。basis:0 则店名永远不参与换行判断，
+   只负责吃掉剩下的空间，真放不下才用省略号截断。 */
+.sp-head h1{
+  order:1;font-size:19px;flex:1 1 0;min-width:0;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+/* logo 靠右：margin-left:auto 顶到最右边。
+   【坑，2026-09-20 踩过】这里**必须写死 width**，不能只写 height:16px ——
+   logo-ink.png 原图是 1200×298，flex 算基础尺寸时用的是图片的**原始宽度 1200px**
+   （不是按比例缩完的 64px），整行被撑爆，能收缩的店名就被压成了「丈...」。
+   64px = 16 × 1200/298，height:auto 让它按比例走，不会变形。 */
+.sp-head img{order:2;width:64px;height:auto;margin:0 0 0 auto;flex:0 0 64px}
+/* 【坑，2026-09-20 踩过】.sub 是「缺少门店参数」那条报错信息的容器，平时是**空的**。
+   当时给它写了 flex-basis:100%（想让它换到第二行），可容器是 nowrap ——
+   一个空 div 也照样按「我要占满整行」参与空间分配，整行溢出，
+   能收缩的店名被压成「丈...」，logo 被挤得贴在它旁边，看起来像右对齐失效了。
+   修法：容器改回 wrap（让它真的能换行）+ 空的时候直接不显示。 */
+.sp-head .sub{order:3;flex-basis:100%;margin-top:6px}
+.sp-head .sub:empty{display:none}
+/* 防御：眉批那行已经从 store.html 里删了，但手机/微信会缓存旧 HTML，
+   旧 DOM 里它还在、又没了样式规则，就会退回 order:0 排到最前面、自己折三行，
+   把店名挤成「丈.」（2026-09-20 真在微信里出过这个）。这里兜底藏掉。 */
+.sp-head .eyebrow{display:none}
+@media (min-width:600px){
+  .sp-head{padding:14px 22px;gap:0 14px}
+  .sp-head h1{font-size:20px}
+}
 .sp-kpis{display:flex;gap:0;padding:0;flex-wrap:wrap;background:var(--card);border-bottom:1px solid var(--line-2)}
 .sp-kpis .kpi{min-width:0;flex:1 1 0;padding:16px 14px;border-left:1px solid var(--line)}
 .sp-kpis .kpi:first-child{border-left:0}
 .sp-kpis .kpi .val{font-size:26px;margin-top:8px}
 .sp-body{padding:18px 18px 72px}
-.wkblock{background:var(--card);border:0;border-radius:0;margin-bottom:14px;overflow:hidden}
+/* 【别加回 overflow:hidden】2026-09-20：祖先上只要有 overflow（hidden/auto 都算），
+   子元素的 position:sticky 就整个失效 —— 周头和日期行的「冻结」全靠它。
+   这里本来也没东西要裁（圆角是 0）。 */
+.wkblock{background:var(--card);border:0;border-radius:0;margin-bottom:14px}
+/* 冻结（2026-09-20 用户：「日期、本周这种日期的展开、收起功能，冻结，随时能点到」）：
+   周头钉在视口顶上，滚多远都点得到。--wh-h 是它的高度，下面日期行要按这个数往下让。 */
 .wkblock .wh{
   display:flex;align-items:center;gap:8px;padding:14px 16px;cursor:pointer;
   font-size:14px;font-weight:600;letter-spacing:0;
+  position:sticky;top:0;z-index:3;background:var(--card);
+  box-shadow:0 1px 0 var(--line-2);   /* 发丝线，不是投影：钉住时跟下面的内容分开 */
 }
 .wkblock .wh .rg{font-size:11.5px;color:var(--t3);font-weight:400}
 .wkblock .wh .cnt{margin-left:auto;font-size:11.5px;color:var(--t3);font-weight:400}
@@ -900,6 +949,15 @@ body.storepage{background:var(--bg)}
 .card2.open .ct .tog i{transform:rotate(180deg)}
 .emptyday{border-top:1px solid var(--line);padding:14px 0;font-size:12.5px;color:var(--t3)}
 .card2 .ct{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+/* 展开的那一条：日期 + 「收起」按钮钉在周头正下方。
+   只钉 .open 的：收起状态的行本来就短，全钉会一路互相顶替，晃眼。
+   背景必须给（--paper 跟展开态一致），否则详情会从底下透出来。
+   不用负边距铺满：详情内容本来就在内容盒里，左右 padding 那两条边上不会有东西滚过去，
+   留着反而保住了左边那条 2px 竖条。 */
+.card2.open .ct{
+  position:sticky;top:var(--wh-h);z-index:2;
+  background:var(--paper);padding:10px 0;margin-top:-10px;
+}
 /* 今天那条：普蓝角标 + 左边一条竖线，店员打开就是来找今天拍什么的 */
 .card2 .ct .now{
   background:var(--navy);color:#fff;font-size:11px;letter-spacing:.06em;

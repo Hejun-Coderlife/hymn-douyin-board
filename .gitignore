@@ -7,3 +7,6 @@ data/scripts.json
 
 # 本地参考素材：样例 xlsx 里有视频成交金额等经营数据，不进公开仓库
 reference/
+
+# 店铺手机号原文：只留在本机，绝不进公开仓库（stores.json 里只有 phoneHash）
+data/phones.local.json
