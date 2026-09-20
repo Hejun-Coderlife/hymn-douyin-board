@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>风格样本 · 10 个方向（电脑版 + 手机版）</title>
+<style>
+/* ===========================================================
+   10 个**完全不同的设计方向**（2026-09-20）。
+
+   跟前两个样本页的区别：
+     数据色样本.html   —— 只换一个数据色
+     配色组合样本.html —— 换整套颜色，但版式不变
+     这一个            —— **连版式一起换**：顶栏形态、圆角、阴影、字体气质、
+                          留白密度、数据色，整套设计语言都不同。
+
+   之所以要做到这一步：前面六套配色全被否，而六套里唯一没变过的就是
+   「一条饱和粉顶栏 + 直角白卡片」这个骨架。只调颜色跳不出这个骨架。
+
+   每个方向都给**电脑版和手机版**两张图，因为同一套设计在宽屏和窄屏上
+   观感差很多（比如大留白在电脑上高级，在手机上就是空）。
+   =========================================================== */
+*{box-sizing:border-box}
+html,body{margin:0;background:#EDEDF0;
+  font:400 14px/1.7 -apple-system,"PingFang SC",system-ui,sans-serif;color:#1B1B21}
+.page{padding:24px 26px 70px}
+h1{font-size:22px;font-weight:600;margin:0 0 8px}
+.lead{font-size:13.5px;color:#66666F;line-height:1.9;margin:0 0 24px;max-width:1040px}
+.lead b{color:#1B1B21}
+
+.item{background:#fff;border:1px solid #DEDEE3;margin-bottom:22px}
+.hd{display:flex;align-items:baseline;gap:10px;padding:13px 16px;border-bottom:1px solid #EDEDF0}
+.hd .no{width:23px;height:23px;background:#1B1B21;color:#fff;font-size:12px;font-weight:600;
+  display:flex;align-items:center;justify-content:center;flex:none;align-self:center}
+.hd b{font-size:15.5px;font-weight:600}
+.hd span{font-size:12.5px;color:#8A8A94}
+.pair{display:flex;gap:18px;padding:18px 16px;align-items:flex-start;background:#F6F6F8;flex-wrap:wrap}
+.pair .lab{font-size:11px;color:#8A8A94;margin-bottom:6px;letter-spacing:.08em}
+.why{padding:12px 16px 15px;font-size:12px;color:#66666F;line-height:1.85;border-top:1px solid #EDEDF0}
+.why em{font-style:normal;color:#1B1B21;font-weight:600}
+
+/* ---------- 设备外框 ---------- */
+.desk{flex:1 1 560px;min-width:440px}
+.phone{flex:0 0 232px}
+.screen{overflow:hidden;background:#fff}
+.desk .screen{border:1px solid #D7D7DD;height:330px}
+.phone .screen{border:8px solid #2A2A2E;border-radius:26px;height:430px}
+
+/* ---------- 通用 mock 结构（各风格用 CSS 变量改造） ---------- */
+.m{height:100%;display:flex;flex-direction:column;
+   background:var(--bg);color:var(--t1);font-family:var(--ff)}
+.m .top{display:flex;align-items:center;gap:9px;padding:var(--toppad);
+   background:var(--topbg);border-bottom:var(--topline);position:relative;flex:none}
+.m .lg{width:var(--lgw);height:var(--lgh);flex:none;background:var(--lgc);
+   -webkit-mask:url(assets/logo-ink.png) no-repeat left center/contain;
+           mask:url(assets/logo-ink.png) no-repeat left center/contain}
+.m .tt{font-size:var(--ttsz);font-weight:var(--ttw);color:var(--ttc);letter-spacing:var(--ttls)}
+.m .bd{flex:1;padding:var(--pad);overflow:hidden}
+
+.m .kpis{display:grid;grid-template-columns:repeat(var(--kcol),1fr);gap:var(--gap)}
+.m .k{background:var(--card);border:var(--cardline);border-radius:var(--r);
+  box-shadow:var(--sh);padding:var(--kpad);position:relative;overflow:hidden}
+.m .k .lab{font-size:var(--labsz);color:var(--t3)}
+.m .k .val{font-size:var(--valsz);font-weight:var(--valw);line-height:1.15;margin-top:3px;
+  font-family:var(--numff)}
+.m .k.a .val{color:var(--c1)}
+.m .k.b .val{color:var(--c2)}
+
+.m .chart{background:var(--card);border:var(--cardline);border-radius:var(--r);
+  box-shadow:var(--sh);padding:var(--kpad);margin-top:var(--gap)}
+.m .chart .ch{font-size:var(--labsz);color:var(--t3);margin-bottom:7px}
+.m .bars{display:flex;gap:2px;align-items:flex-end;height:var(--barh)}
+.m .bars i{flex:1;display:block;background:var(--c1);border-radius:var(--barr)}
+
+.m .cal{background:var(--card);border:var(--cardline);border-radius:var(--r);
+  box-shadow:var(--sh);padding:var(--kpad);margin-top:var(--gap)}
+.m .cal .r{display:flex;gap:2px;margin-bottom:2px}
+.m .cal .r i{flex:1;aspect-ratio:1;max-height:9px;display:block;border-radius:var(--cellr)}
+
+.m .rows{margin-top:var(--gap)}
+.m .row{background:var(--card);border:var(--cardline);border-radius:var(--r);box-shadow:var(--sh);
+  padding:var(--kpad);margin-bottom:var(--gap);display:flex;align-items:center;gap:8px}
+.m .row .d{font-size:var(--labsz);color:var(--t3)}
+.m .row .p{font-size:10px;padding:2px 7px;border-radius:var(--pillr);
+  background:var(--c1);color:var(--pillt)}
+.m .row .t{font-size:var(--rowsz);font-weight:600;margin-top:3px}
+</style>
+</head>
+<body>
+<div class="page">
+
+<h1>10 个风格方向 · 电脑版 + 手机版</h1>
+<p class="lead">
+  跟前两个样本页不一样：那两个只换颜色，<b>这个连版式一起换</b>——顶栏形态、圆角、阴影、字体气质、
+  留白密度、数据色，整套设计语言都不同。<br>
+  之所以做到这一步：前面六套配色全被否，而六套里<b>唯一没变过的</b>就是
+  「一条饱和粉顶栏 + 直角白卡片」这个骨架。只调颜色跳不出这个骨架。<br>
+  每个方向都给<b>电脑版和手机版</b>两张，因为同一套设计在宽屏和窄屏上观感差很多——
+  大留白在电脑上是高级，在手机上就是空。
+</p>
+
+<div id="out"></div>
+</div>
+
+<script>
+/* 每个风格 = 一组 CSS 变量。
+   c1 = 主数据色（已发布）、c2 = 警示色（逾期）、cell3 = 待拍格子 */
+var S = [
+{ n:'01 极简白', d:'没有顶栏，靠留白和线分区', why:'<em>最克制的一版。</em>顶栏整条去掉，logo 缩到左上角一行；全页只有白、黑、一条发丝线，粉只出现在 logo 上。电脑上像一份印刷品，手机上信息密度最高。风险：没有任何记忆点。',
+  v:{bg:'#FFFFFF',card:'#FFFFFF',cardline:'0',r:'0',sh:'none',t1:'#111114',t3:'#8A8A94',
+     c1:'#111114',c2:'#B4402F',cell3:'#E9E9EE',topbg:'transparent',topline:'1px solid #E6E6EA',
+     lgc:'#EDACB2',ttc:'#111114',ttw:'600',ttsz:'13px',ttls:'.02em',toppad:'12px 14px',
+     lgw:'56px',lgh:'15px',ff:'-apple-system,"PingFang SC",sans-serif',numff:'inherit',
+     pad:'14px',gap:'9px',kpad:'10px 11px',labsz:'10px',valsz:'20px',valw:'600',
+     barh:'44px',barr:'0',cellr:'0',pillr:'0',pillt:'#fff',rowsz:'12px'} },
+
+{ n:'02 深色控制台', d:'深灰底 + 高亮数据', why:'<em>气质最专业。</em>深灰底让数据色随便配都不冲突（前面配色老打架，根子就在浅底）。粉在深底上会自动变高级。缺点：手机上长时间看费眼，而且跟美业的柔软感有距离。',
+  v:{bg:'#16161A',card:'#1F1F25',cardline:'1px solid #2C2C34',r:'8px',sh:'none',t1:'#F2F2F5',t3:'#8A8A96',
+     c1:'#EDACB2',c2:'#E8735A',cell3:'#2C2C34',topbg:'#101014',topline:'1px solid #2C2C34',
+     lgc:'#EDACB2',ttc:'#F2F2F5',ttw:'600',ttsz:'13px',ttls:'.06em',toppad:'12px 14px',
+     lgw:'58px',lgh:'15px',ff:'-apple-system,"PingFang SC",sans-serif',numff:'inherit',
+     pad:'13px',gap:'8px',kpad:'10px 11px',labsz:'10px',valsz:'21px',valw:'600',
+     barh:'44px',barr:'2px',cellr:'2px',pillr:'20px',pillt:'#16161A',rowsz:'12px'} },
+
+{ n:'03 杂志编辑风', d:'粗标题 + 重分割线，黑白', why:'<em>像一本杂志的内页。</em>标题特别大、分割线特别粗、正文特别小，靠字号反差做层次，不靠颜色。电脑上很有格调，手机上标题会占掉一屏。',
+  v:{bg:'#FAFAF8',card:'#FAFAF8',cardline:'0',r:'0',sh:'none',t1:'#111111',t3:'#77776F',
+     c1:'#111111',c2:'#A8341F',cell3:'#E2E2DC',topbg:'#FAFAF8',topline:'3px solid #111111',
+     lgc:'#111111',ttc:'#111111',ttw:'700',ttsz:'17px',ttls:'-.01em',toppad:'14px 14px 10px',
+     lgw:'54px',lgh:'14px',ff:'"PingFang SC",Georgia,serif',numff:'Georgia,serif',
+     pad:'14px',gap:'0px',kpad:'11px 0',labsz:'10px',valsz:'25px',valw:'700',
+     barh:'46px',barr:'0',cellr:'0',pillr:'0',pillt:'#fff',rowsz:'13px'} },
+
+{ n:'04 轻拟物卡片', d:'浅灰底 + 圆角 + 柔投影', why:'<em>最「像个 App」。</em>iOS 那套语言：浅灰底衬白卡片、12px 圆角、柔和投影。手机上最舒服、最好点。电脑上会显得幼，而且卡片一多就碎。',
+  v:{bg:'#F2F3F7',card:'#FFFFFF',cardline:'0',r:'12px',sh:'0 1px 2px rgba(20,20,40,.05),0 6px 16px rgba(20,20,40,.05)',
+     t1:'#1B1B21',t3:'#8A8A98',c1:'#5B6ABF',c2:'#E0704F',cell3:'#E6E7EE',
+     topbg:'#FFFFFF',topline:'0',lgc:'#1B1B21',ttc:'#1B1B21',ttw:'600',ttsz:'13px',ttls:'0',
+     toppad:'13px 14px',lgw:'56px',lgh:'15px',ff:'-apple-system,"PingFang SC",sans-serif',numff:'inherit',
+     pad:'13px',gap:'9px',kpad:'11px 12px',labsz:'10px',valsz:'21px',valw:'600',
+     barh:'42px',barr:'3px',cellr:'2px',pillr:'20px',pillt:'#fff',rowsz:'12px'} },
+
+{ n:'05 粉色主导', d:'大面积粉底 + 白卡片', why:'<em>品牌感最强。</em>整页底色就是淡粉，白卡片浮在上面。一眼就是赫眉。代价：数据被粉包着，专业感弱；长时间盯着看容易腻。',
+  v:{bg:'#FBEFF1',card:'#FFFFFF',cardline:'0',r:'10px',sh:'0 2px 10px rgba(180,120,135,.10)',
+     t1:'#2A1F22',t3:'#9A8286',c1:'#C2566E',c2:'#8E3B46',cell3:'#F2DDE1',
+     topbg:'#EDACB2',topline:'0',lgc:'#FFFFFF',ttc:'#FFFFFF',ttw:'600',ttsz:'13px',ttls:'.06em',
+     toppad:'13px 14px',lgw:'58px',lgh:'15px',ff:'-apple-system,"PingFang SC",sans-serif',numff:'inherit',
+     pad:'13px',gap:'9px',kpad:'11px 12px',labsz:'10px',valsz:'21px',valw:'600',
+     barh:'42px',barr:'3px',cellr:'2px',pillr:'20px',pillt:'#fff',rowsz:'12px'} },
+
+{ n:'06 数据密集型', d:'等宽数字 + 网格线，零装饰', why:'<em>为「看数」服务，不为好看服务。</em>等宽数字对齐、细网格线、行距压到最小、没有圆角没有阴影。一屏能塞下两倍信息。适合你自己用，不适合给店员看。',
+  v:{bg:'#FCFCFD',card:'#FFFFFF',cardline:'1px solid #E3E3E8',r:'0',sh:'none',t1:'#15151A',t3:'#7A7A86',
+     c1:'#2F6F5E',c2:'#B4402F',cell3:'#E9E9EE',topbg:'#F4F4F6',topline:'1px solid #DCDCE2',
+     lgc:'#15151A',ttc:'#15151A',ttw:'600',ttsz:'12px',ttls:'.04em',toppad:'9px 12px',
+     lgw:'50px',lgh:'13px',ff:'-apple-system,"PingFang SC",sans-serif',
+     numff:'ui-monospace,Menlo,monospace',
+     pad:'10px',gap:'0px',kpad:'8px 10px',labsz:'9.5px',valsz:'19px',valw:'600',
+     barh:'40px',barr:'0',cellr:'0',pillr:'0',pillt:'#fff',rowsz:'11.5px'} },
+
+{ n:'07 莫兰迪灰调', d:'全部低饱和，柔和不刺眼', why:'<em>最耐看。</em>所有颜色都掺灰压到同一个饱和度，没有一个色跳出来。整页像一张老照片。缺点：逾期这种要警示的状态也被压柔了，看不出紧迫。',
+  v:{bg:'#F4F2EF',card:'#FBFAF8',cardline:'1px solid #E5E1DB',r:'6px',sh:'none',t1:'#3A3632',t3:'#918A82',
+     c1:'#8C9A8E',c2:'#B08579',cell3:'#E3DFD8',topbg:'#E9E5DF',topline:'0',
+     lgc:'#5C564F',ttc:'#3A3632',ttw:'500',ttsz:'13px',ttls:'.06em',toppad:'13px 14px',
+     lgw:'56px',lgh:'15px',ff:'-apple-system,"PingFang SC",sans-serif',numff:'inherit',
+     pad:'13px',gap:'8px',kpad:'11px 12px',labsz:'10px',valsz:'20px',valw:'500',
+     barh:'42px',barr:'2px',cellr:'2px',pillr:'12px',pillt:'#fff',rowsz:'12px'} },
+
+{ n:'08 黑金高对比', d:'近黑底 + 香槟金', why:'<em>最「贵」。</em>黑底金字，高端美容院那一挂。粉可以完全不出现，或只在 logo 上。风险：跟「每天拍视频」这种日常工具的气质不符，用久了会觉得端着。',
+  v:{bg:'#111110',card:'#1A1917',cardline:'1px solid #2B2924',r:'2px',sh:'none',t1:'#F0EDE6',t3:'#8C8578',
+     c1:'#C9A227',c2:'#B4543A',cell3:'#2B2924',topbg:'#0B0B0A',topline:'1px solid #2B2924',
+     lgc:'#C9A227',ttc:'#F0EDE6',ttw:'500',ttsz:'13px',ttls:'.14em',toppad:'13px 14px',
+     lgw:'58px',lgh:'15px',ff:'-apple-system,"PingFang SC",sans-serif',numff:'inherit',
+     pad:'13px',gap:'8px',kpad:'11px 12px',labsz:'10px',valsz:'21px',valw:'500',
+     barh:'42px',barr:'0',cellr:'0',pillr:'0',pillt:'#111110',rowsz:'12px'} },
+
+{ n:'09 纸感手作', d:'米纸底 + 线描 + 圆角', why:'<em>最有人味。</em>米纸底色、圆润的形状、手作感。适合「店员每天用的小工具」这个定位，没有压迫感。缺点：不够专业，给老板汇报时会显轻。',
+  v:{bg:'#F7F3E9',card:'#FFFDF7',cardline:'1px solid #E6DEC9',r:'14px',sh:'none',t1:'#3E3627',t3:'#968C76',
+     c1:'#7A8C5A',c2:'#C4703F',cell3:'#E8E0CC',topbg:'#F1EADA',topline:'0',
+     lgc:'#3E3627',ttc:'#3E3627',ttw:'600',ttsz:'13px',ttls:'.02em',toppad:'13px 14px',
+     lgw:'56px',lgh:'15px',ff:'"PingFang SC",sans-serif',numff:'inherit',
+     pad:'13px',gap:'9px',kpad:'11px 12px',labsz:'10px',valsz:'21px',valw:'600',
+     barh:'42px',barr:'4px',cellr:'3px',pillr:'20px',pillt:'#fff',rowsz:'12px'} },
+
+{ n:'10 撞色分区', d:'每个区块一个底色', why:'<em>信息分区最清楚。</em>不同区块给不同的淡底色（粉/米/灰蓝），一眼知道在看哪一块，不用读标题。电脑上很有活力。风险：容易花，块数一多就乱。',
+  v:{bg:'#FFFFFF',card:'#FFFFFF',cardline:'0',r:'10px',sh:'none',t1:'#1B1B21',t3:'#85858F',
+     c1:'#3F5E8C',c2:'#C0563F',cell3:'#E6E8EE',topbg:'#1B1B21',topline:'0',
+     lgc:'#FFFFFF',ttc:'#FFFFFF',ttw:'600',ttsz:'13px',ttls:'.06em',toppad:'13px 14px',
+     lgw:'58px',lgh:'15px',ff:'-apple-system,"PingFang SC",sans-serif',numff:'inherit',
+     pad:'13px',gap:'9px',kpad:'11px 12px',labsz:'10px',valsz:'21px',valw:'600',
+     barh:'42px',barr:'3px',cellr:'2px',pillr:'20px',pillt:'#fff',rowsz:'12px',
+     tint:['#FBEFF1','#F6F1E6','#EDF0F6']} }
+];
+
+var BARH = [38,52,46,64,72,58,80,88,96,84,92,40];
+
+function mock(s, phone) {
+  var v = s.v, cols = phone ? 2 : 4;
+  var style = Object.keys(v).filter(function (k) { return k !== 'tint'; })
+    .map(function (k) { return '--' + k + ':' + v[k]; }).join(';') + ';--kcol:' + cols;
+
+  var kpi = [['已发布','355','a'],['逾期未发','462','b'],['待拍','473',''],['门店','43/43','']]
+    .slice(0, phone ? 2 : 4).map(function (x, i) {
+      var tint = v.tint ? ';background:' + v.tint[i % v.tint.length] : '';
+      return '<div class="k ' + x[2] + '" style="' + tint.slice(1) + '">' +
+        '<div class="lab">' + x[0] + '</div><div class="val">' + x[1] + '</div></div>';
+    }).join('');
+
+  var cal = '';
+  for (var r = 0; r < (phone ? 3 : 4); r++) {
+    var cells = '';
+    for (var k = 0; k < (phone ? 16 : 26); k++) {
+      var t = (r * 7 + k * 13 + (r * k) % 5) % 10;
+      var bg = k > (phone ? 11 : 19) ? v.cell3 : (t < 4 ? v.c1 : (t < 7 ? v.c2 : v.cell3));
+      cells += '<i style="background:' + bg + '"></i>';
+    }
+    cal += '<div class="r">' + cells + '</div>';
+  }
+
+  var rows = phone ? '<div class="rows">' +
+    [['09-20（周日）','今天'],['09-21（周一）','待拍']].map(function (x) {
+      return '<div class="row" style="display:block">' +
+        '<div><span class="d">' + x[0] + '</span> <span class="p">' + x[1] + '</span></div>' +
+        '<div class="t">抗初老｜法令纹变深</div></div>';
+    }).join('') + '</div>' : '';
+
+  return '<div class="m" style="' + style + '">' +
+    '<div class="top"><span class="lg"></span><span class="tt">视频脚本看板</span></div>' +
+    '<div class="bd">' + '<div class="kpis">' + kpi + '</div>' +
+      (phone ? '' : '<div class="chart"><div class="ch">近 13 周发布量</div><div class="bars">' +
+        BARH.map(function (h) { return '<i style="height:' + h + '%"></i>'; }).join('') + '</div></div>') +
+      '<div class="cal">' + cal + '</div>' + rows +
+    '</div></div>';
+}
+
+document.getElementById('out').innerHTML = S.map(function (s, i) {
+  return '<div class="item">' +
+    '<div class="hd"><span class="no">' + (i + 1) + '</span><b>' + s.n.replace(/^\d+\s/, '') +
+      '</b><span>' + s.d + '</span></div>' +
+    '<div class="pair">' +
+      '<div class="desk"><div class="lab">电脑版</div><div class="screen">' + mock(s, false) + '</div></div>' +
+      '<div class="phone"><div class="lab">手机版</div><div class="screen">' + mock(s, true) + '</div></div>' +
+    '</div>' +
+    '<div class="why">' + s.why + '</div>' +
+  '</div>';
+}).join('');
+</script>
+</body>
+</html>

@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>配色组合样本 · 粉配什么</title>
+<style>
+/* ===========================================================
+   「品牌粉配什么」的整页级样本（2026-09-20）。
+
+   跟 数据色样本.html 的区别：那个只换一个数据色，这个是**整套组合**——
+   底色 / 界面色 / 数据色 / 状态色一起换，因为配色好不好看是**整体**决定的，
+   单看一个色永远判断不了。
+
+   每个组合都画了一份缩小的真页面：粉顶栏 + 四个图块 + KPI 行 + 日历条 + 按钮 + 月份条。
+   顶栏的粉 #EDACB2 是品牌原件取样出来的，六个组合里**一模一样**，
+   变的只是它下面那一整套。
+   =========================================================== */
+:root{ --pink:#EDACB2; }
+*{box-sizing:border-box}
+html,body{margin:0;background:#F2F2F4;
+  font:400 14px/1.7 -apple-system,"PingFang SC",system-ui,sans-serif;color:#1B1B21}
+.page{padding:24px 26px 60px}
+h1{font-size:22px;font-weight:600;margin:0 0 8px}
+.lead{font-size:13.5px;color:#6B6B75;line-height:1.9;margin:0 0 22px;max-width:1000px}
+.lead b{color:#1B1B21}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(520px,1fr));gap:22px}
+
+.combo{background:#fff;border:1px solid #E2E2E6}
+.hd{display:flex;align-items:baseline;gap:10px;padding:13px 16px;border-bottom:1px solid #EDEDF0}
+.hd .no{width:22px;height:22px;background:#1B1B21;color:#fff;font-size:12px;font-weight:600;
+  display:flex;align-items:center;justify-content:center;flex:none;align-self:center}
+.hd b{font-size:15px;font-weight:600}
+.hd .sw{display:flex;gap:4px;margin-left:auto}
+.hd .sw i{width:18px;height:18px;display:block;border:1px solid rgba(0,0,0,.1)}
+
+/* ---- 缩小的真页面 ---- */
+.mock{padding:0}
+.bar{display:flex;align-items:center;gap:10px;padding:9px 14px;background:var(--pink);position:relative}
+.bar .lg{width:62px;height:17px;background:#fff;flex:none;
+  -webkit-mask:url(assets/logo-ink.png) no-repeat left center/contain;
+          mask:url(assets/logo-ink.png) no-repeat left center/contain}
+.bar .sp{width:1px;height:14px;background:rgba(255,255,255,.55)}
+.bar h2{margin:0;font-size:12.5px;font-weight:600;color:#fff;letter-spacing:.06em}
+
+.body{padding:14px 14px 16px}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+.box{aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.bars{display:flex;gap:2px;align-items:flex-end;height:64%;width:80%}
+.bars i{flex:1;display:block}
+.stack{display:flex;height:13px;width:82%;gap:2px}
+.stack i{display:block}
+.big{font-size:20px;font-weight:600}
+
+.kpis{display:flex;margin-top:12px}
+.kpis div{flex:1;padding:8px 9px}
+.kpis b{display:block;font-size:17px;font-weight:600;line-height:1.2}
+.kpis span{font-size:10px}
+
+.cal{display:flex;flex-direction:column;gap:3px;margin-top:12px}
+.cal .r{display:flex;gap:3px}
+.cal .r i{flex:1;aspect-ratio:1;max-height:11px;display:block}
+
+.ctrl{display:flex;align-items:center;gap:8px;margin-top:13px;flex-wrap:wrap}
+.btn{padding:6px 13px;font-size:12px;border:1px solid;background:transparent}
+.btn.solid{color:#fff}
+.mchip{padding:5px 11px;font-size:12px;border:1.5px solid transparent}
+.mchip.on{font-weight:600}
+.why{padding:11px 16px 14px;font-size:12px;color:#6B6B75;line-height:1.8;border-top:1px solid #EDEDF0}
+.why em{font-style:normal;color:#1B1B21;font-weight:600}
+</style>
+</head>
+<body>
+<div class="page">
+
+<h1>品牌粉配什么 · 6 个整套组合</h1>
+<p class="lead">
+  跟上一个样本页的区别：那个只换<b>一个数据色</b>，这个换<b>整套</b>——底色 / 界面色 / 数据色 / 状态色一起变。
+  配色好不好看是<b>整体</b>决定的，单看一个色判断不了。<br>
+  每个组合都画了一份缩小的真页面：粉顶栏 + 四个图块 + KPI + 日历条 + 按钮 + 月份条。
+  <b>顶栏的粉在六个组合里完全一样</b>（品牌原件 #EDACB2），变的只是它下面那一整套。
+</p>
+
+<div class="grid" id="grid"></div>
+</div>
+
+<script>
+/* 每套：bg 页面底 / ui 界面色（按钮·选中框）/ data 已发布 / late 逾期 / todo 待拍 / ex 自由发挥 / track 圆环底轨 */
+var COMBOS = [
+  { n:'粉 + 炭黑', bg:'#FFFFFF', ui:'#1B1B21', data:'#2A2A2E', late:'#9C3B2E', todo:'#E6E6EA', ex:'#8A8A94', track:'#E8E8EC',
+    why:'<em>最不会出错的一套。</em>粉负责情绪，黑负责秩序，两者不在同一个层面上抢。代价是数据区没有色彩记忆点，就是黑白灰加一抹砖红。' },
+
+  { n:'粉 + 奶白米（底色带暖）', bg:'#FAF5EE', ui:'#1B1B21', data:'#5C4638', late:'#9C3B2E', todo:'#E8DFD2', ex:'#8A8A94', track:'#E4DACB',
+    why:'底色从纯白换成奶白，整页暖下来，跟粉同一个温度。数据用<em>深咖</em>——深棕才压得住，浅棕不行。Jo Malone、Glossier 那挂的感觉。' },
+
+  { n:'粉 + 金', bg:'#FFFFFF', ui:'#1B1B21', data:'#8A6A2C', late:'#9C3B2E', todo:'#EDE4D2', ex:'#8A8A94', track:'#EAE3D4',
+    why:'金是粉的"提亮版"，同为暖色，显贵。<em>风险</em>：金和砖红都偏暖，日历格子挨着时要盯一下；而且金用多了容易俗，这里只给数据。' },
+
+  { n:'粉 + 墨绿（小点缀）', bg:'#FFFFFF', ui:'#1B1B21', data:'#2F5D45', late:'#9C3B2E', todo:'#E6E6EA', ex:'#8A8A94', track:'#E8E8EC',
+    why:'粉绿互补，玫瑰配叶子，是经典。<em>比例必须悬殊</em>——粉只在顶栏一条，绿只在数据里，谁也别越界。你之前说不喜欢，放这儿是给个对照。' },
+
+  { n:'粉 + 深咖', bg:'#FFFFFF', ui:'#1B1B21', data:'#4A3426', late:'#9C3B2E', todo:'#E8E0D6', ex:'#8A8A94', track:'#E6DED4',
+    why:'玫瑰木色系的正解。<em>关键是够深</em>：深咖和粉明度拉得开，互相压得住；浅棕跟粉明度太近，就是你说的"怪"。' },
+
+  { n:'粉 + 燕麦棕（现在线上这版）', bg:'#FFFFFF', ui:'#1B1B21', data:'#B39A7C', late:'#9C3B2E', todo:'#E3D8C8', ex:'#4A4A52', track:'#E6E2DA',
+    why:'对照组。粉已经撤回顶栏、界面改黑之后再看一眼——如果还觉得<em>棕和粉互相压不住</em>，那就是浅棕的先天问题，换深棕（第 5 套）或炭黑（第 1 套）。' }
+];
+
+var BARH = [38,52,46,64,72,58,80,88,96,84,92,40];
+
+function ring(c, track) {
+  var r = 26, C = 2 * Math.PI * r;
+  return '<svg viewBox="0 0 70 70" width="62" height="62">' +
+    '<circle cx="35" cy="35" r="' + r + '" fill="none" stroke="' + track + '" stroke-width="8"/>' +
+    '<circle cx="35" cy="35" r="' + r + '" fill="none" stroke="' + c + '" stroke-width="8" ' +
+      'stroke-dasharray="' + C + '" stroke-dashoffset="' + (C * 0.57).toFixed(1) +
+      '" transform="rotate(-90 35 35)"/>' +
+    '<text x="35" y="40" text-anchor="middle" font-size="13" font-weight="600" fill="#1B1B21">43%</text></svg>';
+}
+
+document.getElementById('grid').innerHTML = COMBOS.map(function (x, i) {
+  var tileBg = x.bg === '#FFFFFF' ? '#FFFFFF' : x.bg;
+  var cal = '';
+  for (var r = 0; r < 4; r++) {
+    var cells = '';
+    for (var k = 0; k < 28; k++) {
+      var v = (r * 7 + k * 13 + (r * k) % 5) % 10;
+      var bg = k > 20 ? x.todo : (v < 4 ? x.data : (v < 7 ? x.late : x.todo));
+      cells += '<i style="background:' + bg + '"></i>';
+    }
+    cal += '<div class="r">' + cells + '</div>';
+  }
+  return '<div class="combo">' +
+    '<div class="hd"><span class="no">' + (i + 1) + '</span><b>' + x.n + '</b>' +
+      '<span class="sw">' +
+        '<i style="background:var(--pink)"></i><i style="background:' + x.data + '"></i>' +
+        '<i style="background:' + x.late + '"></i><i style="background:' + x.todo + '"></i>' +
+        '<i style="background:' + x.bg + '"></i></span></div>' +
+    '<div class="mock" style="background:' + x.bg + '">' +
+      '<div class="bar"><span class="lg"></span><span class="sp"></span><h2>视频脚本看板</h2></div>' +
+      '<div class="body">' +
+        '<div class="tiles">' +
+          '<div class="box" style="background:' + tileBg + ';border:1px solid ' + x.todo + '">' + ring(x.data, x.track) + '</div>' +
+          '<div class="box" style="background:' + tileBg + ';border:1px solid ' + x.todo + '"><div class="bars">' +
+            BARH.map(function (h) { return '<i style="height:' + h + '%;background:' + x.data + '"></i>'; }).join('') +
+          '</div></div>' +
+          '<div class="box" style="background:' + tileBg + ';border:1px solid ' + x.todo + '"><div class="stack">' +
+            '<i style="width:30%;background:' + x.data + '"></i>' +
+            '<i style="width:39%;background:' + x.late + '"></i>' +
+            '<i style="width:31%;background:' + x.todo + '"></i></div></div>' +
+          '<div class="box" style="background:' + tileBg + ';border:1px solid ' + x.todo + '">' +
+            '<span class="big" style="color:' + x.data + '">43</span></div>' +
+        '</div>' +
+        '<div class="kpis">' +
+          '<div><b style="color:' + x.data + '">355</b><span style="color:#8A8A94">已发布</span></div>' +
+          '<div><b style="color:' + x.late + '">462</b><span style="color:#8A8A94">逾期未发</span></div>' +
+          '<div><b>473</b><span style="color:#8A8A94">待拍</span></div>' +
+          '<div><b style="color:' + x.ex + '">2,623</b><span style="color:#8A8A94">自由发挥</span></div>' +
+        '</div>' +
+        '<div class="cal">' + cal + '</div>' +
+        '<div class="ctrl">' +
+          '<span class="btn" style="border-color:' + x.ui + ';color:' + x.ui + '">导入数据</span>' +
+          '<span class="btn solid" style="border-color:' + x.ui + ';background:' + x.ui + '">导出</span>' +
+          '<span class="mchip" style="color:#8A8A94">2026.08</span>' +
+          '<span class="mchip on" style="border-color:' + x.ui + ';color:' + x.ui + '">2026.09</span>' +
+          '<span class="mchip" style="color:#8A8A94">2026.10</span>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="why">' + x.why + '</div>' +
+  '</div>';
+}).join('');
+</script>
+</body>
+</html>

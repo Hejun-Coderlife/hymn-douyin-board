@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>赫眉 HYMN — 丈亭店</title>
+<style>
+/* ===========================================================
+   全页设计稿 · 手机版门店页（2026-09-20）
+
+   跟电脑版同一套语言，但**比例重新定过**，不是等比缩小：
+   手机上留白要收、字号反差要更极端，否则一屏装不下一件事。
+
+   排版要点：
+   1. 一屏只讲一件事 —— 第一屏就是「今天拍什么」，标题用 28px 宋体铺满，
+      其余信息全部退到 9px 的小标签里。
+   2. 分镜不做成卡片列表，做成**剧本**：左边一列极小的序号和秒数，
+      右边是画面和台词，中间一条发丝线。像一页剧本纸。
+   3. 台词用宋体、画面用无衬线 —— 靠字体区分"念的"和"拍的"，不靠颜色和底色。
+   4. 日期导航是一条横向的细线刻度，不是一排按钮。
+   5. 品牌粉只出现两次：今天那一格的刻度、以及分镜里"要念的话"的引号。
+   =========================================================== */
+:root{
+  --paper:#FDFCFA;
+  --ink:#16140F;
+  --ink-2:#4A453C;
+  --dim:#9C958A;
+  --hair:#E3DFD6;
+  --hair-2:#F1EEE7;
+  --pink:#D9A6AE;
+  --pink-deep:#B9808B;
+  --serif:Didot,"Bodoni 72","Songti SC",Georgia,serif;
+  --song:"Songti SC","STSong",Didot,serif;
+  --sans:"Optima","PingFang SC",-apple-system,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);
+  -webkit-font-smoothing:antialiased}
+.ph{max-width:430px;margin:0 auto;padding:0 26px 70px}
+
+header{padding:34px 0 0;text-align:center}
+header .lg{width:88px;height:23px;display:inline-block;background:var(--ink);
+  -webkit-mask:url(assets/logo-ink.png) no-repeat center/contain;
+          mask:url(assets/logo-ink.png) no-repeat center/contain}
+header .store{margin-top:13px;font-size:9.5px;letter-spacing:.38em;color:var(--dim);
+  text-transform:uppercase}
+header .pinkline{width:26px;height:1px;background:var(--pink);margin:14px auto 0}
+
+/* ---------- 日期刻度：一条细线，不是一排按钮 ---------- */
+.dates{display:flex;gap:0;margin-top:34px;border-bottom:.5px solid var(--hair)}
+.dates a{flex:1;text-align:center;padding-bottom:13px;text-decoration:none;cursor:pointer}
+.dates a .d{font-family:var(--serif);font-size:17px;color:var(--dim);display:block;line-height:1}
+.dates a .w{font-size:8px;letter-spacing:.16em;color:var(--dim);margin-top:7px;display:block;
+  text-transform:uppercase}
+.dates a.on{border-bottom:1px solid var(--ink);margin-bottom:-.5px}
+.dates a.on .d{color:var(--ink)}
+.dates a.on .w{color:var(--ink)}
+.dates a.today .d{color:var(--pink-deep)}
+
+/* ---------- 今天这条：一屏只讲一件事 ---------- */
+.today{padding:46px 0 40px;border-bottom:.5px solid var(--hair)}
+.today .eyebrow{font-size:9px;letter-spacing:.34em;color:var(--dim);text-transform:uppercase}
+.today h1{font-family:var(--song);font-size:28px;font-weight:400;line-height:1.5;
+  margin:20px 0 0;letter-spacing:.03em}
+.today .meta{display:flex;gap:22px;margin-top:26px}
+.today .meta div .l{font-size:8.5px;letter-spacing:.26em;color:var(--dim);text-transform:uppercase}
+.today .meta div .v{font-family:var(--serif);font-size:15px;margin-top:6px}
+
+/* ---------- 开头 3 秒：整页唯一的"引用" ---------- */
+.hook{padding:40px 0;border-bottom:.5px solid var(--hair)}
+.hook .l{font-size:9px;letter-spacing:.34em;color:var(--dim);text-transform:uppercase}
+.hook p{font-family:var(--song);font-size:19px;line-height:1.95;margin:18px 0 0;
+  letter-spacing:.02em;position:relative;padding-left:18px}
+.hook p::before{content:'';position:absolute;left:0;top:6px;bottom:6px;width:1px;
+  background:var(--pink)}
+
+/* ---------- 分镜：做成剧本，不是卡片列表 ---------- */
+.shots{padding:40px 0 0}
+.shots > .l{font-size:9px;letter-spacing:.34em;color:var(--dim);text-transform:uppercase}
+.shots > .sub{font-size:11px;color:var(--dim);margin-top:8px;letter-spacing:.06em}
+.shot{display:grid;grid-template-columns:40px 1fr;gap:18px;padding:28px 0;
+  border-bottom:.5px solid var(--hair-2)}
+.shot:first-of-type{margin-top:26px;border-top:.5px solid var(--hair)}
+.shot .no{font-family:var(--serif);font-size:15px;color:var(--dim);line-height:1.3}
+.shot .no small{display:block;font-family:var(--sans);font-size:8.5px;letter-spacing:.14em;
+  margin-top:7px}
+.shot .scene{font-size:13.5px;line-height:1.95;color:var(--ink-2);letter-spacing:.02em}
+.shot .line{font-family:var(--song);font-size:16px;line-height:1.95;margin-top:13px;
+  letter-spacing:.02em}
+.shot .line::before{content:'「';color:var(--pink-deep)}
+.shot .line::after{content:'」';color:var(--pink-deep)}
+.shot.end .no{color:var(--pink-deep)}
+
+/* ---------- 标签：一行极小的字，不是一堆药丸 ---------- */
+.tags{padding:36px 0 0;border-top:.5px solid var(--hair);margin-top:8px}
+.tags .l{font-size:9px;letter-spacing:.34em;color:var(--dim);text-transform:uppercase}
+.tags p{font-size:12px;line-height:2.2;color:var(--ink-2);margin:16px 0 0;letter-spacing:.06em}
+
+footer{padding:56px 0 0;text-align:center}
+footer .act{font-size:10px;letter-spacing:.3em;color:var(--dim);text-transform:uppercase;
+  padding-bottom:4px;border-bottom:1px solid var(--hair);cursor:pointer;display:inline-block}
+footer .lg{width:62px;height:16px;display:block;margin:44px auto 0;background:var(--hair);
+  -webkit-mask:url(assets/logo-ink.png) no-repeat center/contain;
+          mask:url(assets/logo-ink.png) no-repeat center/contain}
+</style>
+</head>
+<body>
+
+<div class="ph">
+  <header>
+    <span class="lg"></span>
+    <div class="store">丈亭店 · ZHANGTING</div>
+    <div class="pinkline"></div>
+  </header>
+
+  <nav class="dates" id="dates"></nav>
+
+  <section class="today">
+    <div class="eyebrow">Today · 09.20 Sunday</div>
+    <h1>日常防晒｜夏天过完，<br>防晒是抗老里最便宜的一步</h1>
+    <div class="meta">
+      <div><div class="l">Format</div><div class="v">店员自测</div></div>
+      <div><div class="l">Length</div><div class="v">30–40s</div></div>
+      <div><div class="l">Shots</div><div class="v">06</div></div>
+    </div>
+  </section>
+
+  <section class="hook">
+    <div class="l">First 3 Seconds</div>
+    <p>「夏天过完，脸上多了几块斑，整个人黑一度」——这是我自己，第一天。</p>
+  </section>
+
+  <section class="shots">
+    <div class="l">Shot List</div>
+    <div class="sub">六幕 · 一部手机 · 两个店员</div>
+    <div id="shots"></div>
+  </section>
+
+  <section class="tags">
+    <div class="l">Hashtags</div>
+    <p>#赫眉　#皮肤管理　#日常防晒　#抗初老　#变美日记　#美容院</p>
+  </section>
+
+  <footer>
+    <span class="act">复制整条脚本</span>
+    <span class="lg"></span>
+  </footer>
+</div>
+
+<script>
+var DATES = [['18','Fri'],['19','Sat'],['20','Sun'],['21','Mon'],['22','Tue']];
+document.getElementById('dates').innerHTML = DATES.map(function (d, i) {
+  return '<a class="' + (i === 2 ? 'on today' : '') + '">' +
+    '<span class="d">' + d[0] + '</span><span class="w">' + d[1] + '</span></a>';
+}).join('');
+
+var SHOTS = [
+  ['店员坐在窗边固定位置，手机靠在纸巾盒上，正面素颜',
+   '夏天过完，脸上多了几块斑，整个人黑一度——这是我自己，第一天。','3s'],
+  ['手机凑近自己的问题区域，对上焦停两秒',
+   '问题出在这儿：只在出门前涂一次，中午不补、阴天不涂。','5s'],
+  ['同事帮忙拍：你躺在护理床上，她站侧面拍你的脸',
+   '接下来七天，我在店里做晒后修护护理。','5s'],
+  ['轻薄防晒 + 晒后修护凝胶近景，手指取用',
+   '在家配合轻薄防晒，一天两次，没别的。','4s'],
+  ['第七天，回到同一个窗边、同一个纸巾盒位置拍',
+   '同样的位置、同样的光，我没换角度。','5s'],
+  ['前后两段并排定格三秒（用抖音自带分屏）',
+   '防晒是抗老里最便宜的一步。','4s']
+];
+document.getElementById('shots').innerHTML = SHOTS.map(function (s, i) {
+  var last = i === SHOTS.length - 1;
+  return '<div class="shot' + (last ? ' end' : '') + '">' +
+    '<div class="no">' + (last ? '尾' : ('0' + (i + 1)).slice(-2)) +
+      '<small>' + s[2] + '</small></div>' +
+    '<div><div class="scene">' + s[0] + '</div><div class="line">' + s[1] + '</div></div>' +
+  '</div>';
+}).join('');
+</script>
+</body>
+</html>
