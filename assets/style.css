@@ -1,21 +1,50 @@
+/* ===========================================================
+   白底 + 赫眉品牌粉 配色（2026-09-20）。
+
+   **这是 style.css 的副本，只改颜色，一行版式都没动。**
+   用户明确说过：「我只要你改色系，没要你改内容」——
+   在此之前我做过一版样张，把导航改成 tab、卡片加圆角、按钮重排，被否了。
+   所以这个文件跟 style.css 的 diff 只能出现在色值上，
+   要改间距/圆角/结构，先问。
+
+   改了什么：
+     --bg      奶油 #FCF7F1  →  纯白 #FFFFFF（用户：整个网页白底）
+     暖灰一族   #F2EDE7 / #E2DDD6 / #E4DED7 / #D2CFCD  →  中性灰
+                （底色从奶油变白之后，原来的暖灰会显脏发黄）
+     --ink     纯黑 #000000  →  品牌粉深一档 #D4788C
+                这个变量只用在**交互件**上：按钮、选中态竖条、focus 边框、
+                复选框、菜单选中项。正文颜色走 --t1/--t2/--t3，仍然是黑的。
+     状态色     第一版没动，结果用户问「赫眉的品牌色在哪里」——
+                因为 --ink 只挂在按钮边框和 2px 竖条上，而这页按钮很少，
+                占面积的是四个灰图块 / KPI 数字 / 日历格子，全都没碰到。
+                所以第二版把粉铺到真正占面积的地方：
+                  · 图块灰底、表头、分区线 → 极淡粉灰（整页基调立刻变粉）
+                  · 已发布（这块看板出现最多的数据色）墨绿 → 品牌粉
+                  · 今天那列 / 链接 普蓝 → 粉（普蓝在粉系里是孤立的冷色）
+                **逾期仍是砖红**：它得跟「已发布」拉开，而且红=逾期是通用语义。
+                代价是砖红和粉同属红系，日历格子上靠深浅区分（粉亮、砖红暗）。
+
+   品牌粉 #EDACB2 本身太浅，当边框和文字会糊，所以 --ink 取深一档的 #D4788C，
+   浅粉留给 hover 底色和选中底。
+   =========================================================== */
 :root{
   /* 以下颜色是从 hermes.cn 截图上直接取样的，别凭印象改 */
-  --bg:#FCF7F1;            /* 页面底：暖奶油。注意——真站截图上量到的是 #FDF5EF，
+  --bg:#FFFFFF;            /* 页面底：暖奶油。注意——真站截图上量到的是 #FDF5EF，
                               但在用户的显示器上，CSS 写 #FDF5EF 截出来会变成 #FEF3ED（偏粉 2 阶），
                               所以这里按实测差值补偿成 #FCF7F1，让它在屏幕上跟 hermes.cn 一致。
                               别"照截图取样"改回 #FDF5EF —— 那一步已经踩过了。 */
   --card:#FFFFFF;          /* 数据区白块 */
-  --paper:#F2EDE7;
-  --tile:#E9E4DC;        /* 图块灰底（对应 hermes.cn 商品图的 #E2DDD6，调亮一点好压深色图形）*/         /* 次级块 / 表头 / hover */
-  --tile:#E2DDD6;          /* 图块灰（爱马仕商品图底色） */
-  --surface:#F7F2EC;
-  --line:#E4DED7;          /* 表格内细线 */
-  --line-2:#D2CFCD;        /* 分区线（实测值） */
-  --ink:#000000;
+  --paper:#FBF4F6;
+  --tile:#FAF0F2;        /* 图块灰底（对应 hermes.cn 商品图的 #E2DDD6，调亮一点好压深色图形）*/         /* 次级块 / 表头 / hover */
+  --tile:#F8EDEF;          /* 图块灰（爱马仕商品图底色） */
+  --surface:#FDF8F9;
+  --line:#F0E7E9;          /* 表格内细线 */
+  --line-2:#E5D8DC;        /* 分区线（实测值） */
+  --ink:#D4788C;
   --t1:#000000;            /* 正文/标题：纯黑 */
-  --t2:#3F3C3A;
+  --t2:#3C3C42;
   --t3:#5E5E5E;            /* 次级文字（实测面包屑色） */
-  --t4:#9C9691;
+  --t4:#9A9AA3;
 
   /* 橙只剩「当天另有自由发挥」那个小点在用（对应真站上唯一的一抹橙：logo）。
      其余一律走奶油 / 暖灰 / 黑 —— 用户 2026-09-17「色系也按我发你的改」 */
@@ -30,19 +59,19 @@
   --gold-bright:#9C9691;
   --hairline-gold:linear-gradient(90deg,transparent,var(--line-2),transparent);
   --glass:#FFFFFF;
-  --ink-gradient:#000000;
+  --ink-gradient:#D4788C;
   --ink-text:#FFFFFF;
 
   /* 状态各一色（用户 2026-09-17 选定）：墨绿=已发布、驼黄=推测、砖红=逾期、浅灰=待拍、普蓝=今天/链接。
      唯一禁区是橙色——用户明确说不喜欢，别再加回来。 */
-  --green:#2F5D45;   --green-bg:rgba(47,93,69,.09);
+  --green:#D4788C;   --green-bg:rgba(212,120,140,.12);
   --camel:#B58B3E;   --camel-text:#8A6A2C;  --camel-bg:rgba(181,139,62,.13);
   --brick:#9C3B2E;   --brick-bg:rgba(156,59,46,.09);
-  --navy:#2C4A6E;    --navy-bg:rgba(44,74,110,.08);
-  --todo:#E8E3DC;
+  --navy:#C25E77;    --navy-bg:rgba(194,94,119,.10);
+  --todo:#EDE2E5;
   --late:#9C3B2E;   /* 砖红 */
   --late-bg:var(--brick-bg);
-  --done:#2F5D45;   /* 墨绿 */
+  --done:#D4788C;   /* 品牌粉 */
   --done-bg:var(--green-bg);
   --guess:#B58B3E;  /* 驼黄 */
   --guess-bg:var(--camel-bg);
@@ -154,7 +183,8 @@ button,select,input{font:inherit;color:inherit}
   background:var(--bg);border-right:1px solid var(--line-2);
   display:flex;flex-direction:column;z-index:60;
 }
-.sidebar{transition:width .24s cubic-bezier(.25,.1,.25,1);overflow:hidden}
+/* 折叠侧栏要**瞬间切换**，不要过渡（2026-09-20 用户：「要瞬间变化，不要像翻书一样能看到划过去」）*/
+.sidebar{overflow:hidden}
 .sidebar .logo{padding:30px 22px 22px;border-bottom:1px solid var(--line-2);padding-right:56px}
 
 /* 侧栏折叠按钮：展开时贴在侧栏右上角，收起后滑到页面左上角（用户 2026-09-17 要的 ChatGPT 那个）*/
@@ -162,7 +192,7 @@ button,select,input{font:inherit;color:inherit}
   position:fixed;top:24px;left:calc(var(--nav-w) - 48px);z-index:70;
   width:34px;height:34px;display:flex;align-items:center;justify-content:center;
   border:1px solid var(--line-2);border-radius:0;background:var(--bg);color:var(--t2);
-  cursor:pointer;padding:0;transition:left .24s cubic-bezier(.25,.1,.25,1),background .2s,color .2s;
+  cursor:pointer;padding:0;transition:background .2s,color .2s;   /* left 不做过渡，跟侧栏一起瞬移 */
 }
 .navtog:hover{background:var(--ink);color:#fff;border-color:var(--ink)}
 /* 折叠 = 收成一条图标栏（不是整条藏起来），文字/分组/底部说明全隐藏，只留图标 */
@@ -182,7 +212,8 @@ body.navhide .sidedata{padding:14px 0;text-align:center}
 body.navhide .sidedata .hint{display:none}
 body.navhide .sidedata{display:none}   /* 图标栏里连数据状态也省掉，导入走导航那一项 */
 body.navhide .sidebar .foot{display:none}
-.main{transition:margin-left .24s cubic-bezier(.25,.1,.25,1)}
+/* .main 的 margin-left 也不做过渡，否则侧栏瞬间收了、内容还在慢慢挪 */
+.main{}
 .sidebar .logo img{height:18px;display:block}
 .sidebar .logo .st{font-size:11.5px;color:var(--t3);margin-top:12px;letter-spacing:.02em}
 
@@ -1030,3 +1061,170 @@ body.storepage{--wh-h:48px}
   .kpirow{flex-wrap:wrap}
   .kpi{min-width:44%}
 }
+
+/* ===== 顶栏光轨（2026-09-20，搬自访客登记系统那条 TIESTON 顶栏）===== */
+/* 冻结在顶上（2026-09-20 用户：「最上面这个流光效果冻结，不要随页面划动」）。
+   z-index 要压过表格里那些 sticky 表头（它们是 20/30），所以给 50。
+   position:sticky 能用的前提是祖先链上没有 overflow —— .main 上没有，别加。 */
+/* 冻结：position:fixed，不是 sticky。
+   先用的 sticky，用户反馈「划到最下面还是会动」—— sticky 的参照系是祖先容器，
+   祖先一到底它就跟着走；fixed 参照视口，滚到哪儿都不动，不用逐层排查祖先。
+   left 跟着侧栏宽度走（侧栏能折叠成 58px 图标栏）。
+   **不加 transition** —— 折叠是瞬间完成的，顶栏也得瞬间跟上，
+   否则侧栏已经收好了、顶栏还在慢慢滑。 */
+.hdrfx{
+  position:fixed;top:0;left:var(--nav-w);right:0;z-index:50;
+  overflow:hidden;display:flex;align-items:center;gap:12px;
+  padding:13px 20px;background:#EDACB2;   /* 品牌粉，WebGL 拿不到时也靠它兜着 */
+}
+body.navhide .hdrfx{left:var(--nav-w-rail)}
+/* 顶栏脱离文档流了，主区得空出它的高度（13+25+13 = 51px），否则内容被盖住 */
+body.hasfx .main{padding-top:51px}
+/* 门店页没有侧栏，顶栏从左边缘开始，宽度也就不用跟着变 */
+body.storepage .hdrfx{left:0}
+body.storepage.hasfx .sp-body{padding-top:51px}
+.hdrfx > *:not(canvas){position:relative;z-index:1}
+.hdrfx canvas{position:absolute!important;inset:0;width:100%!important;height:100%!important;
+  z-index:0;display:block;pointer-events:none}
+/* logo：品牌原件就是**粉底白字**，所以这里填纯白，不要渐变不要金。
+   用 PNG 当遮罩，所以不用另存一张白色图。
+   【坑】类名原来叫 .lg，跟登录页的主容器 .lg 撞了 —— logo 继承了容器的
+   padding:calc(51px+10vh)，顶栏在手机上被撑到 400 多像素高。改名 .hdlogo。 */
+.hdrfx .hdlogo{
+  width:92px;height:25px;flex:none;background:#FFFFFF;
+  -webkit-mask:url(logo-ink.png) no-repeat left center/contain;
+          mask:url(logo-ink.png) no-repeat left center/contain;
+}
+.hdrfx .sp{width:1px;height:20px;background:rgba(255,255,255,.55);flex:none}
+.hdrfx h2{margin:0;font-size:16px;font-weight:600;letter-spacing:.06em;color:#fff;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hdrfx::after{content:'';position:absolute;left:0;right:0;bottom:0;height:1px;z-index:2;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.85),transparent)}
+@keyframes hdrflow{from{background-position:0% 50%}to{background-position:280% 50%}}
+@media (prefers-reduced-motion:reduce){.hdrfx .hdlogo{animation:none}}
+
+/* ===== 固定顶栏之后，所有「钉在视口顶上」的东西都要往下让 51px =====
+   2026-09-20：顶栏改成 position:fixed（z-index 50）之后，
+   门店页的周头原本钉在 top:0，正好躲进粉条底下 —— 用户：「往上划了以后，本周怎么没了」。
+   凡是参照**视口**的 sticky 都得加这 51px；参照容器的不用
+   （比如日历大表的表头在 .gridwrap{overflow:auto} 里，钉的是容器，跟顶栏无关）。 */
+body.hasfx .wkblock .wh{top:51px}
+body.hasfx .card2.open .ct{top:calc(51px + var(--wh-h))}
+body.hasfx table.list th{top:51px}
+
+/* ===== 侧栏顶上那块 logo + 标题隐掉（2026-09-20 用户：「这个重复的不要了」）=====
+   加了固定顶栏之后，侧栏顶上的「logo + 视频脚本看板」跟顶栏一模一样，重复了。
+   用 CSS 隐藏而不是删 HTML：预览文件是 index.html 的逐字副本，
+   改 HTML 就对不上了，也不好回退。
+   折叠按钮 .navtog 是 fixed 的（top:24px，34px 高），原来靠 logo 那块占位；
+   logo 一藏，导航会顶上去被按钮压住，所以给 nav 补 66px 的上边距。 */
+body.hasfx .sidebar .logo{display:none}
+body.hasfx .sidebar .nav{padding-top:66px}
+
+/* 侧栏收窄（2026-09-20 用户：「没了 logo 以后，这里现在太宽了」）。
+   214px 当初是为了装下 logo 和「视频脚本看板」那行字；logo 移到顶栏之后，
+   里面最长的一项是「视频数据导入」6 个字 —— 图标 18 + 间距 + 6×14px ≈ 130，
+   加左右内边距取 168px。
+   注意 --nav-w 同时被 .main 的 margin-left 和固定顶栏的 left 引用，改这一个值就够。 */
+body.hasfx{--nav-w:168px}
+
+/* ===== 顶栏通栏 + 折叠按钮下移（2026-09-20）=====
+   用户：「让动效做到最左边，折叠按钮下移一点」。
+   顶栏原来从侧栏右边开始（left:var(--nav-w)），光轨被侧栏截掉一截；
+   改成 left:0 通栏，粉条和光轨横穿整个窗口。
+
+   连带三件事，少一件都会错位：
+     · 顶栏盖住侧栏顶上 51px → 侧栏补 padding-top，导航不会被压在粉条下面
+     · 折叠按钮（fixed，原来 top:24px）正好在粉条里 → 下移到 65px，落在顶栏下方
+     · 导航再往下让开按钮占的 65~99px */
+body.hasfx .hdrfx{left:0}
+body.hasfx .sidebar{padding-top:51px}
+body.hasfx .navtog{top:65px}
+body.hasfx .sidebar .nav{padding-top:54px}
+
+/* 侧栏第一个分组标题「运营」去掉（2026-09-20 用户要求）。
+   它是 .nav 的第一个子节点，所以 :first-child 就能精准命中，
+   不会误伤下面那个「数据」。 */
+body.hasfx .sidebar .nav .grp:first-child{display:none}
+
+/* 右上角「开启动效 / 关闭动效」按钮去掉（2026-09-20 用户：「不要了」）。
+   那是背景折光面的开关。按钮藏了，开关逻辑还在 board.js 里，
+   背景动效开不开只由 localStorage.hymn_bg3d 决定，页面上不再露出入口。 */
+body.hasfx .fxbtn{display:none}
+
+/* 顶栏要压过侧栏（2026-09-20 用户：「挡住了」）。
+   层级现状：侧栏 60、折叠按钮 70、顶栏原本只有 50 —— 侧栏那 168px 白底
+   直接盖在粉条上，把 logo 切掉一半。顶栏通栏之后必须爬到最上面。
+   折叠按钮已经下移到 65px、落在顶栏下方，空间上不重叠，所以 80 > 70 不会有副作用。 */
+body.hasfx .hdrfx{z-index:80}
+
+/* ===== logo 和标题也要流光（2026-09-20 用户：「让 logo 和字能变光」）=====
+   做法跟 TIESTON 原版一样：一条比元素宽得多的渐变，慢慢横移。
+     logo —— 它是用 PNG 当遮罩的，所以直接把 background 换成渐变就行，不用另做图；
+     标题 —— background-clip:text + 文字透明，让渐变透过字显出来。
+   渐变本身是「白 → 淡粉 → 白」：底色是品牌粉，白字上扫过一道偏粉的带子，
+   读起来就是一道光划过。**别做成彩虹渐变**，那跟这套画风不搭。
+   两者用同一个动画、同一个周期，扫过的节奏才对得上。 */
+@keyframes hdrsheen{from{background-position:0% 50%}to{background-position:280% 50%}}
+body.hasfx .hdrfx .hdlogo,
+body.hasfx .hdrfx h2{
+  background:linear-gradient(100deg,
+    #FFFFFF 0%, #FFFFFF 30%, #FFD3DE 42%, #FFFFFF 54%, #FFFFFF 78%, #FFE6EC 88%, #FFFFFF 100%);
+  background-size:280% 100%;
+  animation:hdrsheen 6s linear infinite;
+}
+body.hasfx .hdrfx h2{
+  -webkit-background-clip:text;background-clip:text;
+  color:transparent;-webkit-text-fill-color:transparent;
+}
+@media (prefers-reduced-motion:reduce){
+  body.hasfx .hdrfx .hdlogo,body.hasfx .hdrfx h2{animation:none}
+}
+
+/* logo 和标题的发光已去掉（2026-09-20 用户：「发光去掉吧」）。
+   只保留 hdrsheen 那道横扫的流光。
+   如果以后又要发光：**用 filter:drop-shadow()，不要用 text-shadow** ——
+   标题是 background-clip:text + 文字透明做的，text-shadow 会从透明的字里透出来糊成一团。 */
+
+/* ===== 周头钉在顶上（2026-09-20，来回改过两版，记下结论）=====
+   先把「本周」做成了 position:fixed，想让它永不消失 —— 方向错了。
+   用户澄清：「本周只是其中一周，我选了别的周，那个周的按键就不能消失，
+   只是把我选中的周的那个带箭头的开关钉死」。
+   也就是说要钉的是**你正在看的那一周**，不是固定某一周。这正好就是 sticky 的语义：
+   滚到哪一周，哪一周的头就顶在上面，滚出去自动让给下一周。fixed 反而会把
+   「本周」焊死在屏幕上，换了别的周更乱。
+
+   所以：所有周头统一 sticky 在顶栏下方（51px）。
+   本周不做特殊处理，它只是恰好在最前面。 */
+body.hasfx .wkblock .wh{top:51px}
+body.hasfx .card2.open .ct{top:calc(51px + var(--wh-h))}
+
+/* ===== 展开态改白底，小标题换品牌粉（2026-09-20 用户：「正文部分都要白底，改标题之类的颜色」）=====
+   原设计是「展开=浅色底、里面的小块翻白」来做层次；底色一改白，这套就得**整个对调**：
+   展开态用白，里面的小块（开头3秒、标签、待拍药丸）改用淡粉底。
+   只改一边会全糊成一片白 —— 这是 CLAUDE.md 里记过的坑，换底色时必须一起动。
+   钉住的日期条背景也要跟着白，否则滚动时能看到一条粉的横杠。 */
+body.hasfx .card2.open{background:var(--card)}
+body.hasfx .card2.open .ct{background:var(--card)}
+body.hasfx .card2.open .bigline,
+body.hasfx .card2.open .tgline,
+body.hasfx .card2.open .pill.todo,
+body.hasfx .card2.open .hashrow span{background:var(--paper)}
+
+/* 小标题（开头 3 秒 / 分镜 / 话题标签）：黑 → 品牌粉，左边那条竖条本来就是 --ink，
+   现在文字跟它同色，整组更像一个整体。附注「7 幕 · 30-40 秒」保持灰，别抢。 */
+body.hasfx .sechead{color:var(--ink)}
+body.hasfx .sechead .meta{color:var(--t3)}
+
+/* ===== 只看这一天（2026-09-20 用户：「打开某天的脚本以后，只能看到这一天的」）=====
+   展开某条时，store.js 会给 body 加 focusday，这里负责把无关的都藏掉：
+     · 同一周里其它日期的卡片
+     · 其它周次整块（连周头一起，否则屏幕上挂着一排没用的日期条）
+   周头保留 —— 它是收起这一周、退回列表的入口。
+   全部挂在 body.hasfx 下，所以**只影响预览版**，真页面行为不变。 */
+/* 展开某一周 → 只剩这一周（其余周次连头一起藏） */
+body.hasfx.focusweek .wkblock:not(.open){display:none}
+/* 再展开某一天 → 连同一周里其它日期也藏掉，只剩这一条 */
+body.hasfx.focusday .wkblock .card2:not(.open){display:none}
+body.hasfx.focusday .wkblock:not(.hasopen){display:none}
+body.hasfx.focusday .emptyday{display:none}

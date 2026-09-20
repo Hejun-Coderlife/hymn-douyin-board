@@ -4,23 +4,37 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>赫眉 HYMN · 门店拍摄计划</title>
-<link rel="stylesheet" href="assets/style.css?v=20260920-1537">
+<link rel="stylesheet" href="assets/style.css?v=20260920-1631">
 </head>
 <body class="storepage">
 <div id="boot"><div class="bmark"><img src="assets/logo-ink.png" alt="赫眉 HYMN"></div></div>
 
 
-<div class="sp-head">
-  <img src="assets/logo-ink.png" alt="赫眉 HYMN">
-  <h1 id="spName">—</h1>
-  <div class="sub" id="spSub"></div>
+<div class="hdrfx" id="hdrfx">
+  <span class="hdlogo"></span><span class="sp"></span>
+  <h2 id="spName">—</h2>
 </div>
+<div class="sp-head" style="display:none"><div class="sub" id="spSub"></div></div>
 
 <div class="sp-body" id="spWeeks"></div>
 
-<script src="data/stores.js?v=20260920-1537"></script>
-<script src="data/scripts-index.js?v=20260920-1537"></script>
-<script src="assets/core.js?v=20260920-1537"></script>
-<script src="assets/store.js?v=20260920-1537"></script>
+<script src="data/stores.js?v=20260920-1631"></script>
+<script src="data/scripts-index.js?v=20260920-1631"></script>
+<script src="assets/core.js?v=20260920-1631"></script>
+<script src="assets/fx-header.js?v=20260920-1631"></script>
+<script src="assets/store.js?v=20260920-1631"></script>
+<script>
+(function(){
+  document.body.classList.add("hasfx");   // 顶栏是 fixed，主区要空出 51px
+  var why = hymnHeaderFx(document.getElementById("hdrfx"), {count:600});
+  if (why) {   /* 失败就在顶栏上直接写出来，别让人对着一条纯色底猜 */
+    var t=document.createElement("div");
+    t.style.cssText="position:relative;z-index:3;margin-left:auto;font-size:11px;color:#F3B0BA";
+    t.textContent="光轨没起来："+why;
+    document.getElementById("hdrfx").appendChild(t);
+    console.warn("[顶栏光轨] "+why);
+  } else { console.log("[顶栏光轨] 正在运行"); }
+})();
+</script>
 </body>
 </html>

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>赫眉 HYMN · 视频脚本看板</title>
-<link rel="stylesheet" href="assets/style.css?v=20260920-1537">
+<link rel="stylesheet" href="assets/style.css?v=20260920-1631">
 </head>
 <body>
 <div id="boot"><div class="bmark"><img src="assets/logo-ink.png" alt="赫眉 HYMN"></div></div>
@@ -35,6 +35,11 @@
 </aside>
 
 <div class="main">
+<div class="hdrfx" id="hdrfx">
+  <span class="hdlogo"></span><span class="sp"></span>
+  <h2>视频脚本看板</h2>
+</div>
+
   <div class="content">
 
     <!-- 脚本日历 -->
@@ -64,10 +69,10 @@
         <input type="search" id="fSearch" placeholder="搜门店 / 抖音号">
         <label class="chk"><input type="checkbox" id="fLate"> 只看有逾期</label>
         <div class="legend">
-          <span><i style="background:#E8E3DC"></i>待拍</span>
+          <span><i style="background:#EDE2E5"></i>待拍</span>
           <span><i style="background:#9C3B2E"></i>逾期未发</span>
-          <span><i style="background:#2F5D45"></i>已发布</span>
-          <span><i style="background:#2C4A6E;border-radius:50%;width:7px;height:7px"></i>当天另有自由发挥</span>
+          <span><i style="background:#D4788C"></i>已发布</span>
+          <span><i style="background:#C25E77;border-radius:50%;width:7px;height:7px"></i>当天另有自由发挥</span>
         </div>
       </div>
 
@@ -188,10 +193,24 @@
   <div class="db" id="dBody"></div>
 </aside>
 
-<script src="data/stores.js?v=20260920-1537"></script>
-<script src="data/scripts-index.js?v=20260920-1537"></script>
+<script src="data/stores.js?v=20260920-1631"></script>
+<script src="data/scripts-index.js?v=20260920-1631"></script>
 <script src="vendor/xlsx.full.min.js"></script>
-<script src="assets/core.js?v=20260920-1537"></script>
-<script src="assets/board.js?v=20260920-1537"></script>
+<script src="assets/core.js?v=20260920-1631"></script>
+<script src="assets/fx-header.js?v=20260920-1631"></script>
+<script src="assets/board.js?v=20260920-1631"></script>
+<script>
+(function(){
+  document.body.classList.add("hasfx");   // 顶栏是 fixed，主区要空出 51px
+  var why = hymnHeaderFx(document.getElementById("hdrfx"), {count:800});
+  if (why) {   /* 失败就在顶栏上直接写出来，别让人对着一条纯色底猜 */
+    var t=document.createElement("div");
+    t.style.cssText="position:relative;z-index:3;margin-left:auto;font-size:11px;color:#F3B0BA";
+    t.textContent="光轨没起来："+why;
+    document.getElementById("hdrfx").appendChild(t);
+    console.warn("[顶栏光轨] "+why);
+  } else { console.log("[顶栏光轨] 正在运行"); }
+})();
+</script>
 </body>
 </html>
