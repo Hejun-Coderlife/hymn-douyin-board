@@ -199,7 +199,10 @@
     // 砍掉的：拍给谁看（人群/烦恼）、封面、拍摄要点、避坑、现场（BGM/道具）。
     // 数据里这些字段都还在，想找回来就是把下面几行加回去，别去动数据。
     h += '<div class="sechead">开头 3 秒</div><div class="bigline">' + esc(s.hook) + '</div>';
-    h += '<div class="sechead">分镜 ' + (s.shots || []).length + ' 幕 · ' + esc(s.duration || '') + '</div>';
+    /* 「分镜」是标题，「6 幕 · 30-40 秒」是附注 —— 包成 .meta 压小压灰，
+       不然一整行同样大小，标题反而不突出。 */
+    h += '<div class="sechead">分镜<span class="meta">' + (s.shots || []).length + ' 幕 · ' +
+         esc(s.duration || '') + '</span></div>';
     (s.shots || []).forEach(function (sh, i) {
       h += '<div class="shot"><div class="n">' + (i + 1) + '</div><div class="bd">' +
         '<div class="sc">' + esc(sh.scene) + '</div>' +
