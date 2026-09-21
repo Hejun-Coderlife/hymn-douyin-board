@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>赫眉 HYMN · 视频脚本看板</title>
-<link rel="stylesheet" href="assets/style.css?v=20260921-1600">
+<link rel="stylesheet" href="assets/style.css?v=20260921-1615">
 </head>
 <body>
 <div id="boot"><div class="bmark"><img src="assets/logo-ink.png" alt="赫眉 HYMN"></div></div>
@@ -36,8 +36,8 @@
 
 <div class="main">
 <div class="hdrfx" id="hdrfx">
-  <span class="hdlogo"></span><span class="sp"></span>
-  <h2>视频脚本看板</h2>
+  <span class="hdlogo"></span><span class="sp">·</span>
+  <h2>STUDIO</h2>
 </div>
 
   <div class="content">
@@ -193,24 +193,18 @@
   <div class="db" id="dBody"></div>
 </aside>
 
-<script src="data/stores.js?v=20260921-1600"></script>
-<script src="data/scripts-index.js?v=20260921-1600"></script>
+<script src="data/stores.js?v=20260921-1615"></script>
+<script src="data/scripts-index.js?v=20260921-1615"></script>
 <script src="vendor/xlsx.full.min.js"></script>
-<script src="assets/core.js?v=20260921-1600"></script>
-<script src="assets/fx-header.js?v=20260921-1600"></script>
-<script src="assets/board.js?v=20260921-1600"></script>
+<script src="assets/core.js?v=20260921-1615"></script>
+<script src="assets/board.js?v=20260921-1615"></script>
 <script>
-(function(){
-  document.body.classList.add("hasfx");   // 顶栏是 fixed，主区要空出 51px
-  var why = hymnHeaderFx(document.getElementById("hdrfx"), {count:800});
-  if (why) {   /* 失败就在顶栏上直接写出来，别让人对着一条纯色底猜 */
-    var t=document.createElement("div");
-    t.style.cssText="position:relative;z-index:3;margin-left:auto;font-size:11px;color:#F3B0BA";
-    t.textContent="光轨没起来："+why;
-    document.getElementById("hdrfx").appendChild(t);
-    console.warn("[顶栏光轨] "+why);
-  } else { console.log("[顶栏光轨] 正在运行"); }
-})();
+// 顶栏是 fixed 的，主区要空出 51px。
+// 这里原来还会启动一条 WebGL 粉色流光，2026-09-21 整个撤掉 ——
+// 顶栏换成白底发丝线之后没有可画的地方，粉色色块压在白页面上只会显脏
+// （用户：「和手机里的风格完全不一样」，罪魁就是那条粉横幅）。
+// assets/fx-header.js 本身没删，登录页还在用它。
+document.body.classList.add("hasfx");
 </script>
 </body>
 </html>

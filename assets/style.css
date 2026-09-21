@@ -334,8 +334,10 @@ body.navhide .sidebar .foot{display:none}
   background:var(--card);border:0;border-radius:0;
   padding:24px 26px;margin-bottom:22px;
 }
+/* 区块小标题走宋体细体 + 字距，跟门店页的 .sec h2 / .blk .h 一致。
+   黑体加粗是旧画风留下的，跟 Didot 数字放一起会打架。 */
 .card > h3{
-  font-size:16px;font-weight:600;letter-spacing:.01em;
+  font-family:var(--song);font-size:17px;font-weight:400;letter-spacing:.1em;
   margin-bottom:8px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;
 }
 .card > h3 .tag{font-size:12px;color:var(--t3);font-weight:400;letter-spacing:0}
@@ -379,7 +381,7 @@ body.booted .pagehead .fxbtn{animation:headfade .5s ease .6s both}
   body.booted .pagehead::after,body.booted .pagehead p,
   body.booted .pagehead .fxbtn{animation:none}
 }
-.eyebrow{font-size:12px;font-weight:400;letter-spacing:0;color:var(--t3);margin-bottom:6px}
+.eyebrow{font-size:10.5px;font-weight:400;letter-spacing:.2em;color:var(--t3);margin-bottom:10px}
 .pagehead h2{font-family:var(--song);font-size:24px;line-height:1.4;font-weight:400;
   letter-spacing:.06em;color:var(--t1)}
 .pagehead p{font-size:12.5px;color:var(--t3);margin-top:10px;letter-spacing:0}
@@ -466,14 +468,17 @@ body.booted .tile .ink-draw{animation:inkdraw 1.6s ease .75s both}
 
 /* ===== 排行 ===== */
 .rank{display:flex;gap:8px;flex-wrap:wrap}
+/* 胶囊：白底 + 1px 边框，跟门店页的 .chips a 同一个画法。
+   原来是灰色填充块 —— 这套画风里"实心色块"只留给日历格子的状态。 */
 .rank .it{
-  display:flex;align-items:center;gap:8px;border-radius:0;
-  background:var(--paper);border:0;padding:8px 14px;
-  font-size:12.5px;letter-spacing:0;cursor:pointer;
-  transition:border-color .2s ease,color .2s ease;
+  display:flex;align-items:center;gap:9px;border-radius:0;
+  background:var(--bg);border:1px solid var(--line-2);padding:8px 15px;
+  font-size:13px;letter-spacing:.02em;cursor:pointer;
+  transition:background .18s ease,color .18s ease,border-color .18s ease;
 }
-.rank .it:hover{background:#E9E2DA}
-.rank .it b{color:var(--brick);font-weight:600}
+.rank .it:hover{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.rank .it b{font-family:var(--num);color:var(--late);font-weight:400;font-size:15px}
+.rank .it:hover b{color:var(--pink)}
 .rank .empty{color:var(--t3);font-size:12.5px}
 
 /* ===== 筛选 ===== */
@@ -623,7 +628,7 @@ td.mcell .bnum{font-size:11px;color:var(--t3);margin-top:5px;font-variant-numeri
 }
 .drawer.open{transform:none}
 .drawer .dh{padding:24px 28px;border-bottom:1px solid var(--line);display:flex;gap:12px;align-items:flex-start}
-.drawer .dh h3{font-size:18px;font-weight:600;line-height:1.45;letter-spacing:.01em}
+.drawer .dh h3{font-family:var(--song);font-size:19px;font-weight:400;line-height:1.5;letter-spacing:.04em}
 .drawer .dh .sub{font-size:12px;color:var(--t3);margin-top:6px}
 .drawer .close{margin-left:auto;background:none;border:none;font-size:22px;line-height:1;cursor:pointer;color:var(--t3)}
 .drawer .close:hover{color:var(--ink)}
@@ -831,7 +836,7 @@ table.list td .code{display:block;font-size:10.5px;color:var(--t4);margin-top:2p
   box-shadow:0 24px 70px rgba(28,27,26,.14);padding:28px;display:none;
 }
 .modal.open{display:block}
-.modal h3{font-size:17px;font-weight:600;letter-spacing:.01em;margin-bottom:8px}
+.modal h3{font-family:var(--song);font-size:18px;font-weight:400;letter-spacing:.08em;margin-bottom:10px}
 .drop{
   border:1px dashed var(--line-2);border-radius:0;padding:36px;text-align:center;
   background:var(--paper);cursor:pointer;font-size:12.5px;color:var(--t3);
@@ -1111,35 +1116,39 @@ body.storepage{--wh-h:48px}
    left 跟着侧栏宽度走（侧栏能折叠成 58px 图标栏）。
    **不加 transition** —— 折叠是瞬间完成的，顶栏也得瞬间跟上，
    否则侧栏已经收好了、顶栏还在慢慢滑。 */
+/* ===== 顶栏（2026-09-21 换成门店页那套）=====
+   之前是**整条品牌粉 + WebGL 流光**。配色字体都换过来之后，
+   就剩这条粉横幅在破坏一致性 —— 用户：「和手机里的风格完全不一样」。
+   手机版顶栏是：白底、字标居中、下面一条发丝线，没有任何色块和动效。
+   这里照抄，只是桌面上把字标放左边（侧栏已经占了左上角的视觉位）。
+
+   WebGL 流光**整个撤掉**（fx-header.js 还在，门店页/登录页还用得上，
+   但这个页面不再调 hymnHeaderFx）。理由跟当初给门店页去掉背景特效一样：
+   这套画风九成面积是白的，任何色块压在顶上都显得脏。 */
 .hdrfx{
   position:fixed;top:0;left:var(--nav-w);right:0;z-index:50;
-  overflow:hidden;display:flex;align-items:center;gap:12px;
-  padding:13px 20px;background:#EDACB2;   /* 品牌粉，WebGL 拿不到时也靠它兜着 */
+  display:flex;align-items:center;gap:10px;
+  padding:13px 20px;background:var(--bg);
+  border-bottom:1px solid var(--line-2);
 }
 body.navhide .hdrfx{left:var(--nav-w-rail)}
 /* 顶栏脱离文档流了，主区得空出它的高度（13+25+13 = 51px），否则内容被盖住 */
 body.hasfx .main{padding-top:51px}
-/* 门店页没有侧栏，顶栏从左边缘开始，宽度也就不用跟着变 */
+/* 门店页没有侧栏，顶栏从左边缘开始 */
 body.storepage .hdrfx{left:0}
 body.storepage.hasfx .sp-body{padding-top:51px}
-.hdrfx > *:not(canvas){position:relative;z-index:1}
-.hdrfx canvas{position:absolute!important;inset:0;width:100%!important;height:100%!important;
-  z-index:0;display:block;pointer-events:none}
-/* logo：品牌原件就是**粉底白字**，所以这里填纯白，不要渐变不要金。
-   用 PNG 当遮罩，所以不用另存一张白色图。
+/* 字标锁定组合：logo 出「赫眉」，右边接「· STUDIO」，跟门店页一模一样。
    【坑】类名原来叫 .lg，跟登录页的主容器 .lg 撞了 —— logo 继承了容器的
    padding:calc(51px+10vh)，顶栏在手机上被撑到 400 多像素高。改名 .hdlogo。 */
 .hdrfx .hdlogo{
-  width:92px;height:25px;flex:none;background:#FFFFFF;
+  width:76px;height:19px;flex:none;background:var(--ink);
   -webkit-mask:url(logo-ink.png) no-repeat left center/contain;
           mask:url(logo-ink.png) no-repeat left center/contain;
 }
-.hdrfx .sp{width:1px;height:20px;background:rgba(255,255,255,.55);flex:none}
-.hdrfx h2{margin:0;font-size:16px;font-weight:600;letter-spacing:.06em;color:#fff;
+.hdrfx .sp{font-style:normal;font-size:11px;color:var(--line-2);flex:none;
+  width:auto;height:auto;background:none}
+.hdrfx h2{margin:0;font-size:11px;font-weight:400;letter-spacing:.28em;color:var(--t2);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.hdrfx::after{content:'';position:absolute;left:0;right:0;bottom:0;height:1px;z-index:2;
-  background:linear-gradient(90deg,transparent,rgba(255,255,255,.85),transparent)}
-@keyframes hdrflow{from{background-position:0% 50%}to{background-position:280% 50%}}
 @media (prefers-reduced-motion:reduce){.hdrfx .hdlogo{animation:none}}
 
 /* ===== 固定顶栏之后，所有「钉在视口顶上」的东西都要往下让 51px =====
