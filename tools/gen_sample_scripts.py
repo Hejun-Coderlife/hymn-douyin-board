@@ -37,20 +37,62 @@ def fill(text, ctx):
 
 
 def build_one(store, date, seq, tag_no):
-    """按 序号 轮换 内容方向 / 拍摄形式，保证同一家店不会连着几天同一个套路"""
+    """按 序号 轮换 内容方向 / 拍摄形式，保证同一家店不会连着几天同一个套路。
+
+    台词里的每个变量和每一幕的说法，都按「门店编号 | 日期 | 槽位」从
+    content_lib.SAY / FORMATS 的候选里**确定性**地挑一条（见 L.pick）。
+    这是 2026-09-21 加的，起因：原来每幕台词写死一句，
+    95492 条台词去重只剩 420 句，**43 家店同一天念的是同一句话**。
+    """
     topic = TOPIC_KEYS[seq % len(TOPIC_KEYS)]
     fmt = FORMAT_KEYS[(seq // 2 + seq // len(TOPIC_KEYS)) % len(FORMAT_KEYS)]
     t, f = L.TOPICS[topic], L.FORMATS[fmt]
 
+    salt = "%s|%s" % (store["code"], date.isoformat())
+
+    # 每家店一个固定的起点偏移：同一天 43 家店不会齐刷刷挑到同一条
+    off = L.offset(store["code"])
+
+    # 书面字段先铺一层（{product}/{service}/{audience} 这些没有口语版，照用），
+    # 再用口语版**盖掉** cause/symptom/promise/home/objection —— 台词只念口语版。
+    #
+    # 口语版按 **round**（= 这个方向轮到第几回）轮换，不是按 seq：
+    # topic 每 12 天转回来一次，按 seq 轮换的话 12 % 3 == 0，
+    # 每次轮到同一个方向都会挑到同一条，等于白做。
     ctx = dict(t)
     ctx.update(topic=topic, format=fmt, store=store["storeName"])
-    shots = [{"scene": fill(s, ctx), "line": fill(l, ctx), "sec": sec} for s, l, sec in f["shots"]]
+    rnd = seq // len(TOPIC_KEYS)
+    for ki, (k, opts) in enumerate(sorted(L.SAY[topic].items())):
+        ctx[k] = L.rot(opts, rnd + off + ki * 2)
 
-    titles = [
-        "%s｜%s，%s" % (topic, t["symptom"].split("，")[0], t["promise"].split("，")[0]),
-        "%s：%s" % (store["storeName"], t["home"]),
-        "%s 这样拍｜%s" % (fmt, topic),
+    # 每一幕的说法按 **seq** 轮换，步长跟候选数（4）互质 ——
+    # 这样**相邻两天一定不同**，不会出现连着两天念同一句开场白。
+    shots = []
+    for i, (scene, lines, sec) in enumerate(f["shots"]):
+        line = L.rot(lines, seq * 3 + i * 5 + off)
+        shots.append({"scene": fill(scene, ctx), "line": fill(line, ctx), "sec": sec})
+
+    # 标题也得散开，不然 43 家店同一天标题一模一样。
+    # 口语句子本身带逗号，整句塞进标题会散成一片读不动；
+    # 但只截第一个分句又常常截得没意思（「少用一点」）。
+    # 折中：从头往后凑分句，凑够 8 个字就停，最多 16 个字。
+    def head(x):
+        parts, out = x.split("，"), ""
+        for seg in parts:
+            out = seg if not out else out + "，" + seg
+            if len(out) >= 8:
+                break
+        return out[:16]
+
+    title_forms = [
+        "%s｜%s" % (topic, head(ctx["symptom"])),
+        "%s｜%s" % (topic, head(ctx["promise"])),
+        "%s｜别再%s" % (topic, head(ctx["home"])),
+        "%s｜%s" % (topic, head(ctx["cause"])),
+        "%s｜%s？" % (topic, ctx["objection"]),
     ]
+    first = L.pick(title_forms, salt + "|title")
+    titles = [first] + [x for x in title_forms if x != first][:2]
     tag = "#赫眉%04d" % tag_no
     return {
         "id": "%s-%s" % (store["code"], date.isoformat()),
@@ -66,7 +108,7 @@ def build_one(store, date, seq, tag_no):
         "cause": t["cause"],
         "promise": t["promise"],
         "service": t["service"],
-        "hook": fill(f["shots"][0][1], ctx),
+        "hook": shots[0]["line"],
         "shots": shots,
         "duration": f["duration"],
         "cover": fill(f["cover"], ctx),

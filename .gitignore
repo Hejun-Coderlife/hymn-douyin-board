@@ -10,3 +10,7 @@ reference/
 
 # 店铺手机号原文：只留在本机，绝不进公开仓库（stores.json 里只有 phoneHash）
 data/phones.local.json
+
+# Python 缓存：跟着源码走，不该进仓库
+__pycache__/
+*.pyc
