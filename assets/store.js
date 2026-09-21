@@ -80,10 +80,14 @@
         // 放在标题正下方，店员看第一眼就知道分寸。
         '<div class="ref">参考脚本 · 用自己的话说就行</div>' +
       '</div>';
-    var hook = full.hook ? String(full.hook).replace(/^「/, '') : '';
-    var quote = hook ?
-      '<div class="quote"><div class="h">开头 3 秒</div>' +
-        '<div class="body"><span class="mark">「</span><p>' + esc(hook) + '</p></div></div>' : '';
+    // 这块原来放「开头 3 秒」，但那句就是第 1 幕的台词，同一句念两遍。
+    // 2026-09-21 用户圈出来：「改成整个视频想表达的意思」。
+    // gist 是新字段（见 content_lib 的 SAY.gist）；老数据没有就退回 hook，页面不会空。
+    // 悬挂的「」去掉了 —— 那是"要念的话"的标记，这句是落点不是台词。
+    var gist = full.gist || (full.hook ? String(full.hook).replace(/^「/, '') : '');
+    var quote = gist ?
+      '<div class="quote"><div class="h">这条想说什么</div>' +
+        '<div class="body nomark"><p>' + esc(gist) + '</p></div></div>' : '';
     var list = shots.map(function (sh, i) {
       var last = i === shots.length - 1;
       return '<div class="shot' + (last ? ' end' : '') + '">' +
@@ -191,7 +195,7 @@
     var f = HY.detail(sid); if (!f) return '';
     var L = [f.title || (f.topic + '｜' + f.format),
              '（参考脚本，用自己的话说就行）', '',
-             '开头 3 秒：' + (f.hook || ''), ''];
+             '这条想说什么：' + (f.gist || f.hook || ''), ''];
     (f.shots || []).forEach(function (sh, i) {
       L.push((i + 1) + '. 【' + (sh.sec != null ? sh.sec + 's' : '') + '】画面：' + (sh.scene || ''));
       if (sh.line) L.push('   台词：' + sh.line);

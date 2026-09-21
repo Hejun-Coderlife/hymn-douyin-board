@@ -124,6 +124,11 @@ def build_one(store, date, seq, tag_no):
         "cause": t["cause"],
         "promise": t["promise"],
         "service": t["service"],
+        # gist = 这条视频**整个想说什么**（门店页最上面那句）。
+        # 原来那儿显示的是 hook（开头 3 秒），但 hook 就是第 1 幕的台词，
+        # 等于同一句话念两遍（2026-09-21 用户圈出来要求改）。
+        # hook 字段保留，数据里还在，只是页面不再显示。
+        "gist": ctx["gist"],
         "hook": shots[0]["line"],
         "shots": shots,
         "duration": f["duration"],
