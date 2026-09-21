@@ -218,7 +218,8 @@ button,select,input{font:inherit;color:inherit}
 }
 /* 折叠侧栏要**瞬间切换**，不要过渡（2026-09-20 用户：「要瞬间变化，不要像翻书一样能看到划过去」）*/
 .sidebar{overflow:hidden}
-.sidebar .logo{padding:30px 22px 22px;border-bottom:1px solid var(--line-2);padding-right:56px}
+/* 顶栏拆掉之后，这里是全站唯一的赫眉字标，放大一档、上下留足气 */
+.sidebar .logo{padding:34px 22px 26px;border-bottom:1px solid var(--line-2);padding-right:56px}
 
 /* 侧栏折叠按钮：展开时贴在侧栏右上角，收起后滑到页面左上角（用户 2026-09-17 要的 ChatGPT 那个）*/
 .navtog{
@@ -247,8 +248,8 @@ body.navhide .sidedata{display:none}   /* 图标栏里连数据状态也省掉�
 body.navhide .sidebar .foot{display:none}
 /* .main 的 margin-left 也不做过渡，否则侧栏瞬间收了、内容还在慢慢挪 */
 .main{}
-.sidebar .logo img{height:18px;display:block}
-.sidebar .logo .st{font-size:10.5px;color:var(--t3);margin-top:12px;letter-spacing:.16em}
+.sidebar .logo img{height:22px;display:block}
+.sidebar .logo .st{font-size:10.5px;color:var(--t3);margin-top:13px;letter-spacing:.3em}
 
 .nav{padding:10px 0;flex:1;overflow:auto}
 .nav .grp{font-size:11px;font-weight:400;letter-spacing:.02em;color:var(--t4);padding:22px 22px 9px}
@@ -1116,40 +1117,19 @@ body.storepage{--wh-h:48px}
    left 跟着侧栏宽度走（侧栏能折叠成 58px 图标栏）。
    **不加 transition** —— 折叠是瞬间完成的，顶栏也得瞬间跟上，
    否则侧栏已经收好了、顶栏还在慢慢滑。 */
-/* ===== 顶栏（2026-09-21 换成门店页那套）=====
-   之前是**整条品牌粉 + WebGL 流光**。配色字体都换过来之后，
-   就剩这条粉横幅在破坏一致性 —— 用户：「和手机里的风格完全不一样」。
-   手机版顶栏是：白底、字标居中、下面一条发丝线，没有任何色块和动效。
-   这里照抄，只是桌面上把字标放左边（侧栏已经占了左上角的视觉位）。
+/* ===== 固定顶栏 2026-09-21 整条拆掉 =====
+   用户：「赫眉 logo 放到这里，顶栏取消」。
 
-   WebGL 流光**整个撤掉**（fx-header.js 还在，门店页/登录页还用得上，
-   但这个页面不再调 hymnHeaderFx）。理由跟当初给门店页去掉背景特效一样：
-   这套画风九成面积是白的，任何色块压在顶上都显得脏。 */
-.hdrfx{
-  position:fixed;top:0;left:var(--nav-w);right:0;z-index:50;
-  display:flex;align-items:center;gap:10px;
-  padding:13px 20px;background:var(--bg);
-  border-bottom:1px solid var(--line-2);
-}
-body.navhide .hdrfx{left:var(--nav-w-rail)}
-/* 顶栏脱离文档流了，主区得空出它的高度（13+25+13 = 51px），否则内容被盖住 */
-body.hasfx .main{padding-top:51px}
-/* 门店页没有侧栏，顶栏从左边缘开始 */
-body.storepage .hdrfx{left:0}
-body.storepage.hasfx .sp-body{padding-top:51px}
-/* 字标锁定组合：logo 出「赫眉」，右边接「· STUDIO」，跟门店页一模一样。
-   【坑】类名原来叫 .lg，跟登录页的主容器 .lg 撞了 —— logo 继承了容器的
-   padding:calc(51px+10vh)，顶栏在手机上被撑到 400 多像素高。改名 .hdlogo。 */
-.hdrfx .hdlogo{
-  width:76px;height:19px;flex:none;background:var(--ink);
-  -webkit-mask:url(logo-ink.png) no-repeat left center/contain;
-          mask:url(logo-ink.png) no-repeat left center/contain;
-}
-.hdrfx .sp{font-style:normal;font-size:11px;color:var(--line-2);flex:none;
-  width:auto;height:auto;background:none}
-.hdrfx h2{margin:0;font-size:11px;font-weight:400;letter-spacing:.28em;color:var(--t2);
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-@media (prefers-reduced-motion:reduce){.hdrfx .hdlogo{animation:none}}
+   顶栏是 2026-09-20 加的。加它的时候顺手做了两件事，现在都得知道：
+     · 用 `body.hasfx .sidebar .logo{display:none}` 把侧栏顶上的 logo 藏了
+       （当时两处 logo 确实重复）—— 这就是为什么侧栏一直看不到字标
+     · 把侧栏从 214px 收到 168px（`body.hasfx{--nav-w:168px}`）
+   顶栏没了之后 index.html 不再给 body 加 hasfx，**这两件事自动还原**，
+   不用逐条改回去。
+
+   下面那一片 `body.hasfx …` 的规则因此全部失效了。**没有删**：
+   它们互相嵌在 @media 和多行选择器里，机器删容易删错，而失效的规则本来就不生效。
+   要翻旧账看提交 4e0f2b2。**别再给 body 加回 hasfx，也别再加回固定顶栏。** */
 
 /* ===== 固定顶栏之后，所有「钉在视口顶上」的东西都要往下让 51px =====
    2026-09-20：顶栏改成 position:fixed（z-index 50）之后，

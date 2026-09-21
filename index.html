@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>赫眉 HYMN · 视频脚本看板</title>
-<link rel="stylesheet" href="assets/style.css?v=20260921-1623">
+<link rel="stylesheet" href="assets/style.css?v=20260921-1647">
 </head>
 <body>
 <div id="boot"><div class="bmark"><img src="assets/logo-ink.png" alt="赫眉 HYMN"></div></div>
@@ -19,7 +19,7 @@
 <aside class="sidebar">
   <div class="logo">
     <img src="assets/logo-ink.png" alt="赫眉 HYMN">
-    <div class="st">视频脚本看板</div>
+    <div class="st">STUDIO</div>
   </div>
   <nav class="nav">
     <div class="grp">运营</div>
@@ -35,10 +35,6 @@
 </aside>
 
 <div class="main">
-<div class="hdrfx" id="hdrfx">
-  <span class="hdlogo"></span><span class="sp">·</span>
-  <h2>STUDIO</h2>
-</div>
 
   <div class="content">
 
@@ -193,18 +189,11 @@
   <div class="db" id="dBody"></div>
 </aside>
 
-<script src="data/stores.js?v=20260921-1623"></script>
-<script src="data/scripts-index.js?v=20260921-1623"></script>
+<script src="data/stores.js?v=20260921-1647"></script>
+<script src="data/scripts-index.js?v=20260921-1647"></script>
 <script src="vendor/xlsx.full.min.js"></script>
-<script src="assets/core.js?v=20260921-1623"></script>
-<script src="assets/board.js?v=20260921-1623"></script>
-<script>
-// 顶栏是 fixed 的，主区要空出 51px。
-// 这里原来还会启动一条 WebGL 粉色流光，2026-09-21 整个撤掉 ——
-// 顶栏换成白底发丝线之后没有可画的地方，粉色色块压在白页面上只会显脏
-// （用户：「和手机里的风格完全不一样」，罪魁就是那条粉横幅）。
-// assets/fx-header.js 本身没删，登录页还在用它。
-document.body.classList.add("hasfx");
-</script>
+<script src="assets/core.js?v=20260921-1647"></script>
+<script src="assets/board.js?v=20260921-1647"></script>
+
 </body>
 </html>
