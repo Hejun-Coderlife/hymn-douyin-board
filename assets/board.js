@@ -1297,24 +1297,11 @@
     if ($('#p-stores').classList.contains('on')) renderStoreList();
   }
 
-  /* ---------- 顶部 3D 横幅 ---------- */
-  function initHero() {
-    var btn = $('#fxToggle');
-    if (!btn) return;
-    // 背景动效现在是 CSS 的（见 style.css 的 body.fxon），跟 WebGL 没关系了
-    var off = localStorage.getItem('hymn_bg3d') !== 'on';
-    apply(off);
-    btn.onclick = function () {
-      off = !off;
-      localStorage.setItem('hymn_bg3d', off ? 'off' : 'on');
-      apply(off);
-    };
-    function apply(isOff) {
-      document.body.classList.toggle('fxon', !isOff);
-      btn.classList.toggle('off', isOff);
-      btn.textContent = isOff ? '开启动效' : '关闭动效';
-    }
-  }
+  /* 「动效」开关 2026-09-21 删掉（用户：「这个已经没了吧」）。
+     背景动效早就整个取消了，body.fxon 这个类没有任何样式挂着，
+     按钮点了什么都不会发生。它一直没露出来，是因为被
+     `body.hasfx .fxbtn{display:none}` 藏着；顶栏一拆 hasfx 没了，它就冒出来了。
+     ——**删掉没用的功能，别留着一个点了没反应的按钮。** */
 
   function renderHeroSub() {
     var el = $('#heroSub');
@@ -1427,7 +1414,6 @@
     S.scripts.forEach(function (s) { S.scriptById[s.id] = s; });
     fillFilters();
     bind();
-    initHero();
     refreshAll();
     showPanel(hashView());
     window.addEventListener('hashchange', function () { showPanel(hashView()); });

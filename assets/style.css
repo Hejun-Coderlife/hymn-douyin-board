@@ -148,7 +148,9 @@ body{
 /* 背景动效：2026-09-17 从 WebGL 换成纯 CSS。
    原来的 bg3d.js 在这台机器上死活画不出东西（读像素全 0），调参数没用；
    CSS 渐变 + transform 动画是合成器直接跑的，一定看得见，也几乎不吃性能。
-   默认关，右上角「动效」按钮开关，状态存 localStorage.hymn_bg3d。 */
+   背景动效 2026-09-21 连同「动效」开关按钮一起彻底删干净：
+   按钮、board.js 里的 initHero()、.fxbtn 的样式、没人引用的 assets/bg3d.js，全没了。
+   localStorage 里可能还残留 hymn_bg3d 这个键，没人读它，不用管。 */
 #pageBg{display:none}
 /* 背景折光特效已删除（2026-09-20 用户：「原来那个折光特效也去掉」）。
    它是一整幅 107° 的斜向明暗带，在奶油底时代是页面唯一的动效；
@@ -351,7 +353,6 @@ body.navhide .sidebar .foot{display:none}
 .hero.nogl canvas{display:none}
 .hero .hero-in{position:relative;z-index:2;padding:28px 32px;pointer-events:none}
 .hero .hero-in h2{font-family:var(--serif);font-size:30px;font-weight:500;letter-spacing:.12em;color:#fff}
-.hero .fxbtn{position:absolute;right:16px;bottom:14px;z-index:3}
 
 /* ===== 页面标题区 ===== */
 .pagehead{
@@ -370,7 +371,6 @@ body.booted .pagehead .eyebrow{animation:headfade .5s ease .04s both}
 body.booted .pagehead h2{animation:headwipe .78s cubic-bezier(.25,.1,.25,1) .1s both}
 body.booted .pagehead::after{animation:headrule .72s cubic-bezier(.25,.1,.25,1) .34s both}
 body.booted .pagehead p{animation:headfade .55s ease .46s both}
-body.booted .pagehead .fxbtn{animation:headfade .5s ease .6s both}
 @keyframes headfade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 @keyframes headwipe{
   from{-webkit-clip-path:inset(0 100% 0 0);clip-path:inset(0 100% 0 0)}
@@ -380,19 +380,11 @@ body.booted .pagehead .fxbtn{animation:headfade .5s ease .6s both}
 @media (prefers-reduced-motion:reduce){
   body.booted .pagehead .eyebrow,body.booted .pagehead h2,
   body.booted .pagehead::after,body.booted .pagehead p,
-  body.booted .pagehead .fxbtn{animation:none}
-}
+  }
 .eyebrow{font-size:10.5px;font-weight:400;letter-spacing:.2em;color:var(--t3);margin-bottom:10px}
 .pagehead h2{font-family:var(--song);font-size:24px;line-height:1.4;font-weight:400;
   letter-spacing:.06em;color:var(--t1)}
 .pagehead p{font-size:12.5px;color:var(--t3);margin-top:10px;letter-spacing:0}
-.fxbtn{
-  margin-left:auto;border:1px solid var(--line-2);background:transparent;color:var(--t3);
-  border-radius:0;padding:8px 16px;font-size:11.5px;letter-spacing:var(--track);cursor:pointer;
-  transition:background .2s ease,color .2s ease,border-color .2s ease;
-}
-.fxbtn:hover{background:var(--ink);border-color:var(--ink);color:#fff}
-.fxbtn.off{opacity:.55}
 
 /* ===== 图块区（对着 hermes.cn 首页那排灰底商品图做的）=====
    四块灰底方块，里面是会动的数据图 + 一张线描插画。
@@ -1177,9 +1169,8 @@ body.hasfx .sidebar .nav .grp:first-child{display:none}
 
 /* 右上角「开启动效 / 关闭动效」按钮去掉（2026-09-20 用户：「不要了」）。
    那是背景折光面的开关。按钮藏了，开关逻辑还在 board.js 里，
-   背景动效开不开只由 localStorage.hymn_bg3d 决定，页面上不再露出入口。 */
-body.hasfx .fxbtn{display:none}
-
+   背景动效已彻底删除，没有开关，也没有入口。 */
+body.hasfx 
 /* 顶栏要压过侧栏（2026-09-20 用户：「挡住了」）。
    层级现状：侧栏 60、折叠按钮 70、顶栏原本只有 50 —— 侧栏那 168px 白底
    直接盖在粉条上，把 logo 切掉一半。顶栏通栏之后必须爬到最上面。
