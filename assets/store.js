@@ -75,6 +75,9 @@
         '<h1>' + esc(titleOf(s)) + '</h1>' +
         '<div class="meta">' + esc(full.format || '') + '<i>·</i>' +
           esc(full.duration || '') + '<i>·</i>' + shots.length + ' 幕</div>' +
+        // 每一条都得标明这是参考，不是必须照着念的稿子（2026-09-21 用户要求）。
+        // 放在标题正下方，店员看第一眼就知道分寸。
+        '<div class="ref">参考脚本 · 用自己的话说就行</div>' +
       '</div>';
     var hook = full.hook ? String(full.hook).replace(/^「/, '') : '';
     var quote = hook ?
@@ -182,7 +185,9 @@
   }
   function scriptText(sid) {
     var f = HY.detail(sid); if (!f) return '';
-    var L = [f.title || (f.topic + '｜' + f.format), '', '开头 3 秒：' + (f.hook || ''), ''];
+    var L = [f.title || (f.topic + '｜' + f.format),
+             '（参考脚本，用自己的话说就行）', '',
+             '开头 3 秒：' + (f.hook || ''), ''];
     (f.shots || []).forEach(function (sh, i) {
       L.push((i + 1) + '. 【' + (sh.sec != null ? sh.sec + 's' : '') + '】画面：' + (sh.scene || ''));
       if (sh.line) L.push('   台词：' + sh.line);

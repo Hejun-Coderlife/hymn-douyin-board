@@ -198,6 +198,11 @@ html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans)
 /* meta 不用胶囊：一行极小的字，中间用细点分隔 —— 胶囊方框像表单，不像杂志 */
 .dh .meta{font-size:11.5px;letter-spacing:.16em;color:var(--dim);margin-top:18px;
   text-transform:uppercase}
+/* 「参考脚本」标注：每一条都要有（2026-09-21 用户要求）。
+   不是警告也不是提示框——就是一行小字，说明这稿子是参考不是台本。
+   用发丝线框起来而不是填色块，跟这套语言一致（填充色块一律不用）。 */
+.dh .ref{display:inline-block;margin-top:14px;padding:5px 11px;
+  border:1px solid var(--chip);font-size:10.5px;letter-spacing:.14em;color:var(--dim)}
 .dh .meta i{font-style:normal;margin:0 9px;color:var(--line)}
 
 /* 引文：是"要念的第一句话"，不是标题。
