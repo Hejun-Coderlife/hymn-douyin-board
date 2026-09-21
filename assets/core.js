@@ -331,6 +331,21 @@ window.HY = (function () {
     });
   }
 
+  /* 分片的版本号：从页面上 data/scripts-index.js 那个 <script> 的 ?v= 里抠出来。
+
+     【为什么必须有】tools/stamp_assets.py 只会给**写在 HTML 里**的 css/js 打戳，
+     而分片是这里动态注入的，URL 上光秃秃没有 ?v=。
+     GitHub Pages 对静态资源发 cache-control: max-age=600，结果就是：
+     推完新数据后的 10 分钟里，手机拿到的是**新的 store.js + 旧的分片** ——
+     2026-09-21 真出过一次：页面标签已经换成「这条想说什么」，
+     底下显示的却还是旧数据里的 hook，看着像功能没做对，其实是缓存串了版本。
+     分片跟 scripts-index.js 是同一次 sync 生成的，所以共用它的版本号最准。 */
+  var _dataVer = (function () {
+    var el = document.querySelector('script[src*="scripts-index.js"]');
+    var m = el && el.src.match(/[?&]v=([^&]+)/);
+    return m ? m[1] : '';
+  })();
+
   /* 按「门店编号 × 月份」加载脚本详情分片；file:// 下 fetch 不行，但注入 <script> 可以 */
   var _pending = {};
   function loadDetail(code, ym) {
@@ -340,7 +355,7 @@ window.HY = (function () {
     if (_pending[key]) return _pending[key];
     _pending[key] = new Promise(function (resolve, reject) {
       var el = document.createElement('script');
-      el.src = 'data/scripts/' + key + '.js';
+      el.src = 'data/scripts/' + key + '.js' + (_dataVer ? '?v=' + _dataVer : '');
       el.onload = function () { resolve(); };
       el.onerror = function () {
         delete _pending[key];
