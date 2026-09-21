@@ -22,6 +22,9 @@ BAD_BEFORE = ["是", "因为", "在", "冲着", "把", "别再", "败在", "针�
 BAD_AFTER = ["的人", "这件事", "去的", "上。", "呢？", "了，", "了。"]
 # 用户点名要干掉的 AI 腔
 AI_TELLS = r"问题出在这儿|真实情况是|先说结论|记住一句话|核心解决的是|今天想说说|今天重点讲|第 ?\d{2,} ?遍|\d{2,} ?% ?的人|就像.{0,8}一样"
+# 台词里**不许出现第二个人**。分单人/两人版的是**画面**（FORMATS 的 solo），
+# 台词两边共用 —— 梅林店只有一个店员，台词里冒出「同事帮我做」就穿帮了。
+NEED_TWO = r"同事|搭档|两人|两个店员|帮我拍|帮忙拍"
 
 VARS = ["cause", "symptom", "promise", "home", "objection"]
 
@@ -50,6 +53,24 @@ def scan():
                     bad.append(("%s 第%d幕" % (fname, i + 1), tpl, "AI 腔"))
                 if "+" in tpl:
                     bad.append(("%s 第%d幕" % (fname, i + 1), tpl, "台词里有 + 号"))
+                if re.search(NEED_TWO, tpl):
+                    bad.append(("%s 第%d幕" % (fname, i + 1), tpl,
+                                "台词里提到第二个人（独苗店念不了，要分只能分画面）"))
+    return bad
+
+
+def check_solo():
+    """独苗店（stores.json 里 staff=="1"）能用的形式，画面里不许还要第二个人。"""
+    need = re.compile(r"同事|两人|两个店员|店员 ?[AB]|并排坐|递给 A|互相|轮流当")
+    bad = []
+    for name, f in L.FORMATS.items():
+        if f.get("people", 2) != 1 and not f.get("solo"):
+            continue                      # 这种形式本来就不派给独苗店
+        swap = f.get("solo", {})
+        for i, (scene, _l, _s) in enumerate(f["shots"]):
+            sc = swap.get(i, scene)
+            if need.search(sc):
+                bad.append((name, i + 1, sc))
     return bad
 
 
@@ -80,12 +101,20 @@ def main():
     else:
         print("✅ 模板检查通过：没有把整句当名词用，也没有 AI 腔和 + 号")
 
+    solo = check_solo()
+    if solo:
+        print("\n❌ 独苗店会拿到需要第二个人的画面 %d 处：" % len(solo))
+        for n, i, sc in solo:
+            print("  [%s 第%d幕] %s" % (n, i, sc))
+    else:
+        print("✅ 独苗店可用的形式，画面全部一个人能拍")
+
     rows = sample_all()
     longs = [r for r in rows if r[3].count("，") >= 4]
     print("\n真拼一遍共 %d 句；四个逗号以上（念着断不开）的 %d 句" % (len(rows), len(longs)))
     for r in longs[:12]:
         print("  [%s 第%d幕|%s] %s" % r)
-    return 1 if bad else 0
+    return 1 if (bad or solo) else 0
 
 
 if __name__ == "__main__":

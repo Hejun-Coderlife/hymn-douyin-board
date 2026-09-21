@@ -24,6 +24,12 @@ WEEKS_BACK, WEEKS_FWD = 2, 52   # 往前 2 周（演示归档）+ 往后一整�
 TOPIC_KEYS = list(L.TOPICS.keys())
 FORMAT_KEYS = list(L.FORMATS.keys())
 
+# 只有一个店员的店（stores.json 里 staff == "1"）能用的形式：
+# 要么本来就一个人能拍（people=1），要么给出了单人版的画面（solo）。
+# 两人问答 / 情景剧本质就是两个人的戏，没有单人版，直接不派。
+SOLO_KEYS = [k for k in FORMAT_KEYS
+             if L.FORMATS[k].get("people", 2) == 1 or L.FORMATS[k].get("solo")]
+
 
 def monday(d):
     return d - dt.timedelta(days=d.weekday())
@@ -44,8 +50,11 @@ def build_one(store, date, seq, tag_no):
     这是 2026-09-21 加的，起因：原来每幕台词写死一句，
     95492 条台词去重只剩 420 句，**43 家店同一天念的是同一句话**。
     """
+    solo = str(store.get("staff") or "") == "1"
+    keys = SOLO_KEYS if solo else FORMAT_KEYS
+
     topic = TOPIC_KEYS[seq % len(TOPIC_KEYS)]
-    fmt = FORMAT_KEYS[(seq // 2 + seq // len(TOPIC_KEYS)) % len(FORMAT_KEYS)]
+    fmt = keys[(seq // 2 + seq // len(TOPIC_KEYS)) % len(keys)]
     t, f = L.TOPICS[topic], L.FORMATS[fmt]
 
     salt = "%s|%s" % (store["code"], date.isoformat())
@@ -67,10 +76,17 @@ def build_one(store, date, seq, tag_no):
 
     # 每一幕的说法按 **seq** 轮换，步长跟候选数（4）互质 ——
     # 这样**相邻两天一定不同**，不会出现连着两天念同一句开场白。
+    # 独苗店：本来要同事出镜/掌镜的那几幕，换成单人版的画面描述。
+    # **只换画面不换台词** —— 台词里本来就没有"同事"这个角色。
+    # 画面描述是店员在门店页上唯一看得到的操作说明（tips 不显示），
+    # 所以"一个人怎么拍"必须写在画面里。
+    swap = f.get("solo", {}) if solo else {}
+
     shots = []
     for i, (scene, lines, sec) in enumerate(f["shots"]):
         line = L.rot(lines, seq * 3 + i * 5 + off)
-        shots.append({"scene": fill(scene, ctx), "line": fill(line, ctx), "sec": sec})
+        shots.append({"scene": fill(swap.get(i, scene), ctx),
+                      "line": fill(line, ctx), "sec": sec})
 
     # 标题也得散开，不然 43 家店同一天标题一模一样。
     # 口语句子本身带逗号，整句塞进标题会散成一片读不动；
@@ -119,7 +135,10 @@ def build_one(store, date, seq, tag_no):
         "cta": ("评论区扣「1」，我私信你适配方案" if seq % 3 == 0
                 else "点左下角，到店先做一次免费皮肤检测" if seq % 3 == 1
                 else "主页领新客体验券，到店核销"),
-        "tips": f["tips"],
+        # 独苗店把"就你一个人"这件事写在最前面，免得店员看到 tips 里
+        # "两个人轮流当模特"以为自己拍不了
+        "tips": (["这条是按**一个人**拍设计的：手机靠着固定，全程不需要别人帮忙"] + f["tips"]
+                 if solo else f["tips"]),
         "avoid": f["avoid"],
         "hashtags": [tag] + ["#" + k for k in t["keywords"]] + L.COMMON_TAGS,
     }

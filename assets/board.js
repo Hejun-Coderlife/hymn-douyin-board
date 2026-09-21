@@ -667,6 +667,7 @@
 
     var h = '<thead><tr><th style="width:52px">编号</th><th>门店</th><th>抖音号</th><th style="width:120px">区域经理</th>' +
       '<th style="width:130px">店铺手机号</th>' +
+      '<th style="width:96px">店里几个人</th>' +
       '<th style="width:110px">区域</th>' +
       '<th style="width:110px">门店类型</th><th style="width:150px">客群</th>' +
       '<th style="width:170px">主推项目</th><th style="width:170px">可拍场景</th>' +
@@ -679,6 +680,8 @@
         '<td class="mono muted">' + st.douyinId + '</td>' +
         cellSelect(st, 'manager', [''].concat(names)) +
         cellInput(st, 'phone', '店铺手机号（只存本机）') +
+        // 只有一个人的店，生成脚本时只派单人能拍的形式。改完记得导出 stores.json 再跑生成。
+        cellSelect(st, 'staff', ['', '1']) +
         cellInput(st, 'region', '区域', 'regionList') +
         cellSelect(st, 'storeType', TYPE_OPTS) +
         cellInput(st, 'customer', '如 30-45 岁社区妈妈') +

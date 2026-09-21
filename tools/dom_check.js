@@ -33,7 +33,10 @@ const vc = new VirtualConsole(), errs = [];
 vc.on('jsdomError', e => errs.push('JSDOM: ' + (e.stack || e.message)));
 vc.on('error', (...a) => errs.push('console.error: ' + a.join(' ')));
 
-JSDOM.fromURL('http://localhost:8765/' + page + hash, {
+// 端口可以用 HY_PORT 指定：本机同时开着别的静态服务时，写死 8765 会拿到别人的页面
+// 然后报一个莫名其妙的 404（2026-09-21 踩过）。
+const PORT = process.env.HY_PORT || '8765';
+JSDOM.fromURL('http://localhost:' + PORT + '/' + page + hash, {
   runScripts: 'dangerously', resources: 'usable', pretendToBeVisual: true, virtualConsole: vc,
   beforeParse(w) {
     if (seedFile) w.localStorage.setItem('hymn_videos_v1', fs.readFileSync(seedFile, 'utf8'));

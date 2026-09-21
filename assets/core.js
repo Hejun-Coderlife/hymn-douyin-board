@@ -254,7 +254,9 @@ window.HY = (function () {
 
   /* 'phone' = 店铺手机号，**只存在本机 localStorage**，导出 stores.json 时会被换成
      phoneHash（见 board.js 的 exportStores），原文永远不进仓库、不上线。 */
-  var EDITABLE = ['manager', 'region', 'storeType', 'customer', 'mainService', 'scenes', 'onCamera', 'note', 'phone'];
+  // staff='1' 表示店里只有一个人 —— 生成脚本时只派单人能拍的形式（见 tools/content_lib.py）。
+  // 空 = 两个人以上，走全部形式。**漏加进 EDITABLE 就存不住**，区域经理那次踩过。
+  var EDITABLE = ['manager', 'region', 'storeType', 'customer', 'mainService', 'scenes', 'onCamera', 'note', 'phone', 'staff'];
 
   /* 区域经理名单：跟门店分配分开存，这样「加了名字还没分配门店」也留得住 */
   var LS_MGR = 'hymn_managers_v1';
