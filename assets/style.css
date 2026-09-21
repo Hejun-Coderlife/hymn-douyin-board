@@ -57,73 +57,84 @@
    后来也撤了（跟燕麦棕不搭）。现在粉只做品牌点缀，不承担任何界面功能。
    =========================================================== */
 :root{
-  /* 以下颜色是从 hermes.cn 截图上直接取样的，别凭印象改 */
-  --bg:#FFFFFF;            /* 页面底：暖奶油。注意——真站截图上量到的是 #FDF5EF，
-                              但在用户的显示器上，CSS 写 #FDF5EF 截出来会变成 #FEF3ED（偏粉 2 阶），
-                              所以这里按实测差值补偿成 #FCF7F1，让它在屏幕上跟 hermes.cn 一致。
-                              别"照截图取样"改回 #FDF5EF —— 那一步已经踩过了。 */
-  --card:#FFFFFF;          /* 数据区白块 */
-  --paper:#F8F2EA;
-  --tile:#FFFFFF;        /* 图块灰底（对应 hermes.cn 商品图的 #E2DDD6，调亮一点好压深色图形）*/         /* 次级块 / 表头 / hover */
-  --tile:#FFFFFF;          /* 图块灰（爱马仕商品图底色） */
-  --surface:#FBF7F1;
-  --line:#EEE6DB;          /* 表格内细线 */
-  --line-2:#DED2C2;        /* 分区线（实测值） */
-  /* 界面交互色 = 近黑（2026-09-20 二次调整）。
-     中途试过把它改成品牌粉，结果粉跑得满页都是（按钮边框、下拉边框、月份选中框、
-     输入框 focus、选中态竖条…），跟燕麦棕的数据色打架 ——
-     用户：「这个还是用黑色」「你现在这样搭配有点怪，棕色和粉色搭吗」。
-     棕配粉确实不搭，棕配黑才是天然的。
-     **粉只留两处**：顶栏（品牌标识）和「今天那列」的淡底，作为整页唯一的品牌点缀。 */
-  --ink:#1B1B21;
-  --t1:#000000;            /* 正文/标题：纯黑 */
-  --t2:#3C3C42;
-  --t3:#5E5E5E;            /* 次级文字（实测面包屑色） */
-  --t4:#9A9AA3;
+  /* ===== 2026-09-21：整套换成门店页的语言（assets/store-mobile.css）=====
+     用户：「后台的风格，改成和前台的一样」。
+     在此之前是爱马仕暖奶油那套（--bg #FCF7F1 + 白卡片靠色差分区），
+     色号注释里那段"从 hermes.cn 取样、显示器差值补偿"的考据已经作废，
+     别照着它改回去。
 
-  /* 橙只剩「当天另有自由发挥」那个小点在用（对应真站上唯一的一抹橙：logo）。
-     其余一律走奶油 / 暖灰 / 黑 —— 用户 2026-09-17「色系也按我发你的改」 */
-  --brand:#4A423A;   /* 橙色已弃用，变量保留只为兼容旧写法 */
-  --brand-mid:#4A423A;
-  --brand-deep:#4A423A;
-  --brand-dk:#4A423A;
-  --brand-bg:var(--navy-bg);    /* 今天那列的底：普蓝极淡 */
-  --grad-brand:#4A423A;
-  --grad-brand-v:#4A423A;
-  --gold:#5E5E5E;
-  --gold-bright:#9C9691;
+     现在的规矩跟门店页完全一致：
+       · 底是**纯白**，分区靠**发丝线**，不靠色块（--bg 和 --card 都是白的，
+         所以任何"白卡片压在奶油底上"的写法都失效了）
+       · 直角、无阴影、无渐变（早就如此，继续保持）
+       · **衬线只给数字**（Didot），中文正文一律无衬线，台词用宋体
+       · **粉只给要被注意到的量**：完成率、逾期数。其余黑白灰
+     ===================================================================== */
+  --bg:#FFFFFF;
+  --card:#FFFFFF;
+  --paper:#FAFAF8;         /* 表头 / hover：极淡中性灰，不是米色 */
+  --surface:#FFFFFF;
+  --tile:#FFFFFF;          /* 图块底：白，靠外框发丝线分区 */
+  --line:#F0EDE6;          /* 表格内细线（对应门店页 --line-2） */
+  --line-2:#E3DFD6;        /* 分区线（对应门店页 --line） */
+
+  --ink:#16140F;           /* 界面强调色 = 近黑，跟门店页 --ink 同值 */
+  --t1:#16140F;            /* 正文/标题 */
+  --t2:#4A453C;            /* 次级（门店页 --ink-2） */
+  --t3:#9C958A;            /* 再次级（门店页 --dim） */
+  --t4:#B4ADA1;
+
+  /* 品牌粉：只给完成率和逾期数，跟门店页同一条规矩 */
+  --pink:#D9A6AE;
+  --pink-deep:#B9808B;
+  --pink-bg:#FAF2F3;
+
+  /* 橙色早就弃用，变量留着只为兼容旧写法，别再往页面上加橙 */
+  --brand:#16140F; --brand-mid:#16140F; --brand-deep:#16140F; --brand-dk:#16140F;
+  --brand-bg:var(--pink-bg);
+  --grad-brand:#16140F; --grad-brand-v:#16140F;
+  --gold:#9C958A; --gold-bright:#B4ADA1;
   --hairline-gold:linear-gradient(90deg,transparent,var(--line-2),transparent);
   --glass:#FFFFFF;
-  --ink-gradient:#1B1B21;
+  --ink-gradient:#16140F;
   --ink-text:#FFFFFF;
 
-  /* 状态各一色（用户 2026-09-17 选定）：墨绿=已发布、驼黄=推测、砖红=逾期、浅灰=待拍、普蓝=今天/链接。
-     唯一禁区是橙色——用户明确说不喜欢，别再加回来。 */
-  --green:#B39A7C;   --green-bg:rgba(179,154,124,.16);   --green-text:#7E6849;
-  --camel:#4A4A52;   --camel-text:#3A3A42;  --camel-bg:rgba(74,74,82,.10);
-  --brick:#9C3B2E;   --brick-bg:rgba(156,59,46,.09);
-  --navy:#D4788C;    --navy-bg:rgba(212,120,140,.12);
-  --todo:#E3D8C8;
-  /* 【别叫 --track】那个名字项目里早就被字距占了（见下面 --track:.06em），
-     撞名的话后定义的会赢，圆环底轨会拿到 .06em 这个无效值。 */
-  --ring-track:#E6E2DA;   /* 完成率圆环的底轨：比待拍深一档，压在奶茶图块底上才分得出 */
-  --late:#9C3B2E;   /* 砖红 */
-  --late-bg:var(--brick-bg);
-  --done:#B39A7C;   /* 燕麦棕（色块用）*/
-  --done-text:#7E6849;  /* 同色深一档：KPI 大数字用，燕麦棕太淡当文字会发虚 */
-  --done-bg:var(--green-bg);
-  --guess:#B58B3E;  /* 驼黄 */
-  --guess-bg:var(--camel-bg);
+  /* 状态三档，跟门店页的行状态同一套：
+     已发布=近黑（实心最重）、逾期=品牌粉、待拍=发丝灰。
+     日历上几千个格子，只有这三种颜色，粉就是唯一要被看见的那个。 */
+  /* 已发布 = 墨绿 #2F5D45（2026-09-21 用户指定，前后台同一个值）。
+     中途用过近黑，但日历上「今天那列」也是黑的，两者挤在一起分不清。 */
+  --done:#2F5D45;   --done-text:#2F5D45;  --done-bg:rgba(47,93,69,.10);
+  --late:#B9808B;   --late-bg:var(--pink-bg);
+  --todo:#EAE6DD;
+  --brick:#B9808B;  --brick-bg:var(--pink-bg);
+  --green:var(--done);  --green-bg:var(--done-bg); --green-text:var(--done-text);
+  --camel:#9C958A;  --camel-text:#4A453C;  --camel-bg:rgba(156,149,138,.12);
+  --navy:#16140F;   --navy-bg:var(--pink-bg);   /* 「今天那列」的淡底仍是粉 */
+  --guess:#9C958A;  --guess-bg:var(--camel-bg);
+  /* 【别叫 --track】那个名字被字距占了，撞名会让圆环底轨拿到 .06em */
+  --ring-track:#EAE6DD;
 
-  --sans:"PingFang SC","Helvetica Neue",system-ui,-apple-system,"Microsoft YaHei",sans-serif;
-  --serif:var(--sans);     /* 爱马仕站上没有衬线，这个变量留着只为兼容旧写法 */
+  /* 字体：无衬线正文 + Didot 数字 + 宋体台词，跟门店页一字不差 */
+  --sans:-apple-system,"SF Pro Text","PingFang SC",system-ui,sans-serif;
+  --num:Didot,"Bodoni 72",Georgia,"Songti SC",serif;   /* 只给数字 */
+  --song:"Songti SC","STSong",Didot,serif;             /* 只给台词 */
+  --serif:var(--sans);     /* 旧写法兼容：以前 --serif 指向无衬线，别拿它当数字字体 */
+
   --nav-w:214px;
-  --nav-w-rail:58px;      /* 折叠后的图标栏宽度 */
-  --radius:0px;
-  --radius-s:0px;
-  --shadow:none;
-  --shadow-hover:none;
-  --track:.06em;           /* 字距按真站收窄，别再拉到 .14em */
+  --nav-w-rail:58px;
+  --radius:0px; --radius-s:0px;
+  --shadow:none; --shadow-hover:none;
+  --track:.06em;
+}
+
+/* ===== 数字一律 Didot（2026-09-21）=====
+   门店页的做法：衬线只给"要被看见"的东西，其余交给无衬线。
+   后台满屏都是数字，这一条改完风格就对了一大半。 */
+.kpi .val, .tile .tval b, .mono, .celltip b,
+.eff td.mono, .eff th.mono, .stat .v{
+  font-family:var(--num);font-weight:400;letter-spacing:.01em;
+  font-variant-numeric:tabular-nums;
 }
 *{margin:0;padding:0;box-sizing:border-box}
 html{background:var(--bg)}
@@ -237,7 +248,7 @@ body.navhide .sidebar .foot{display:none}
 /* .main 的 margin-left 也不做过渡，否则侧栏瞬间收了、内容还在慢慢挪 */
 .main{}
 .sidebar .logo img{height:18px;display:block}
-.sidebar .logo .st{font-size:11.5px;color:var(--t3);margin-top:12px;letter-spacing:.02em}
+.sidebar .logo .st{font-size:10.5px;color:var(--t3);margin-top:12px;letter-spacing:.16em}
 
 .nav{padding:10px 0;flex:1;overflow:auto}
 .nav .grp{font-size:11px;font-weight:400;letter-spacing:.02em;color:var(--t4);padding:22px 22px 9px}
@@ -369,7 +380,8 @@ body.booted .pagehead .fxbtn{animation:headfade .5s ease .6s both}
   body.booted .pagehead .fxbtn{animation:none}
 }
 .eyebrow{font-size:12px;font-weight:400;letter-spacing:0;color:var(--t3);margin-bottom:6px}
-.pagehead h2{font-size:22px;line-height:1.35;font-weight:600;letter-spacing:.01em;color:var(--t1)}
+.pagehead h2{font-family:var(--song);font-size:24px;line-height:1.4;font-weight:400;
+  letter-spacing:.06em;color:var(--t1)}
 .pagehead p{font-size:12.5px;color:var(--t3);margin-top:10px;letter-spacing:0}
 .fxbtn{
   margin-left:auto;border:1px solid var(--line-2);background:transparent;color:var(--t3);
@@ -399,7 +411,7 @@ body.booted .pagehead .fxbtn{animation:headfade .5s ease .6s both}
   position:absolute;inset:0;display:flex;flex-direction:column;
   align-items:center;justify-content:center;pointer-events:none;background:transparent;
 }
-.tile .tval b{font-size:30px;font-weight:600;letter-spacing:-.01em;line-height:1;color:var(--t1)}
+.tile .tval b{font-size:36px;font-weight:400;letter-spacing:-.01em;line-height:1;color:var(--t1)}
 .tile .tval b small{font-size:14px;font-weight:500;margin-left:2px}
 .tile .tval i{font-style:normal;font-size:11px;color:var(--t3);margin-top:5px;letter-spacing:.04em}
 /* 堆叠条下面的直接标注（图例 + 数值，不靠颜色单独表意） */
@@ -440,15 +452,17 @@ body.booted .tile .ink-draw{animation:inkdraw 1.6s ease .75s both}
   padding:22px 26px;flex:1;min-width:160px;
 }
 .kpi:first-child{border-left:0}
-.kpi .lab{font-size:12px;font-weight:400;letter-spacing:0;color:var(--t3)}
+.kpi .lab{font-size:11.5px;font-weight:400;letter-spacing:.14em;color:var(--t3)}
 .kpi .val{
-  font-size:30px;font-weight:600;line-height:1.2;margin-top:10px;
+  font-size:38px;font-weight:400;line-height:1.05;margin-top:12px;
   font-variant-numeric:tabular-nums;letter-spacing:0;
 }
 .kpi .val small{font-size:14px;color:var(--t3);font-weight:400;margin-left:4px}
 .kpi .sub{font-size:11.5px;color:var(--t4);margin-top:6px}
 .kpi.late .val{color:var(--brick)}
-.kpi.done .val{color:var(--green)}
+.kpi.done .val{color:var(--done-text)}
+/* 完成率和逾期数用品牌粉：整页只有这两处是粉的，跟门店页一致 */
+.kpi.rate .val{color:var(--pink-deep)}
 
 /* ===== 排行 ===== */
 .rank{display:flex;gap:8px;flex-wrap:wrap}

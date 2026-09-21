@@ -139,10 +139,11 @@
       var c = { done: 0, late: 0, todo: 0, now: 0 };
       rows.forEach(function (s) { var l = label(s); if (c[l.c] != null) c[l.c]++; });
       var sum = HASVIDEO
-        ? [['已发布', c.done, 0], ['逾期', c.late, 1], ['今天', c.now, 0]]
+        // 第三个值 = 给哪个数上色：1=品牌粉（要处理的），2=墨绿（已完成的）
+        ? [['已发布', c.done, 2], ['逾期', c.late, 1], ['今天', c.now, 0]]
         : [['已到期', c.late, 1], ['待拍', c.todo, 0], ['今天', c.now, 0]];
       $('.sum').innerHTML = sum.map(function (x) {
-        return '<div><div class="v' + (x[2] ? ' p' : '') + '">' + x[1] + '</div>' +
+        return '<div><div class="v' + (x[2] === 1 ? ' p' : x[2] === 2 ? ' g' : '') + '">' + x[1] + '</div>' +
                '<div class="l">' + x[0] + '</div></div>';
       }).join('');
 
