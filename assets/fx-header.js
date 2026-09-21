@@ -167,7 +167,9 @@
     opt = opt || {};
     build(document.body, {
       cls: 'fx-bg', count: opt.count || 460, alpha: opt.alpha == null ? 1 : opt.alpha,
-      bg: [1.0, 1.0, 1.0, 1], blend: 'normal', box: false,
+      // 底色可传：画布底色必须跟页面底色一模一样，差 2~3 阶在屏幕上
+      // 就是一块看得出来的色块。默认纯白。
+      bg: opt.bg || [1.0, 1.0, 1.0, 1], blend: 'normal', box: false,
       vs: [
         'precision highp float;',
         'attribute float aIdx,aT,aSide;',

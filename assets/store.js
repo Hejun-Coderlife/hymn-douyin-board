@@ -1,290 +1,351 @@
-/* 门店页（手机，只读）—— store.html?store=<抖音号> */
+/* 门店页（手机）—— store.html?store=<抖音号>
+   2026-09-21 整页重做：杂志式排版 + 底部固定标签栏（设计经过见 assets/store-mobile.css 的头注释）。
+
+   四个标签：今天 / 本周 / 日历 / 我的。
+   数据来自 data/scripts-index.js（日期、内容方向、拍摄形式）+ 按需加载的
+   data/scripts/<门店编号>-<年月>.js 分片（开头 3 秒、分镜、标签）。
+   **分片只在要用到那个月时才拉**，一次一个月约 70KB，手机上不会卡。
+
+   状态怎么定（跟旧版一致，别改）：店员手机上通常没有视频数据，
+   所以**不猜发没发** —— 过了计划日只说「计划日期已过」，不说「逾期未发」。
+   只有本机真导入过视频数据时，才显示已发布/逾期。 */
 (function () {
   'use strict';
-  var $ = function (s) { return document.querySelector(s); };
-  var $$ = function (s) { return Array.prototype.slice.call(document.querySelectorAll(s)); };
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
   function esc(v) {
     return String(v == null ? '' : v).replace(/[&<>"]/g, function (c) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
     });
   }
-  // 背景动效改成纯 CSS（body.fxon，见 style.css）；门店页跟总部页共用同一个开关状态
-  if (localStorage.getItem('hymn_bg3d') === 'on') document.body.classList.add('fxon');
 
-  /* 门店从哪来（2026-09-20 加「记住门店」）：
-     ① URL 上带 ?store= 就用它，并**记下来**——店员第一次是从二维码/链接/login.html 进来的；
-     ② 没带参数就用记住的那家——店员把页面加到手机桌面后，点图标直接是自己店；
-     ③ 都没有就送去 login.html 输手机号认人。
-     这样「一进去就看到自己的页面」对三种入口都成立。 */
-  /* 登录页地址允许被覆盖：预览版要跳预览版的登录页，不然一退出就掉回旧样式。
-     没设就是 login.html，真页面行为不变。 */
   var LOGIN = window.HY_LOGIN_PAGE || 'login.html';
   var qs = new URLSearchParams(location.search);
   var id = qs.get('store');
-  if (id) {
-    HY.MyStore.set(id);
-  } else {
-    id = HY.MyStore.get();
-    if (!id) { location.replace(LOGIN); return; }
+  if (id) HY.MyStore.set(id);
+  else { id = HY.MyStore.get(); if (!id) { location.replace(LOGIN); return; } }
+
+  var TODAY = HY.ymd(new Date());
+  var D, STORE, MINE = {}, HASVIDEO = false, MATCH = null;
+  var WD = ['日', '一', '二', '三', '四', '五', '六'];
+
+  /* ---------- 工具 ---------- */
+  function ymOf(d) { return d.slice(0, 7); }
+  function addMonth(ym, n) {
+    var y = +ym.slice(0, 4), m = +ym.slice(5, 7) - 1 + n;
+    var t = new Date(y, m, 1);
+    return t.getFullYear() + '-' + ('0' + (t.getMonth() + 1)).slice(-2);
   }
-  var today = HY.ymd(new Date());
-
-  HY.loadData().then(function (d) {
-    var st = d.storeById[id];
-    if (!st) {
-      /* 记住的门店可能失效（店关了、抖音号换了）。不能让店员卡死在这一屏，
-         把记忆清掉并给一个重新认人的入口。 */
-      HY.MyStore.clear();
-      $('#spName').textContent = '没找到这家门店';
-      $('#spSub').innerHTML = '抖音号 ' + esc(id) + ' 不在门店表里。' +
-        '<a class="mob" href="' + LOGIN + '">用手机号重新进入 →</a>';
-      return Promise.reject(new Error('门店不存在'));
+  function mondayOf(dstr) { return HY.ymd(HY.monday(HY.parseYmd(dstr))); }
+  function shift(dstr, n) { return HY.ymd(HY.addDays(HY.parseYmd(dstr), n)); }
+  function label(s) {
+    if (s.date === TODAY) return { t: '今天 · 待拍', c: 'now' };
+    if (HASVIDEO) {
+      var stt = HY.statusOf(s, MATCH.byScript[s.id], TODAY);
+      return { t: HY.STATUS_CN[stt], c: stt };
     }
-    // 脚本详情按「门店 × 月份」分片，把展示窗口覆盖到的月份都加载进来
-    // （之前这里只传了 code、没传月份，loadDetail 直接 reject，门店页一开就是「数据加载失败」）
-    var yms = [], seen = {};
-    HY.buildDayGrid(new Date(), HY.WEEKS).forEach(function (w) {
-      w.days.forEach(function (day) {
-        var ym = HY.ymOf(day.date);
-        if (!seen[ym]) { seen[ym] = 1; yms.push(ym); }
-      });
-    });
-    return Promise.all(yms.map(function (ym) {
-      return HY.loadDetail(st.code, ym).catch(function () {});  // 某个月没分片就跳过，别让整页挂掉
-    })).then(function () { return d; });
-  }).then(function (d) {
-    if (!d) { HY.bootDone(); return; }
-    var st = d.storeById[id];
-    // 视频数据来自总部在本机导入的 localStorage；店员手机上通常是空的，
-    // 那就只显示计划，不判断发没发，免得误伤。
-    var videos = HY.Videos.list().filter(function (v) { return v.store === id; });
-    var mine = d.scripts.filter(function (s) { return s.store === id; })
-      .map(function (x) { return HY.detail(x.id) || x; });
-    var m = HY.match(mine, videos);
-    var weeks = HY.buildDayGrid(new Date(), HY.WEEKS);
-    var hasVideo = videos.length > 0;
-
-    $('#spName').textContent = st.storeName + (st.brandLine ? '（' + st.brandLine + '）' : '');
-
-    var byDate = {}, byId = {};
-    mine.forEach(function (s) { byDate[s.date] = s; byId[s.id] = s; });
-
-    var html = '';
-    weeks.forEach(function (w, wi) {
-      var isNow = w.days.some(function (x) { return x.today; });
-      var days = w.days.filter(function (x) { return byDate[x.date]; });
-      /* 一次只展开一周（专注模式）之后，默认就只能开本周。
-         原来是「本周 + 下周」都展开，跟一次只开一周自相矛盾。 */
-      var open = isNow;
-      html += '<div class="wkblock' + (isNow ? ' now' : '') + (open ? ' open' : '') + '">' +
-        /* 2026-09-20 用户：「本周保留，第X周改成只显示日期」。
-           「第 5 周」这种序号对店员没意义（他们不数周次，只看几号拍什么），
-           所以非本周的那些直接拿日期当标题；本周还是「本周 + 日期」。 */
-        '<div class="wh"><span class="arrow">▶</span>' +
-        (isNow
-          ? '本周 <span class="rg">' + HY.md(w.monday) + '–' + HY.md(w.sunday) + '</span>'
-          : HY.md(w.monday) + '–' + HY.md(w.sunday)) +
-        '<span class="cnt">' + days.length + ' 条</span></div><div class="wb">';
-      if (!days.length) html += '<div class="emptyday">本周暂无脚本</div>';
-      days.forEach(function (dd) {
-        var s = byDate[dd.date];
-        var mm = m.byScript[s.id];
-        // 店员手机上一般没有视频数据，那就一律按「待拍」显示，不猜发没发
-        var stt = hasVideo ? HY.statusOf(s, mm, today) : 'todo';
-        html += card(s, dd, mm, stt, hasVideo);
-      });
-      html += '</div></div>';
-    });
-    /* 退出登录：店员换店/换人时用。放在列表最底下，不抢正文。
-       必须带 ?switch=1 —— login.html 认出这个参数才会清掉记忆并停下来让人重输，
-       否则它一看到本机记着门店就直接跳回来了（见 login.html）。 */
-    html += '<div class="sp-out"><a class="mob" href="' + LOGIN + '?switch=1">不是这家店？退出 →</a></div>';
-    $('#spWeeks').innerHTML = html;
-
-    $$('.wkblock .wh').forEach(function (el) {
-      el.onclick = function () {
-        var blk = el.parentNode, wasOpen = blk.classList.contains('open');
-        /* 一次只开一周（2026-09-20 用户：「日期也是一样，点开后只能看到这一周的内容」）。
-           收起这一周 = 退回全部周次的列表。 */
-        $$('.wkblock.open').forEach(function (x) { x.classList.remove('open'); });
-        $$('.card2.open').forEach(function (x) { x.classList.remove('open'); });  // 换周时把展开的那天也收了
-        if (!wasOpen) blk.classList.add('open');
-        syncFocus();
-        window.scrollTo({ top: 0, behavior: 'auto' });   // 高度骤变，回到顶上最不容易迷路
-      };
-    });
-    /* 展开某天 = 进入「只看这一天」（2026-09-20 用户要求）。
-       一次只允许开一条：点开新的，旧的自动收。
-       body.focusday 交给 CSS 去藏别的卡片和别的周 ——
-       **不在这里直接改样式**，因为总部抽屉复用同一套结构，
-       样式挂在 body.hasfx 上，真页面不受影响。 */
-    function syncFocus() {
-      var open = $('.card2.open');
-      document.body.classList.toggle('focusday', !!open);
-      document.body.classList.toggle('focusweek', !!$('.wkblock.open'));
-      /* 顺手标出「哪一周里有展开的卡片」。
-         本来可以用 CSS 的 :has()，但它在旧手机上不支持又不会报错，
-         会变成「其它周没藏掉」这种静默失效 —— 用类名最稳。 */
-      $$('.wkblock').forEach(function (b) {
-        b.classList.toggle('hasopen', !!open && b.contains(open));
-      });
-    }
-    $$('.card2').forEach(function (el) {
-      el.onclick = function () {
-        var wasOpen = el.classList.contains('open');
-        $$('.card2.open').forEach(function (x) { x.classList.remove('open'); });
-        if (!wasOpen) el.classList.add('open');
-        syncFocus();
-        if (!wasOpen) {
-          // 收起别的之后页面会跳，把这条滚回顶栏下面（51 顶栏 + 48 周头）
-          var y = el.getBoundingClientRect().top + window.pageYOffset - 104;
-          window.scrollTo({ top: Math.max(0, y), behavior: 'auto' });
-        }
-      };
-    });
-    syncFocus();   // 默认本周是展开的，进页面就该是专注态
-
-    $$('.card2 .vlink').forEach(function (el) {
-      el.onclick = function (e) { e.stopPropagation(); };   // 点视频链接别把卡片收起来
-    });
-    $$('.card2 .hashrow span').forEach(function (el) {      // 单个标签：点一下复制自己
-      el.onclick = function (e) {
-        e.stopPropagation();
-        var t = el.textContent.trim();
-        copyText(t).then(function (ok) { HY.toast(ok ? '已复制 ' + t : '复制失败，长按选中'); });
-      };
-    });
-    $$('.card2 .copyscript').forEach(function (el) {         // 整条脚本拷成文本
-      el.onclick = function (e) {
-        e.stopPropagation();
-        var sc = byId[el.closest('.card2').dataset.id];
-        if (!sc) return;
-        copyText(scriptText(sc, st.storeName)).then(function (ok) {
-          HY.toast(ok ? '整条脚本已复制' : '复制失败，长按选中');
-        });
-      };
-    });
-    $$('.card2 .copyall').forEach(function (el) {            // 一键复制这条的全部标签
-      el.onclick = function (e) {
-        e.stopPropagation();
-        var row = el.parentNode.nextElementSibling;
-        var all = Array.prototype.map.call(row.querySelectorAll('span'), function (x) {
-          return x.textContent.trim();
-        }).join(' ');
-        copyText(all).then(function (ok) {
-          HY.toast(ok ? '已复制 ' + row.querySelectorAll('span').length + ' 个标签' : '复制失败，长按选中');
-        });
-      };
-    });
-    HY.bootDone();
-  }).catch(function (e) {
-    $('#spName').textContent = '数据加载失败';
-    $('#spSub').textContent = e.message;
-    HY.bootDone();
-  });
-
-  // file:// 打开时 navigator.clipboard 多半不可用，退回老办法
-  function copyText(t) {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      return navigator.clipboard.writeText(t).then(function () { return true; }, fallback);
-    }
-    return Promise.resolve(fallback());
-    function fallback() {
-      var ta = document.createElement('textarea');
-      ta.value = t;
-      ta.style.cssText = 'position:fixed;left:-9999px;top:0';
-      document.body.appendChild(ta);
-      ta.select();
-      var ok = false;
-      try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
-      document.body.removeChild(ta);
-      return ok;
-    }
+    return s.date < TODAY ? { t: '计划日期已过', c: 'late' } : { t: '待拍', c: 'todo' };
+  }
+  function titleOf(s) {
+    var full = HY.detail(s.id);
+    return (full && full.title) || (s.topic + '｜' + s.format);
   }
 
-  /* 素材里有些台词本身就带「」（比如「{objection}」），外面再套一层就变成「「…」」。
-     开头已经是「的就原样用。*/
-  function quote(t) {
-    t = String(t == null ? '' : t);
-    return t.charAt(0) === '\u300c' ? esc(t) : '\u300c' + esc(t) + '\u300d';
-  }
-  /* 占位数据里 cta 自带「结尾引导：」前缀，上面又有一个同名小标题，重复了。
-     生成脚本已经改掉，这里再兜一层，老数据也不会重复。*/
-  function ctaText(t) { return String(t == null ? '' : t).replace(/^\u7ed3\u5c3e\u5f15\u5bfc[:\uff1a]\s*/, ''); }
-
-  function list(arr, cls) {
-    if (!arr || !arr.length) return '';
-    return '<ul class="lines ' + (cls || '') + '">' + arr.map(function (x) {
-      return '<li>' + esc(x) + '</li>';
-    }).join('') + '</ul>';
+  /* 分片按需加载：要用到哪几个月就拉哪几个月，拉过的不重复拉 */
+  var loaded = {};
+  function needMonths(yms) {
+    var todo = yms.filter(function (y) { return !loaded[y]; });
+    todo.forEach(function (y) { loaded[y] = 1; });
+    if (!todo.length) return Promise.resolve();
+    return Promise.all(todo.map(function (y) {
+      return HY.loadDetail(STORE.code, y).catch(function () {});
+    }));
   }
 
-  function card(s, dd, m, stt, hasVideo) {
-    var label = hasVideo ? HY.STATUS_CN[stt] : (s.date < today ? '计划日期已过' : '待拍');
-    // 列表行只留四样：日期、周几、标题、完成情况（用户 2026-09-17 要求）；
-    // 标签、痛点、分镜全部收进 detail，点整张卡片展开。
-    // 今天那条多一个普蓝「今天」角标 —— 店员点开就是来找今天拍什么的。
-    var isToday = s.date === today;
-    var h = '<div class="card2 ' + stt + (isToday ? ' istoday' : '') + '" data-id="' + esc(s.id) + '">' +
-      '<div class="ct">' + (isToday ? '<span class="now">今天</span>' : '') +
-      '<span class="dt">' + s.date + '（周' + dd.dow + '）</span>' +
-      '<span class="pill ' + stt + '">' + label + '</span>' +
-      '<span class="tog"><em class="o">展开</em><em class="c">收起</em><i>▾</i></span></div>' +
-      '<h5>' + esc(s.title || (s.topic + '｜' + s.format)) + '</h5>' +
-      '<div class="detail">';
-    if (m) {
-      h += '<a class="vlink" href="' + esc(m.video.url) + '" target="_blank" rel="noopener">已发布：' +
-        esc(m.video.title || '（无标题）') + ' ↗</a>';
-    }
-    // 【极简】2026-09-20 用户：「太复杂了，不适合给所有人看，要极简」。
-    // 屏幕上只剩：开头 3 秒 + 分镜（画面/台词/秒数）+ 标签。
-    // 砍掉的：拍给谁看（人群/烦恼）、封面、拍摄要点、避坑、现场（BGM/道具）。
-    // 数据里这些字段都还在，想找回来就是把下面几行加回去，别去动数据。
-    h += '<div class="sechead">开头 3 秒</div><div class="bigline">' + esc(s.hook) + '</div>';
-    /* 「分镜」是标题，「6 幕 · 30-40 秒」是附注 —— 包成 .meta 压小压灰，
-       不然一整行同样大小，标题反而不突出。 */
-    h += '<div class="sechead">分镜<span class="meta">' + (s.shots || []).length + ' 幕 · ' +
-         esc(s.duration || '') + '</span></div>';
-    (s.shots || []).forEach(function (sh, i) {
-      h += '<div class="shot"><div class="n">' + (i + 1) + '</div><div class="bd">' +
-        '<div class="sc">' + esc(sh.scene) + '</div>' +
-        (sh.line ? '<div class="ln">' + quote(sh.line) + '</div>' : '') +
-        '</div><div class="sec">' + (sh.sec || 0) + 's</div></div>';
+  /* ---------- 渲染：某一天的完整脚本（今天 / 详情共用） ---------- */
+  function scriptHTML(s, opts) {
+    var full = HY.detail(s.id) || s;
+    var shots = full.shots || [];
+    var tags = (full.hashtags || []).filter(function (t) { return t !== full.tag; });
+    var dd = HY.parseYmd(s.date);
+    var head =
+      '<div class="dh">' +
+        '<div class="d">' + esc(HY.md(s.date)) + ' 周' + WD[dd.getDay()] +
+          (s.date === TODAY ? ' · 今天' : '') + '</div>' +
+        '<h1>' + esc(titleOf(s)) + '</h1>' +
+        '<div class="meta">' + esc(full.format || '') + '<i>·</i>' +
+          esc(full.duration || '') + '<i>·</i>' + shots.length + ' 幕</div>' +
+      '</div>';
+    var hook = full.hook ? String(full.hook).replace(/^「/, '') : '';
+    var quote = hook ?
+      '<div class="quote"><div class="h">开头 3 秒</div>' +
+        '<div class="body"><span class="mark">「</span><p>' + esc(hook) + '</p></div></div>' : '';
+    var list = shots.map(function (sh, i) {
+      var last = i === shots.length - 1;
+      return '<div class="shot' + (last ? ' end' : '') + '">' +
+        '<div class="no"><b>' + (last ? '尾' : ('0' + (i + 1)).slice(-2)) + '</b>' +
+          '<span>' + esc(sh.sec != null ? sh.sec + 's' : '') + '</span></div>' +
+        '<div><span class="lab">画面</span><div class="sc">' + esc(sh.scene || '') + '</div>' +
+          (sh.line ? '<span class="lab say">台词</span>' +
+                     '<div class="ln">' + esc(sh.line) + '</div>' : '') +
+        '</div></div>';
+    }).join('');
+    return (opts && opts.back ? '<div class="back" data-back="1">‹ 返回</div>' : '') +
+      head + quote +
+      '<div class="blk"><div class="h">分镜</div>' +
+        '<div class="sub">' + shots.length + ' 幕 · 一部手机 · 两个店员</div>' + list + '</div>' +
+      (tags.length ?
+        '<div class="blk" style="border-top:.5px solid var(--line)"><div class="h">话题标签</div>' +
+          '<div class="sub">点单个标签可以只复制它</div>' +
+          '<div class="hash">' + tags.map(function (t) {
+            return '<span>' + esc(t) + '</span>';
+          }).join('') + '</div></div>' : '') +
+      '<div class="acts">' +
+        '<button class="main" data-copy="all" data-id="' + esc(s.id) + '">复制整条脚本</button>' +
+        '<button class="sub2" data-copy="tags" data-id="' + esc(s.id) + '">只复制标签</button>' +
+      '</div>';
+  }
+
+  /* ---------- 列表 ---------- */
+  var RANGES = {
+    week:   function () { var m = mondayOf(TODAY); return { t: '本周', from: m, to: shift(m, 6) }; },
+    next:   function () { var m = shift(mondayOf(TODAY), 7); return { t: '下周', from: m, to: shift(m, 6) }; },
+    month:  function () { var y = ymOf(TODAY); return { t: '本月', from: y + '-01', to: y + '-31' }; },
+    nextmo: function () { var y = addMonth(ymOf(TODAY), 1); return { t: '下月', from: y + '-01', to: y + '-31' }; }
+  };
+  var curRange = 'week';
+
+  function inRange(s, r) { return s.date >= r.from && s.date <= r.to; }
+
+  function paintList() {
+    var r = RANGES[curRange]();
+    var rows = Object.keys(MINE).map(function (k) { return MINE[k]; })
+      .filter(function (s) { return inRange(s, r); })
+      .sort(function (a, b) { return a.date < b.date ? -1 : 1; });
+
+    var yms = {}; rows.forEach(function (s) { yms[ymOf(s.date)] = 1; });
+    needMonths(Object.keys(yms)).then(function () {
+      $('#rangeTitle').textContent = r.t + ' ' +
+        HY.md(rows.length ? rows[0].date : r.from) + '–' +
+        HY.md(rows.length ? rows[rows.length - 1].date : r.to);
+      $('#rangeCnt').textContent = rows.length + ' 条';
+
+      var c = { done: 0, late: 0, todo: 0, now: 0 };
+      rows.forEach(function (s) { var l = label(s); if (c[l.c] != null) c[l.c]++; });
+      var sum = HASVIDEO
+        ? [['已发布', c.done, 0], ['逾期', c.late, 1], ['今天', c.now, 0]]
+        : [['已到期', c.late, 1], ['待拍', c.todo, 0], ['今天', c.now, 0]];
+      $('.sum').innerHTML = sum.map(function (x) {
+        return '<div><div class="v' + (x[2] ? ' p' : '') + '">' + x[1] + '</div>' +
+               '<div class="l">' + x[0] + '</div></div>';
+      }).join('');
+
+      $('#list').innerHTML = rows.map(function (s) {
+        var l = label(s), dd = HY.parseYmd(s.date);
+        return '<div class="row ' + l.c + '" data-id="' + esc(s.id) + '">' +
+          '<div class="dt"><b>' + dd.getDate() + '</b><span>' + WD[dd.getDay()] + '</span></div>' +
+          '<div class="mid"><div class="t">' + esc(titleOf(s)) + '</div>' +
+            '<div class="s' + (l.c === 'late' ? ' late' : '') + '">' + l.t + '</div></div>' +
+          '<div class="go">›</div></div>';
+      }).join('') || '<div class="none" style="padding:26px 0;color:var(--dim)">这段时间还没有脚本</div>';
     });
-    // 结尾那句也是要念出来的话，所以并进分镜最后一行，不单开一块
-    if (s.cta) {
-      h += '<div class="shot end"><div class="n">尾</div><div class="bd">' +
-        '<div class="ln">' + quote(ctaText(s.cta)) + '</div></div><div class="sec"></div></div>';
-    }
-    if (s.hashtags && s.hashtags.length) {
-      var tags = s.hashtags.filter(function (t) { return t !== s.tag; });
-      h += '<div class="sechead row">话题标签<button class="btnmini copyall" type="button">复制全部标签</button></div>' +
-        '<div class="hashrow">' +
-        tags.map(function (t) { return '<span>' + esc(t) + '</span>'; }).join('') + '</div>';
-    }
-    // 店员手上只有一部手机：整条拷进备忘录，拍的时候照着念最省事
-    h += '<div class="copyrow"><button class="btnmini copyscript" type="button">复制整条脚本</button></div>';
-    h += '</div></div>';
-    return h;
   }
 
-  /** 拷进备忘录的纯文本版；内容跟屏幕上看到的一模一样，不多给也不少给 */
-  function scriptText(s, storeName) {
-    var L = [];
-    L.push(s.date + '　' + storeName);
-    L.push(s.title || (s.topic + '｜' + s.format));
-    L.push('');
-    L.push('开头 3 秒：' + (s.hook || ''));
-    L.push('');
-    (s.shots || []).forEach(function (sh, i) {
-      L.push((i + 1) + '. 画面：' + sh.scene + '（' + (sh.sec || 0) + '秒）');
+  /* ---------- 日历 ---------- */
+  var calYm;
+  function paintCal() {
+    needMonths([calYm]).then(function () {
+      var y = +calYm.slice(0, 4), m = +calYm.slice(5, 7);
+      $('#calMo').innerHTML = m + ' 月<small>' + y + '</small>';
+      var first = new Date(y, m - 1, 1), days = new Date(y, m, 0).getDate();
+      var lead = (first.getDay() + 6) % 7;            // 周一开头
+      var g = '';
+      for (var i = 0; i < lead; i++) g += '<div class="day out"><b></b><i></i></div>';
+      for (var dnum = 1; dnum <= days; dnum++) {
+        var ds = calYm + '-' + ('0' + dnum).slice(-2);
+        var s = MINE[ds], cls = 'day';
+        if (s) { var l = label(s); cls += ' ' + l.c; }
+        else cls += ' out';
+        g += '<div class="' + cls + '"' + (s ? ' data-id="' + esc(s.id) + '"' : '') +
+             '><b>' + dnum + '</b><i></i></div>';
+      }
+      var tail = (lead + days) % 7;
+      if (tail) for (var j = 0; j < 7 - tail; j++) g += '<div class="day out"><b></b><i></i></div>';
+      $('#calGrid').innerHTML = g;
+    });
+  }
+
+  /* ---------- 复制 ---------- */
+  function tagsOf(sid) {
+    var f = HY.detail(sid) || {};
+    return (f.hashtags || []).filter(function (t) { return t !== f.tag; }).join(' ');
+  }
+  function scriptText(sid) {
+    var f = HY.detail(sid); if (!f) return '';
+    var L = [f.title || (f.topic + '｜' + f.format), '', '开头 3 秒：' + (f.hook || ''), ''];
+    (f.shots || []).forEach(function (sh, i) {
+      L.push((i + 1) + '. 【' + (sh.sec != null ? sh.sec + 's' : '') + '】画面：' + (sh.scene || ''));
       if (sh.line) L.push('   台词：' + sh.line);
     });
-    if (s.cta) L.push('尾. 台词：' + ctaText(s.cta));
-    if (s.hashtags && s.hashtags.length) {
-      L.push('');
-      L.push('标签：' + s.hashtags.filter(function (t) { return t !== s.tag; }).join(' '));
-    }
+    var t = tagsOf(sid); if (t) { L.push(''); L.push(t); }
     return L.join('\n');
   }
+  /* file:// 和非 https 下 navigator.clipboard 会被禁 —— 必须留 execCommand 这条退路 */
+  function copyText(t) {
+    if (!t) { toast('这条还没有内容'); return; }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(t).then(function () { toast('已复制'); }, fb);
+    } else fb();
+    function fb() {
+      var ta = document.createElement('textarea');
+      ta.value = t; ta.style.cssText = 'position:fixed;left:-9999px';
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); toast('已复制'); }
+      catch (e) { toast('复制失败，长按选中'); }
+      document.body.removeChild(ta);
+    }
+  }
+  var toastEl;
+  function toast(msg) {
+    if (!toastEl) { toastEl = document.createElement('div'); toastEl.className = 'toast';
+      document.body.appendChild(toastEl); }
+    toastEl.textContent = msg; toastEl.classList.add('on');
+    clearTimeout(toast._t); toast._t = setTimeout(function () { toastEl.classList.remove('on'); }, 1400);
+  }
+
+  /* ---------- 视图切换 ---------- */
+  var VIEWS = {};
+  function show(k) {
+    Object.keys(VIEWS).forEach(function (n) { VIEWS[n].classList.toggle('hide', n !== k); });
+    $('#viewB').classList.add('hide');
+    $('#viewPick').classList.add('hide');
+    $$('#tabbar a').forEach(function (a) { a.classList.toggle('on', a.dataset.v === k); });
+    scrollTo(0, 0);
+  }
+  /* 从哪一屏点进详情，返回就回哪一屏（从日历点进去再返回，别把人甩回本周） */
+  var backTo = 'week';
+  function openDay(sid) {
+    Object.keys(VIEWS).forEach(function (n) {
+      if (!VIEWS[n].classList.contains('hide')) backTo = n;
+    });
+    var idx = null;
+    Object.keys(MINE).forEach(function (k) { if (MINE[k].id === sid) idx = MINE[k]; });
+    if (!idx) return;
+    needMonths([ymOf(idx.date)]).then(function () {
+      $('#viewB').innerHTML = scriptHTML(idx, { back: true });
+      Object.keys(VIEWS).forEach(function (n) { VIEWS[n].classList.add('hide'); });
+      $('#viewPick').classList.add('hide');
+      $('#viewB').classList.remove('hide');
+      scrollTo(0, 0);
+    });
+  }
+
+  /* ---------- 切换门店 ---------- */
+  function paintStores(kw) {
+    var q = (kw || '').trim();
+    var rows = q ? D.stores.filter(function (s) {
+      return (s.storeName + (s.brandLine || '') + s.douyinId).indexOf(q) >= 0; }) : D.stores;
+    $('#pickCnt').textContent = rows.length + ' / ' + D.stores.length + ' 家';
+    if (!rows.length) { $('#pickList').innerHTML = '<div class="none">没有叫「' + esc(q) + '」的门店</div>'; return; }
+    $('#pickList').innerHTML = rows.map(function (s) {
+      var cur = s.douyinId === id;
+      return '<div class="st' + (cur ? ' cur' : '') + '" data-sid="' + esc(s.douyinId) + '">' +
+        '<div class="ini">' + esc(s.storeName.charAt(0)) + '</div>' +
+        '<div class="nm"><b>' + esc(s.storeName) +
+          (s.brandLine ? ' <span style="display:inline;font-family:inherit;font-size:11px;' +
+            'color:var(--dim);letter-spacing:.06em">' + esc(s.brandLine) + '</span>' : '') + '</b>' +
+          '<span>' + esc(s.douyinId) + '</span></div>' +
+        (cur ? '<span class="on">当前</span>' : '<span class="go">›</span>') + '</div>';
+    }).join('');
+  }
+
+  /* ---------- 启动 ---------- */
+  HY.loadData().then(function (d) {
+    D = d;
+    STORE = d.storeById[id];
+    if (!STORE) {
+      HY.MyStore.clear();
+      $('#storeLine').innerHTML = '没找到这家门店　<a href="' + LOGIN + '">重新选择 →</a>';
+      HY.bootDone();
+      return Promise.reject(new Error('门店不存在'));
+    }
+    d.scripts.forEach(function (s) { if (s.store === id) MINE[s.date] = s; });
+    var videos = HY.Videos.list().filter(function (v) { return v.store === id; });
+    HASVIDEO = videos.length > 0;
+    MATCH = HY.match(Object.keys(MINE).map(function (k) { return MINE[k]; }), videos);
+
+    /* 头部 */
+    var nm = STORE.storeName + (STORE.brandLine ? ' · ' + STORE.brandLine : '');
+    $('#storeLine').textContent = nm;
+    $('#avIni').textContent = STORE.storeName.charAt(0);
+    $('#meIni').textContent = STORE.storeName.charAt(0);
+    $('#meName').textContent = STORE.storeName;
+    // 光一串数字没人看得懂（2026-09-21 用户问「下面那串数字什么意思」），
+    // 前面加两个字说清楚它是什么。
+    $('#meId').innerHTML = '<span>抖音号</span>' + esc(STORE.douyinId);
+    $('#meStoreName').textContent = STORE.storeName;
+
+    var all = Object.keys(MINE);
+    var thisMo = all.filter(function (k) { return ymOf(k) === ymOf(TODAY); });
+    var past = all.filter(function (k) { return k < TODAY; });
+    $('#stAll').textContent = all.length;
+    $('#stRate').textContent = thisMo.length;
+    $('#stPast').textContent = past.length;
+
+    VIEWS = { week: $('#viewA'), today: $('#viewToday'), cal: $('#viewCal'), me: $('#viewMe') };
+    calYm = ymOf(TODAY);
+
+    /* 今天 */
+    return needMonths([ymOf(TODAY)]).then(function () {
+      var s = MINE[TODAY];
+      $('#viewToday').innerHTML = s ? scriptHTML(s, {}) :
+        '<div class="dh"><div class="d">' + TODAY + '</div><h1>今天没有排脚本</h1></div>';
+      paintList();
+      HY.bootDone();
+    });
+  }).catch(function () { HY.bootDone(); });
+
+  /* ---------- 事件 ---------- */
+  document.addEventListener('click', function (e) {
+    var t;
+    if ((t = e.target.closest('[data-copy]'))) {
+      copyText(t.dataset.copy === 'tags' ? tagsOf(t.dataset.id) : scriptText(t.dataset.id)); return; }
+    if ((t = e.target.closest('[data-back]'))) { $('#viewB').classList.add('hide'); show(backTo); return; }
+    if ((t = e.target.closest('.row[data-id], .day[data-id]'))) { openDay(t.dataset.id); return; }
+    if ((t = e.target.closest('#tabbar a[data-v]'))) { show(t.dataset.v); return; }
+    if ((t = e.target.closest('.chips a'))) {
+      var keys = ['week', 'next', 'month', 'nextmo'];
+      $$('.chips a').forEach(function (x, i) { x.classList.toggle('on', x === t); if (x === t) curRange = keys[i]; });
+      paintList(); scrollTo(0, 0); return;
+    }
+    if (e.target.closest('#calPrev')) { calYm = addMonth(calYm, -1); paintCal(); return; }
+    if (e.target.closest('#calNext')) { calYm = addMonth(calYm, 1); paintCal(); return; }
+    if (e.target.closest('#goPick')) {
+      paintStores($('#q').value);
+      Object.keys(VIEWS).forEach(function (n) { VIEWS[n].classList.add('hide'); });
+      $('#viewPick').classList.remove('hide'); scrollTo(0, 0); return;
+    }
+    if (e.target.closest('#pickBack')) { $('#viewPick').classList.add('hide'); show('me'); return; }
+    if ((t = e.target.closest('.st[data-sid]'))) {
+      HY.MyStore.set(t.dataset.sid);
+      location.href = 'store.html?store=' + encodeURIComponent(t.dataset.sid); return;
+    }
+    if (e.target.closest('#goOut')) { location.href = LOGIN + '?switch=1'; return; }
+  });
+
+  /* 日历第一次进才画，省一次分片加载 */
+  var calPainted = false;
+  document.addEventListener('click', function (e) {
+    if (e.target.closest('#tabbar a[data-v="cal"]') && !calPainted) { calPainted = true; paintCal(); }
+  });
+
+  /* 搜索：中文输入法打一半不筛（踩过的坑） */
+  (function () {
+    var q = $('#q'), composing = false, tm = null;
+    if (!q) return;
+    function go() { if (composing) return; clearTimeout(tm); tm = setTimeout(function () { paintStores(q.value); }, 150); }
+    q.addEventListener('compositionstart', function () { composing = true; });
+    q.addEventListener('compositionend', function () { composing = false; go(); });
+    q.addEventListener('input', go);
+  })();
 })();

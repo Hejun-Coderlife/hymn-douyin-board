@@ -1,0 +1,374 @@
+/* ===========================================================
+   门店页（手机）专用样式 —— 2026-09-21 定稿
+
+   这套跟看板的 assets/style.css **完全独立**：门店页是店员在手机上每天用的，
+   走的是杂志式的排版语言（Didot 数字 + 宋体台词 + 无衬线正文），
+   跟总部看板那套不是一回事，混在一个文件里迟早互相踩。
+
+   设计经过（十二轮，别再倒回去）：
+     · 骨架抄 Vogue App —— 关键不是"极简高级"，是**功能件必须有明确信号**：
+       带边框的分类胶囊、每行的日期方块、行尾圆按钮、底部实心主按钮、固定标签栏。
+       之前做过几版"文字 + 发丝线"的，像海报不像工具，全被否。
+     · 衬线只给数字和台词，正文一律无衬线。中文全用宋体会糊成一片文艺，该看清的看不清。
+     · 小字最低 10.5px。8.5px + 超宽字距是"看起来高级"，店员在店里读不动。
+     · 强调**不用填充色块**。开头 3 秒那段做过淡粉底块，被否（廉价）；
+       改成悬挂大引号 + 小一号字，靠字号和留白分层级。
+     · 品牌粉只给三处：完成率、逾期数、台词标签。再多铺就烂了。
+   =========================================================== */
+/* ===========================================================
+   手机版 V12（2026-09-20）
+
+   完成率改用品牌粉 #B9808B（用户指定，就是「逾期 462」那个色）。
+   这个粉在整套里只给**三处**：完成率、逾期数、台词标签 ——
+   都是"要被注意到"的量，其余一律黑白灰。再多就烂了。
+
+   三处改动：
+   1. **分镜加「画面 / 台词」标签** —— 用户：「店员看不懂你括号里的是台词」。
+      「」引号是设计者的约定，店员不知道。现在每一幕明写两行小标签：
+      画面是拍的、台词是念的，不用猜。
+   2. **「全部」胶囊改成「下月」** —— 「全部」含义不清（全年？还是全部状态？），
+      而且点了跟本月一模一样。改成下月之后，四个胶囊是一条清楚的时间线：
+      本周 → 下周 → 本月 → 下月。
+   3. **本周页底部那条「门店 · 切换/退出」删掉** —— 这个功能只该在「我的」里有一处。
+      同一个动作出现在两个地方，用户会怀疑是不是两件事。
+
+   用户：「复制全部标签，和只复制标签，重复了」—— 确实，
+   标签区标题右边挂的「复制全部标签」跟底部的「只复制标签」是同一个动作。
+   留底部那一对（复制整条脚本 / 只复制标签），因为它们并排是一个**明确的二选一**；
+   散落在两处反而让人犹豫点哪个。
+   单个标签点一下复制自己的能力保留 —— 那是另一件事（临时加减标签）。
+
+   用户：「为什么正文标题有 2 个」。病根：标题 27px 宋体，
+   「开头 3 秒」的引文 22px 宋体居中 —— **两块都是大号宋体**，
+   一眼看过去像两个并列的标题，分不出主次。
+
+   引文的性质是「要念的第一句话」，不是标题。改成杂志的引文处理：
+     · 左对齐（标题才居中/顶格，引文顶格但不居中）
+     · 降到 19px，比标题小 8px —— 层级必须靠尺寸差说话
+     · 一个 42px 的悬挂大引号挂在左边，一眼就知道"这是一句话"不是"这是一节"
+     · 去掉上下那两条粗细不同的分隔线，只留上面一条
+
+   店员的真实动作是分两步的：先把脚本拷到备忘录照着拍，
+   发抖音时**只要那一串标签**往输入框里一贴。以前只有「复制整条脚本」，
+   标签混在一大段文字里，还得自己挑出来。
+   所以标签区给了独立按钮，另外**单个标签点一下复制自己**（想加减标签时最省事）。
+
+   复制走 navigator.clipboard，**失败时退回 execCommand** ——
+   file:// 和非 https 下 clipboard API 会被禁，这个坑在门店页踩过。
+
+   门店清单用的是**真实的 43 家**（从 data/stores.json 抽的店名 + 抖音号 + 品牌线）。
+   交互：我的 → 切换门店 → 搜索/点选 → 全站店名同步更新（顶栏、店名行、我的、头像首字）。
+   搜索框跟着输入实时筛，支持店名和品牌线（比如输「珀莱雅」出 7 家）。
+   选完自动回「我的」，不需要再点一次返回。
+
+   V5 里那四个胶囊是死的，点了没反应。这一版接上了：
+   点任意一个 → 重算日期区间 → 重画列表 + 更新分区标题和条数。
+   脚本标题按内容方向循环生成（真页面会换成 scripts-index 的真数据），
+   状态按「过了今天 = 已发布/逾期，今天 = 待拍，之后 = 待拍」推。
+
+   V4 的底栏有四个标签，但只有「本周」是通的，其余三个是摆设。
+   这一版把四个都做出来，共用同一套语言：
+
+     今天 —— 打开就是今天要拍的那条，**没有列表、没有导航**，
+             一屏直接是标题 + 引文 + 分镜。店员最高频的动作是"今天拍啥"，
+             不该让他先看目录再点一次。
+     本周 —— 七天的目录（原来那屏）
+     日历 —— 自己这家店的月历，一天一格，状态用三档灰阶 + 粉。
+             点任意一天直接进详情；月份可以前后翻。
+     我的 —— 门店信息 + 切换门店 + 退出。列表项右边都有 ›，跟目录页一致。
+
+   参考用户给的 Vogue 首页：底部四个线描图标 + 小字标签常驻，顶部 logo 居中、
+   右上角一个圆形头像。底栏的价值不是"多几个入口"，而是**让人知道自己在哪**、
+   随时能回到别的区域 —— 这是 V1/V2 缺的最后一块"明确信号"。
+
+   四个标签按店员的实际动线定，不是照搬 Vogue：
+     今天 —— 打开就该看到今天拍什么（最高频）
+     本周 —— 七天的目录（就是现在这一屏）
+     日历 —— 往后看一整年的安排
+     我的 —— 换门店 / 退出
+   
+
+   这一版改了三处（用户指定）：
+   1. **「丈亭店」那个 44px 大标题去掉**，收进顶栏跟 logo 并排。
+      店员天天看自己店名，不需要占一屏的头。
+   2. **配色换成基准稿那套**：纯黑 #16140F、
+      粉 #D9A6AE / #B9808B、发丝线 #E3DFD6。
+   3. **数字一律 Didot**（高对比衬线），中文和标签仍走无衬线 ——
+      这正是 Vogue 的做法：衬线只给"要被看见"的东西，其余交给无衬线。
+
+   顶栏省下来的位置换成**一行 Didot 数字概览**：页面需要一个视觉焦点，
+   但焦点该是"这周干得怎么样"，不是店名。
+
+   V1 里那些"明确的信号"全部保留：带边框的分类胶囊、每行的日期方块、
+   行尾的圆按钮、实心的主按钮。它们才是这版能当工具用的原因。
+   =========================================================== */
+:root{
+  --bg:#FFFFFF; --ink:#16140F; --ink-2:#4A453C; --dim:#9C958A;
+  --line:#E3DFD6; --line-2:#F0EDE6; --chip:#DAD4C8;
+  --pink:#D9A6AE; --pink-deep:#B9808B; --pink-bg:#FAF2F3;
+  --serif:Didot,"Bodoni 72",Georgia,"Songti SC",serif;
+  --song:"Songti SC","STSong",Didot,serif;
+  --sans:-apple-system,"SF Pro Text","PingFang SC",system-ui,sans-serif;
+}
+/* 底色是**纯白 #FFFFFF**（2026-09-21 用户定的）。
+   v12 设计稿原来取的是骨白（比纯白暗 2/3/5 阶，为了纸感），用户一眼看出来了，
+   要求改纯白。**别再"为了纸感"把它调暗回去。**
+   连带处：登录页那层 WebGL 光丝的画布底色、.row.now 里那个 rgba 白，
+   都得跟着是纯白，否则屏幕上会出现一块看得出来的色块。 */
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+  -webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%}
+.ph{max-width:460px;margin:0 auto;padding:0 20px 70px}
+
+/* ---------- 顶栏：字标居中，右上角圆形头像（照 Vogue 首页） ----------
+   软件叫**赫眉·STUDIO**（2026-09-21 用户定的）。
+   做成一个锁定组合：logo 出「赫眉」，右边接「· STUDIO」 ——
+   logo 本身就是赫眉的字标，再写一遍「赫眉」等于同一个词出现两次。
+   三件东西按**基线**对齐，不是按盒子居中，不然 STUDIO 会比 logo 浮高一点。 */
+.bar{display:flex;align-items:center;padding:14px 0 13px;border-bottom:1px solid var(--line)}
+.bar .lock{margin:0 auto;display:flex;align-items:baseline;gap:8px}
+.bar .lock .lg{width:72px;height:18px;background:var(--ink);align-self:center;
+  -webkit-mask:url(logo-ink.png) no-repeat center/contain;
+          mask:url(logo-ink.png) no-repeat center/contain}
+.bar .lock em{font-style:normal;font-size:11px;color:var(--chip);align-self:center}
+.bar .lock b{font-size:11px;font-weight:400;letter-spacing:.28em;color:var(--ink-2);
+  align-self:center;padding-left:1px}
+.bar .av{width:30px;height:30px;flex:none;border-radius:50%;border:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center;font-family:var(--serif);
+  font-size:13px;color:var(--ink-2)}
+.bar .av.l{opacity:0;border:0}
+/* 店名退成一行居中的小字，不再跟 logo 抢 */
+.store{text-align:center;font-size:12.5px;letter-spacing:.16em;color:var(--dim);
+  padding:12px 0 0}
+
+/* ---------- 数字概览：Didot，页面的焦点 ---------- */
+.sum{display:flex;padding:24px 0 22px;border-bottom:1px solid var(--line)}
+.sum > div{flex:1;text-align:center;position:relative}
+.sum > div + div::before{content:'';position:absolute;left:0;top:6px;bottom:6px;width:1px;
+  background:var(--line-2)}
+.sum .v{font-family:var(--serif);font-size:38px;line-height:1;font-weight:400}
+.sum .v.p{color:var(--pink-deep)}
+.sum .l{font-size:11.5px;letter-spacing:.14em;color:var(--dim);margin-top:9px;text-transform:uppercase}
+
+/* ---------- 分类胶囊 ---------- */
+.chips{display:flex;gap:9px;overflow-x:auto;padding:18px 0 4px;-webkit-overflow-scrolling:touch}
+.chips::-webkit-scrollbar{display:none}
+.chips a{flex:none;font-size:13px;letter-spacing:.04em;padding:9px 16px;
+  border:1px solid var(--chip);color:var(--ink);text-decoration:none;white-space:nowrap}
+.chips a.on{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+
+/* ---------- 分区标题 ---------- */
+.sec{display:flex;align-items:baseline;justify-content:space-between;gap:16px;
+  padding:22px 0 12px;margin-top:16px;border-top:1px solid var(--ink)}
+.sec h2{font-family:var(--serif);font-size:22px;font-weight:400;margin:0}
+.sec .more{font-size:11.5px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase}
+
+/* ---------- 列表行 ---------- */
+.row{display:flex;align-items:center;gap:14px;padding:13px 0;
+  border-bottom:1px solid var(--line-2);cursor:pointer}
+.row:active{background:#F5F5F5}
+.row .dt{width:54px;height:54px;flex:none;border:1px solid var(--line);
+  display:flex;flex-direction:column;align-items:center;justify-content:center}
+.row .dt b{font-family:var(--serif);font-size:21px;font-weight:400;line-height:1}
+.row .dt span{font-size:9.5px;letter-spacing:.08em;color:var(--dim);margin-top:4px}
+.row .mid{flex:1;min-width:0}
+.row .mid .t{font-size:15.5px;line-height:1.45;font-weight:500}
+.row .mid .s{font-size:11.5px;letter-spacing:.12em;color:var(--dim);margin-top:6px;
+  text-transform:uppercase}
+.row .mid .s.late{color:var(--pink-deep)}
+.row .go{width:31px;height:31px;flex:none;border-radius:50%;border:1px solid var(--chip);
+  display:flex;align-items:center;justify-content:center;font-size:15px;color:var(--ink-2)}
+.row.now .dt{background:var(--ink);border-color:var(--ink)}
+.row.now .dt b{color:var(--bg)}.row.now .dt span{color:rgba(255,255,255,.6)}
+.row.now .go{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+
+/* ---------- 详情：按杂志正文页重做（2026-09-20）----------
+   上一版被否：「这个页面丑，没有奢侈品的感觉」。三个病根：
+     ① 开头 3 秒做成了**大面积淡粉填充块** —— 填充色块是最廉价的强调方式
+     ② 台词旁边一道**粉竖线** —— 同理，而且满页重复出现，很吵
+     ③ 中文**全部无衬线** —— 没有质感层次，跟普通 App 无异
+   杂志正文页的做法：引文是**大号衬线、无底色**，上下各一条发丝线，
+   靠字号和留白撑；正文与引文用**字体**区分，不用颜色也不用底色。 */
+.back{display:flex;align-items:center;gap:8px;padding:16px 0;font-size:12px;
+  letter-spacing:.14em;color:var(--dim);text-transform:uppercase;cursor:pointer}
+.dh{padding:10px 0 26px}
+.dh .d{font-family:var(--serif);font-size:14px;color:var(--dim);letter-spacing:.04em}
+.dh h1{font-family:var(--song);font-size:27px;font-weight:400;line-height:1.55;
+  margin:14px 0 0;letter-spacing:.03em}
+/* meta 不用胶囊：一行极小的字，中间用细点分隔 —— 胶囊方框像表单，不像杂志 */
+.dh .meta{font-size:11.5px;letter-spacing:.16em;color:var(--dim);margin-top:18px;
+  text-transform:uppercase}
+.dh .meta i{font-style:normal;margin:0 9px;color:var(--line)}
+
+/* 引文：是"要念的第一句话"，不是标题。
+   跟标题的区别必须一眼看出来 —— 左对齐、小 8px、挂一个大引号。 */
+.quote{padding:26px 0 28px;border-top:1px solid var(--ink)}
+.quote .h{font-size:11px;letter-spacing:.34em;color:var(--dim);text-transform:uppercase}
+.quote .body{display:grid;grid-template-columns:30px 1fr;gap:6px;margin-top:14px}
+.quote .mark{font-family:var(--song);font-size:42px;line-height:.9;color:var(--pink);
+  align-self:start}
+.quote p{font-family:var(--song);font-size:19px;line-height:1.85;margin:0;letter-spacing:.02em}
+
+.blk{padding:26px 0}
+.blk .h{font-size:11px;letter-spacing:.34em;color:var(--dim);text-transform:uppercase}
+.blk .sub{font-size:12px;color:var(--dim);margin-top:7px;letter-spacing:.02em}
+
+/* 分镜：序号 Didot 挂左边，画面无衬线灰、台词宋体黑 —— 靠字体分层，不靠线不靠色 */
+.shot{display:grid;grid-template-columns:40px 1fr;gap:18px;padding:22px 0;
+  border-bottom:.5px solid var(--line-2)}
+.shot:first-of-type{margin-top:20px;border-top:.5px solid var(--line)}
+.shot:last-child{border-bottom:0}
+.shot .no b{font-family:var(--serif);font-size:21px;font-weight:400;display:block;line-height:1;
+  color:var(--ink)}
+.shot .no span{font-size:9.5px;letter-spacing:.1em;color:var(--dim);display:block;margin-top:8px}
+/* 「」引号是设计者的约定，店员不认识 —— 明写标签（2026-09-20 用户指出）。
+   标签只留「画面 / 台词」两个词，2026-09-21 用户把「· 要念出来」去掉了：
+   粉色 + 底下那行宋体大字已经把"这是要说的话"说清楚了，再加注解就啰嗦。 */
+.shot .lab{font-size:10.5px;letter-spacing:.24em;color:var(--dim);display:block}
+.shot .lab.say{color:var(--pink-deep);margin-top:15px}
+.shot .sc{font-size:14px;line-height:1.85;color:var(--ink-2);letter-spacing:.01em;margin-top:6px}
+.shot .ln{font-family:var(--song);font-size:17px;line-height:1.9;margin-top:6px;
+  letter-spacing:.02em}
+.shot.end .no b{color:var(--pink-deep)}
+.hash{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+/* 标签只是给人看的，**不可点**（2026-09-21 用户：「话题标签 点单个…不要」）。
+   原来点一下能复制自己，跟底部那个「只复制标签」是一回事，多余。
+   所以不要 cursor:pointer、不要 :active —— 看着像按钮却不该点，最讨厌。 */
+.hash span{font-size:13px;letter-spacing:.04em;padding:7px 13px;border:1px solid var(--chip);
+  color:var(--ink-2)}
+/* 底部两个按钮并排：主操作实心，次操作描边 */
+.acts{display:flex;gap:10px;margin-top:24px}
+.acts button{flex:1;padding:16px 0;font:inherit;font-size:13px;letter-spacing:.12em;
+  text-transform:uppercase;cursor:pointer;border-radius:0}
+.acts .main{background:var(--ink);color:var(--bg);border:1px solid var(--ink)}
+.acts .sub2{background:transparent;color:var(--ink);border:1px solid var(--chip)}
+/* 复制成功的提示：底栏上方浮一条，1.4 秒后消失 */
+.toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%) translateY(8px);
+  background:var(--ink);color:var(--bg);font-size:13px;letter-spacing:.06em;
+  padding:11px 20px;z-index:30;opacity:0;pointer-events:none;transition:opacity .18s,transform .18s}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+.hide{display:none}
+
+/* ---------- 日历视图 ---------- */
+.cal .mo{display:flex;align-items:center;justify-content:space-between;padding:26px 0 18px}
+.cal .mo h2{font-family:var(--serif);font-size:30px;font-weight:400;margin:0;letter-spacing:.01em}
+.cal .mo h2 small{font-size:13px;color:var(--dim);margin-left:9px;letter-spacing:.14em}
+.cal .mo .nav{display:flex;gap:8px}
+.cal .mo .nav span{width:31px;height:31px;border:1px solid var(--chip);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-size:15px;color:var(--ink-2)}
+.cal .wd{display:grid;grid-template-columns:repeat(7,1fr);padding-bottom:10px;
+  border-bottom:1px solid var(--ink)}
+.cal .wd span{text-align:center;font-size:10.5px;letter-spacing:.1em;color:var(--dim)}
+.cal .grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--line-2);
+  border:1px solid var(--line-2);border-top:0}
+.cal .day{background:var(--bg);aspect-ratio:1;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:6px;cursor:pointer}
+.cal .day b{font-family:var(--serif);font-size:17px;font-weight:400;line-height:1}
+.cal .day i{width:5px;height:5px;border-radius:50%;display:block;background:var(--line)}
+.cal .day.out b{color:var(--line)}
+.cal .day.out i{opacity:0}
+.cal .day.done i{background:var(--ink)}
+.cal .day.late i{background:var(--pink-deep)}
+.cal .day.now{background:var(--ink)}
+.cal .day.now b{color:var(--bg)}
+.cal .day.now i{background:var(--bg)}
+.cal .key{display:flex;justify-content:center;gap:22px;padding:20px 0 0}
+.cal .key span{display:flex;align-items:center;gap:7px;font-size:11px;letter-spacing:.1em;
+  color:var(--dim)}
+.cal .key i{width:5px;height:5px;border-radius:50%;display:block}
+
+/* ---------- 我的 ---------- */
+.me .card{text-align:center;padding:34px 0 30px;border-bottom:1px solid var(--ink)}
+.me .card .av{width:64px;height:64px;margin:0 auto;border-radius:50%;border:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:25px}
+.me .card h2{font-family:var(--song);font-size:21px;font-weight:400;margin:16px 0 0;
+  letter-spacing:.06em}
+/* 抖音号：Didot 的数字 + 无衬线的小标签。
+   光一串数字没人知道那是什么（2026-09-21 用户问「下面那串数字什么意思」）。 */
+.me .card .id{font-family:var(--serif);font-size:13px;color:var(--dim);margin-top:7px;
+  letter-spacing:.06em}
+.me .card .id span{font-family:var(--sans);font-size:10.5px;letter-spacing:.16em;
+  margin-right:7px}
+.me .stat{display:flex;padding:22px 0;border-bottom:1px solid var(--line)}
+.me .stat > div{flex:1;text-align:center;position:relative}
+.me .stat > div + div::before{content:'';position:absolute;left:0;top:4px;bottom:4px;width:1px;
+  background:var(--line-2)}
+.me .stat .v{font-family:var(--serif);font-size:26px;line-height:1}
+/* 完成率用品牌粉 —— 它是这页唯一要被一眼抓住的数 */
+.me .stat > div:nth-child(3) .v{color:var(--pink-deep)}  /* 粉给「已到期」——那才是要处理的数 */
+.me .ver{margin:34px 0 0;text-align:center;font-size:11px;letter-spacing:.2em;
+  color:var(--dim);text-transform:uppercase}
+.me .stat .l{font-size:10.5px;letter-spacing:.14em;color:var(--dim);margin-top:8px;
+  text-transform:uppercase}
+.me .li{display:flex;align-items:center;padding:17px 0;border-bottom:1px solid var(--line-2);
+  cursor:pointer}
+.me .li .t{font-size:15px;flex:1}
+.me .li .v{font-size:13px;color:var(--dim);margin-right:10px}
+.me .li .go{font-size:16px;color:var(--chip)}
+.me .ver{text-align:center;font-size:11px;letter-spacing:.2em;color:var(--dim);padding:30px 0 0;
+  text-transform:uppercase}
+
+/* ---------- 切换门店 ---------- */
+.pick .top{display:flex;align-items:center;gap:12px;padding:16px 0 14px}
+.pick .top .back2{font-size:12px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase;
+  cursor:pointer}
+.pick .top h2{font-family:var(--serif);font-size:22px;font-weight:400;margin:0 auto 0 0}
+.pick .search{position:relative;margin-bottom:6px}
+.pick .search input{width:100%;box-sizing:border-box;border:1px solid var(--chip);
+  background:var(--bg);color:var(--ink);padding:14px 14px 14px 38px;font:inherit;font-size:15px;
+  border-radius:0}
+.pick .search input:focus{outline:none;border-color:var(--ink)}
+.pick .search .mag{position:absolute;left:14px;top:50%;transform:translateY(-50%);
+  font-size:14px;color:var(--dim)}
+.pick .cnt{font-size:11px;letter-spacing:.16em;color:var(--dim);text-transform:uppercase;
+  padding:16px 0 8px;border-bottom:1px solid var(--ink)}
+.pick .st{display:flex;align-items:center;gap:13px;padding:14px 0;
+  border-bottom:1px solid var(--line-2);cursor:pointer}
+.pick .st:active{background:#F5F5F5}
+.pick .st .ini{width:38px;height:38px;flex:none;border-radius:50%;border:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:15px;
+  color:var(--ink-2)}
+.pick .st .nm{flex:1;min-width:0}
+.pick .st .nm b{display:block;font-size:15.5px;font-weight:500}
+.pick .st .nm span{display:block;font-family:var(--serif);font-size:12px;color:var(--dim);
+  margin-top:4px;letter-spacing:.04em}
+.pick .st .on{font-size:11px;letter-spacing:.14em;color:var(--ink);text-transform:uppercase}
+.pick .st .go{font-size:16px;color:var(--chip)}
+.pick .st.cur .ini{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.pick .none{padding:26px 0;font-size:14px;color:var(--dim);text-align:center}
+
+/* ---------- 底部固定标签栏 ---------- */
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--bg);
+  border-top:1px solid var(--line);display:flex;
+  padding-bottom:env(safe-area-inset-bottom,0)}
+.tabbar a{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;
+  padding:11px 0 9px;text-decoration:none;color:var(--dim);cursor:pointer}
+.tabbar a svg{width:22px;height:22px;display:block;stroke:currentColor;fill:none;
+  stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round}
+.tabbar a span{font-size:10px;letter-spacing:.16em}
+.tabbar a.on{color:var(--ink)}
+.tabbar a.on svg{stroke-width:1.6}
+/* 内容要给底栏让出高度，否则最后一行被盖住 */
+body.hastab .ph{padding-bottom:96px}
+
+/* ===== 刷新过场 =====
+   store.html 里有 <div id="boot">，core.js 的 HY.bootDone() 负责淡出。
+   这份 CSS 是从 v12 设计稿里扒出来的、跟 assets/style.css 完全独立，
+   **当初漏抄了 #boot**，结果那张 logo 就直接摊在页面最上面（2026-09-21 补）。
+   时长跟看板保持一致：揭字 .38s、划线 .3s、淡出 .25s。 */
+#boot{position:fixed;inset:0;z-index:300;background:var(--bg);
+  display:flex;align-items:center;justify-content:center;transition:opacity .25s ease}
+#boot.off{opacity:0;pointer-events:none}
+#boot .bmark{position:relative}
+#boot .bmark img{display:block;width:min(180px,46vw);
+  -webkit-clip-path:inset(0 100% 0 0);clip-path:inset(0 100% 0 0);
+  animation:bootwipe .38s cubic-bezier(.25,.1,.25,1) forwards}
+#boot .bmark::after{content:'';position:absolute;left:0;right:0;bottom:-12px;height:1px;
+  background:var(--ink);transform:scaleX(0);transform-origin:left center;
+  animation:bootline .3s cubic-bezier(.25,.1,.25,1) .18s forwards}
+@keyframes bootwipe{to{-webkit-clip-path:inset(0 0 0 0);clip-path:inset(0 0 0 0)}}
+@keyframes bootline{to{transform:scaleX(1)}}
+@media (prefers-reduced-motion:reduce){
+  #boot .bmark img{animation:none;-webkit-clip-path:none;clip-path:none}
+  #boot .bmark::after{animation:none;transform:scaleX(1)}
+}

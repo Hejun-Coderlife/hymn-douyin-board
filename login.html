@@ -3,91 +3,114 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>赫眉 HYMN · 进入我的门店</title>
-<link rel="stylesheet" href="assets/style.css?v=20260920-1656">
+<title>赫眉·STUDIO</title>
+<link rel="stylesheet" href="assets/store-mobile.css?v=20260921-1200">
 <style>
-/* 入口页：店员输手机号进自己店。**认人，不是鉴权**（见 core.js 里 phoneHash 那段注释）。 */
-body.loginpage{background:#FFFFFF}
-/* 背景光丝的画布：铺满视口、压在最底层；页面内容靠 .lg 的 z-index:1 浮在上面。
-   WebGL 拿不到时这层就是空的，页面还是白底，不影响使用。 */
+/* ===========================================================
+   登录页 —— 2026-09-21 换成跟门店页同一套语言
+
+   为什么直接挂 assets/store-mobile.css：店员这辈子看这两个页面的顺序永远是
+   「登录 → 门店页」，两屏之间换一套字体和底色就露馅了。
+   所以骨白底、Didot 数字、发丝线、圆角为零全部沿用，
+   这里的 <style> 只写登录页独有的那几件东西。
+
+   **粉色只给三处**（跟门店页同一条规矩，再多铺就烂了）：
+     ① 背景那层竖向光丝（赫眉粉系，画布底色跟页面一样是纯白）
+     ② 输入框聚焦时的边框和放大镜
+     ③ 清单里的品牌线标签（珀莱雅那类）
+   中间做过一个 Didot 大数字「43 家门店」当焦点，2026-09-21 用户否了 ——
+   登录页只要一件事：选店。别的都是噪音。
+   其余一律黑白灰。
+
+   交互逻辑一行没动（都是踩过坑换来的，见下面 script 里的注释）：
+   输汉字筛门店、输满 11 位当手机号、点列表外面才收起、中文输入法打一半不筛。
+   =========================================================== */
+body{min-height:100vh}
 canvas.fx-bg{position:fixed;inset:0;width:100%;height:100%;z-index:0;display:block;pointer-events:none}
-/* 2026-09-20 用户：「只要一个更大的赫眉logo，下面一个店铺手机号标题，再一个输入框，
-   别的都不要」——标题「进入我的门店」、说明文字、「进入」按钮、底部脚注全删了。
-   按钮删了怎么提交：**输满 11 位自动进入**（回车也行）。
-   只剩下 .msg 还在，那是报错用的（号码没登记要有个交代），没事的时候它是空的、不占地方。 */
-/* 登录页没有顶栏（2026-09-20 用户：「现在眉头那个不要了」），
-   logo 回到页面中间、210px 居中 —— 跟加顶栏之前一样。 */
-.lg{max-width:420px;margin:0 auto;padding:18vh 24px 40px;position:relative;z-index:1}
-.lg img.logo{width:210px;height:auto;display:block;margin:0 auto 54px}
-.lg label{display:block;font-size:14px;color:var(--t3);font-weight:400;letter-spacing:.06em;margin-bottom:10px}
-/* 门店列表（2026-09-20 用户：「输手机号太麻烦，反正也没什么隐私，拿到网址就能用」）。
-   手机号那条路留着没删：已经发出去的号码还能用，而且有人就是习惯输号码。
-   一个输入框兼两用 —— 输汉字筛门店，输满 11 位数字就按手机号直接进。 */
-/* 门店清单做成**浮层下拉**（2026-09-20 用户：「门店清单要下拉框」）。
-   原来是内联块，一展开就把下面的内容整个顶下去；改成绝对定位挂在输入框底下，
-   浮在页面之上，收起时完全不占位。
-   .field 是定位参照系，没有它 .list 会以整个 .lg 为参照，跑到页面顶上去。 */
-.lg .field{position:relative}
-.lg .list{
-  display:none;position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:30;
-  background:var(--card);border:1.5px solid var(--t1);
-  max-height:46vh;overflow-y:auto;-webkit-overflow-scrolling:touch;
-  box-shadow:0 8px 24px rgba(40,34,32,.14);   /* 浮层要跟底下的内容分开，这层投影是必要的 */
-}
-.lg .list.on{display:block}
-.lg .list a{padding:13px 14px}
-.lg .list a:last-child{border-bottom:0}
-.lg .list a{
-  display:flex;align-items:baseline;gap:9px;padding:15px 4px;
-  border-bottom:1px solid #F3E2E6;cursor:pointer;
-}
-.lg .list a:active{background:rgba(212,120,140,.10)}
-.lg .list a b{font-size:16px;font-weight:600}
-.lg .list a i{font-style:normal;font-size:11.5px;color:var(--t3)}
-.lg .list .none{padding:22px 4px;font-size:13px;color:var(--t3)}
-/* 输入框走黑（2026-09-20 用户：「登录页，输入框，黑色吧」）。
-   中间试过粉边粉底，粉太多反而糊；黑边 + 白底最清楚，
-   也跟「这是要填东西的地方」这个认知一致。
-   聚焦时加粗黑边 —— 不用粉描边，那圈粉在白底上显脏。 */
-.lg input{
-  width:100%;box-sizing:border-box;border:1.5px solid var(--t1);border-radius:0;
-  background:#FFFFFF;padding:16px 14px;font-size:19px;letter-spacing:.06em;
-  font-variant-numeric:tabular-nums;color:var(--t1);
-}
-.lg input::placeholder{color:#9A9AA0}
-.lg input:focus{outline:none;border-width:2px;border-color:var(--t1)}
-.lg .msg{margin-top:14px;font-size:13px;line-height:1.8;min-height:1.8em}
-.lg .msg.err{color:var(--brick)}
-.lg .msg.ok{color:var(--green)}
-/* 「试用版」：压在最底下，极淡，只是个交代，不抢输入框 */
-.lg .ver{margin-top:40px;text-align:center;font-size:11.5px;color:var(--t3);letter-spacing:.06em}
+.ph{position:relative;z-index:1}
+
+.lg{padding:14vh 0 40px}
+/* 登录页顶上**只有 logo**（2026-09-21 用户：「登录页不要 studio」）。
+   「赫眉·STUDIO」这个名字只出现在门店页顶栏和底部版本行；
+   登录页就一件事 —— 选店，别的字都是噪音。这里也别再加 VIDEO SCRIPT BOARD 那种副标。 */
+.lg .mark{width:132px;height:33px;margin:0 auto;background:var(--ink);
+  -webkit-mask:url(assets/logo-ink.png) no-repeat center/contain;
+          mask:url(assets/logo-ink.png) no-repeat center/contain}
+
+/* 输入框：明确的方框（这套语言里功能件必须有明确信号，别做成一条下划线）。
+   logo 和输入框之间不放标题、不放横线（2026-09-21 用户两次明确要求），
+   只靠这段留白分区。别再往这儿加东西。 */
+.field{position:relative;margin-top:56px}
+.field .mag{position:absolute;left:14px;top:50%;transform:translateY(-50%);
+  font-size:15px;color:var(--dim);pointer-events:none}
+.field input{width:100%;box-sizing:border-box;border:1px solid var(--chip);border-radius:0;
+  background:var(--bg);padding:16px 14px 16px 38px;font:inherit;font-size:15.5px;
+  letter-spacing:.04em;color:var(--ink);-webkit-appearance:none;appearance:none}
+.field input::placeholder{color:var(--dim)}
+.field input:focus{outline:none;border-color:var(--pink-deep)}
+.field input:focus ~ .mag{color:var(--pink-deep)}
+/* 清单一开，输入框就锁在聚焦色上 —— 手机上点清单的瞬间输入框会 blur，
+   不锁的话边框弹回灰色、清单还是粉的，上下两截颜色对不上。
+   .open 由 JS 挂在 .field 上（不用 :has()，老 Safari 不认）。 */
+.field.open input{border-color:var(--pink-deep)}
+.field.open .mag{color:var(--pink-deep)}
+
+/* 门店清单：浮层。**收起时完全不占位** —— 做成内联块会把下面的内容整个顶下去 */
+/* 边框跟输入框同色、同粗细，上下两截接成一个整体（top 退 1px 让边线重叠） */
+.field .list{display:none;position:absolute;left:0;right:0;top:calc(100% - 1px);z-index:30;
+  background:var(--bg);border:1px solid var(--pink-deep);max-height:46vh;overflow-y:auto;
+  -webkit-overflow-scrolling:touch;box-shadow:0 10px 28px rgba(22,20,15,.10)}
+.field .list.on{display:block}
+.field .list a{display:flex;align-items:center;gap:10px;padding:14px 14px;
+  border-bottom:1px solid var(--pink-bg);cursor:pointer}
+.field .list a:last-child{border-bottom:0}
+.field .list a:active{background:var(--pink-bg)}
+.field .list a b{font-size:15px;font-weight:500;flex:1;min-width:0;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.field .list a i{font-style:normal;font-size:11px;letter-spacing:.08em;color:var(--pink-deep);
+  border:1px solid var(--pink);padding:2px 7px;flex:none}
+.field .list a .go{width:26px;height:26px;flex:none;border-radius:50%;border:1px solid var(--chip);
+  display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--ink-2)}
+.field .list .none{padding:22px 14px;font-size:13px;color:var(--dim)}
+
+.msg{margin-top:14px;font-size:12.5px;line-height:1.8;min-height:1.8em;color:var(--ink-2)}
+.msg.err{color:var(--pink-deep)}
+.msg.ok{color:var(--ink-2)}
+.ver{margin-top:44px;text-align:center;font-size:11px;letter-spacing:.2em;color:var(--dim);
+  text-transform:uppercase}
 </style>
 </head>
-<body class="loginpage">
+<body>
 <div id="boot"><div class="bmark"><img src="assets/logo-ink.png" alt="赫眉 HYMN"></div></div>
 
-<div class="lg">
-  <img class="logo" src="assets/logo-ink.png" alt="赫眉 HYMN">
-  <label for="ph">选择门店</label>
-  <div class="field">
-    <input id="ph" type="search" inputmode="text" autocomplete="off"
-           maxlength="20" placeholder="搜门店名，或输店铺手机号">
-    <div class="list" id="list"></div>
+<div class="ph">
+  <div class="lg">
+    <div class="mark"></div>
+
+    <div class="field">
+      <span class="mag">⌕</span>
+      <input id="ph" type="search" inputmode="text" autocomplete="off"
+             maxlength="20" placeholder="门店名/门店手机号">
+      <div class="list" id="list"></div>
+    </div>
+    <div class="msg" id="msg"></div>
+
+    <div class="ver">赫眉·STUDIO · 试用版</div>
   </div>
-  <div class="msg" id="msg"></div>
-  <div class="ver">试用版</div>
 </div>
 
-<script src="data/stores.js?v=20260920-1656"></script>
-<script src="assets/core.js?v=20260920-1656"></script>
-<script src="assets/fx-header.js?v=20260920-1656"></script>
+<script src="data/stores.js?v=20260921-1200"></script>
+<script src="assets/core.js?v=20260921-1200"></script>
+<script src="assets/fx-header.js?v=20260921-1200"></script>
 <script>
 (function () {
   'use strict';
-  /* 登录页不用顶栏，改成整页的竖向光丝（从下往上流）。
-     不加 body.hasfx —— 那个类是给「有固定顶栏」的页面让位置用的，这里没有顶栏。 */
+  /* 整页的竖向光丝（从下往上流，赫眉粉系）。
+     画布底色必须跟页面一致（纯白，hymnBgFx 的默认值），否则那块画布看得出来。
+     不加 body.hasfx：那个类是给「有固定顶栏」的页面让位置用的，这里没有顶栏。 */
   var why = hymnBgFx({count:460, alpha:0.9});
   if (why) console.warn('[背景光丝] ' + why); else console.log('[背景光丝] 正在运行');
+
   var $ = function (s) { return document.querySelector(s); };
   var msg = $('#msg'), input = $('#ph');
 
@@ -135,7 +158,8 @@ canvas.fx-bg{position:fixed;inset:0;width:100%;height:100%;z-index:0;display:blo
       if (!rows.length) { listEl.innerHTML = '<div class="none">没有叫「' + esc(q) + '」的门店</div>'; return; }
       listEl.innerHTML = rows.map(function (st) {
         return '<a data-id="' + esc(st.douyinId) + '"><b>' + esc(st.storeName) + '</b>' +
-               (st.brandLine ? '<i>' + esc(st.brandLine) + '</i>' : '') + '</a>';
+               (st.brandLine ? '<i>' + esc(st.brandLine) + '</i>' : '') +
+               '<span class="go">›</span></a>';
       }).join('');
     }
     listEl.addEventListener('click', function (e) {
@@ -153,8 +177,12 @@ canvas.fx-bg{position:fixed;inset:0;width:100%;height:100%;z-index:0;display:blo
        桌面端仍然拦 mousedown 保住焦点（鼠标不涉及滚动，安全）。 */
     listEl.addEventListener('mousedown', function (e) { e.preventDefault(); });
 
-    function openList(kw) { paint(kw == null ? input.value : kw); listEl.classList.add('on'); }
-    function closeList() { listEl.classList.remove('on'); }
+    var fieldEl = listEl.parentNode;
+    function openList(kw) {
+      paint(kw == null ? input.value : kw);
+      listEl.classList.add('on'); fieldEl.classList.add('open');
+    }
+    function closeList() { listEl.classList.remove('on'); fieldEl.classList.remove('open'); }
     function outside(e) {
       if (!listEl.contains(e.target) && e.target !== input) closeList();
     }
