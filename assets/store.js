@@ -20,6 +20,7 @@
   }
 
   var LOGIN = window.HY_LOGIN_PAGE || 'login.html';
+  var CREW = '两个店员';        // 载入门店后按 staff 改写，见下面 loadData
   var qs = new URLSearchParams(location.search);
   var id = qs.get('store');
   if (id) HY.MyStore.set(id);
@@ -96,10 +97,12 @@
     return (opts && opts.back ? '<div class="back" data-back="1">‹ 返回</div>' : '') +
       head + quote +
       '<div class="blk"><div class="h">分镜</div>' +
-        '<div class="sub">' + shots.length + ' 幕 · 一部手机 · 两个店员</div>' + list + '</div>' +
+        // 人手写死成「两个店员」是错的：梅林店只有一个人，分镜明明已经按单人生成了，
+        // 这行字还在说要两个人（2026-09-21 用户截图指出）。改成读门店自己的 staff。
+        '<div class="sub">' + shots.length + ' 幕 · 一部手机 · ' + CREW + '</div>' + list + '</div>' +
       (tags.length ?
         '<div class="blk" style="border-top:.5px solid var(--line)"><div class="h">话题标签</div>' +
-          '<div class="sub">点单个标签可以只复制它</div>' +
+
           '<div class="hash">' + tags.map(function (t) {
             return '<span>' + esc(t) + '</span>';
           }).join('') + '</div></div>' : '') +
@@ -268,6 +271,8 @@
   HY.loadData().then(function (d) {
     D = d;
     STORE = d.storeById[id];
+    // stores.json 的 staff == '1' 表示店里只有一个人（见 tools/content_lib.py 的 solo）
+    CREW = String(STORE.staff || '') === '1' ? '一个人' : '两个店员';
     if (!STORE) {
       HY.MyStore.clear();
       $('#storeLine').innerHTML = '没找到这家门店　<a href="' + LOGIN + '">重新选择 →</a>';
