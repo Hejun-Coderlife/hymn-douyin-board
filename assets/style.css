@@ -585,9 +585,14 @@ td.cell.wknd{background:var(--paper)}
 .dot.guess{background:var(--guess)}  /* 已发布·推测：驼黄 */
 .dot.none{width:4px;height:4px;background:var(--t4);cursor:default}
 .dot.none:hover{outline:none}
-.dot.free::after{
-  content:"";position:absolute;margin:-3px 0 0 11px;width:5px;height:5px;border-radius:50%;
-  background:var(--camel);border:1px solid var(--card);   /* 自由发挥用炭灰，别跟「今天」的粉混 */
+.dot{position:relative}
+.dot.free{background:var(--camel)}   /* 没排脚本、自己发的：炭灰方块 */
+/* 当天发了几条：方块右上角的数字角标（用户 2026-09-23：一天发好几条要体现出来） */
+.dot[data-n]::after{
+  content:attr(data-n);position:absolute;top:-7px;right:-9px;
+  min-width:12px;height:12px;padding:0 2px;box-sizing:border-box;border-radius:6px;
+  background:var(--camel-text);color:#fff;border:1px solid var(--card);
+  font-size:8.5px;line-height:10px;font-weight:600;text-align:center;font-variant-numeric:tabular-nums;
 }
 /* 全年总览的列 */
 th.mcol{
@@ -1254,3 +1259,5 @@ body.hasfx.focusday .emptyday{display:none}
 
 /* KPI「已发布」用深一档的燕麦棕：色块可以淡，大数字不能淡（对白底 2.68 会发虚）*/
 .kpi.done .val{color:var(--done-text)}
+.legend .lgn{display:inline-block;min-width:12px;height:12px;padding:0 2px;margin-right:7px;border-radius:6px;
+  background:var(--camel-text);color:#fff;font-size:8.5px;line-height:12px;font-weight:600;text-align:center;vertical-align:0}

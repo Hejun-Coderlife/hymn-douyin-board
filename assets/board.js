@@ -396,16 +396,21 @@
         var sc = S.byStoreDate[st.douyinId + '|' + d.date];
         var free = S.freeByStoreDate[st.douyinId + '|' + d.date];
         h += '<td class="' + cls + '">';
+        // 角标 = 当天实际发了几条；只有方块本身说不清的时候才标（单发一条按脚本的不标）
+        var nf = free ? free.length : 0;
         if (sc) {
           var stt = statusOfScript(sc);
-          h += '<span class="dot ' + stt + (free ? ' free' : '') + '" data-id="' + esc(sc.id) +
+          var n = (stt === 'done' ? 1 : 0) + nf;
+          h += '<span class="dot ' + stt + '"' + (nf ? ' data-n="' + n + '"' : '') +
+               ' data-id="' + esc(sc.id) +
                '" data-tip="' + esc(st.storeName + ' · ' + d.date + '（周' + d.dow + '）\n' +
                sc.topic + '·' + sc.format + '\n' + HY.STATUS_CN[stt] +
-               (free ? ' · 当天另有 ' + free.length + ' 条自由发挥' : '')) + '"></span>';
+               (nf ? '\n当天共发 ' + n + ' 条（其中自由发挥 ' + nf + ' 条）' : '')) + '"></span>';
         } else if (free) {
-          h += '<span class="dot none free" data-free="' + st.douyinId + '|' + d.date +
+          h += '<span class="dot free"' + (nf > 1 ? ' data-n="' + nf + '"' : '') +
+               ' data-free="' + st.douyinId + '|' + d.date +
                '" data-tip="' + esc(st.storeName + ' · ' + d.date + '（周' + d.dow + '）\n' +
-               free.length + ' 条自由发挥视频，点开看链接') + '"></span>';
+               '当天发了 ' + nf + ' 条自由发挥视频，点开看链接') + '"></span>';
         } else {
           h += '<span class="dot none"></span>';
         }
