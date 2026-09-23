@@ -599,11 +599,7 @@
 
     h += '<div class="statusbox">';
     if (m) {
-      var v = m.video;
-      h += '<a class="vlink" href="' + esc(v.url) + '" target="_blank" rel="noopener">' +
-           esc(v.title || '（无标题）') + ' ↗</a>' +
-           '<div class="vmeta mono">发布 ' + v.pubDate + ' · 播放 ' + HY.num(v.play) +
-           ' · 成交 ¥' + HY.num(v.gmv) + '</div>';
+      h += videoInfo(m.video);
       h += '<div class="vmeta">※ 计划当天该门店发了这条视频，就按完成算（没有标签可核对，只看日期）。</div>';
     } else if (stt === 'late') {
       h += '<div class="vmeta">计划日期已过，当天该门店没有视频。晚几天补发的不算，已拍的话重新导入最新数据看看。</div>';
@@ -611,6 +607,12 @@
       h += '<div class="vmeta">还没到计划日期。</div>';
     }
     h += '</div>';
+    // 当天另外发的（自由发挥）也列出来，带链接
+    var extra = S.freeByStoreDate[s.store + '|' + s.date] || [];
+    if (extra.length) {
+      h += '<div class="vmeta" style="margin-top:14px">当天另外还发了 ' + extra.length + ' 条：</div>';
+      extra.forEach(function (v) { h += '<div class="statusbox" style="margin-top:8px">' + videoInfo(v) + '</div>'; });
+    }
 
     // 【极简】2026-09-20 用户：「太复杂了，不适合给所有人看，要极简」。
     // 抽屉跟门店页保持一套内容：开头 3 秒 + 分镜 + 标签，别的都不露。
@@ -665,13 +667,33 @@
     $('#dTitle').textContent = st.storeName + '｜自由发挥';
     $('#dSub').textContent = p[1] + ' 当天没对上任何脚本的视频 ' + arr.length + ' 条';
     $('#dBody').innerHTML = arr.map(function (v) {
-      return '<div class="statusbox" style="margin-top:10px"><a class="vlink" style="margin-top:0" href="' +
-        esc(v.url) + '" target="_blank" rel="noopener">' + esc(v.title || '（无标题）') + ' ↗</a>' +
-        '<div class="vmeta mono">' + v.pubDate + ' · 播放 ' + HY.num(v.play) +
-        ' · 成交 ¥' + HY.num(v.gmv) + '</div></div>';
+      return '<div class="statusbox" style="margin-top:10px">' + videoInfo(v) + '</div>';
     }).join('');
     openDrawer();
   }
+
+  /* 一条视频：标题 + 数据 + 明摆着的「打开视频」「复制链接」和链接原文
+     （2026-09-23 用户：已发布的视频要给链接 —— 原来只有标题带下划线能点，看不出是链接） */
+  function videoInfo(v) {
+    var h = '<div class="vtitle">' + esc(v.title || '（无标题）') + '</div>' +
+      '<div class="vmeta mono">发布 ' + v.pubDate + ' · 播放 ' + HY.num(v.play) +
+      ' · 成交 ¥' + HY.num(v.gmv) + '</div>';
+    if (!v.url) return h + '<div class="vmeta">导入的数据里这条没有链接</div>';
+    return h + '<div class="vbtns"><a class="btn primary" href="' + esc(v.url) +
+      '" target="_blank" rel="noopener">打开视频 ↗</a>' +
+      '<button class="btn" type="button" data-copy="' + esc(v.url) + '">复制链接</button></div>' +
+      '<div class="vurl mono">' + esc(v.url) + '</div>';
+  }
+  // 复制链接：整页只挂一次
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-copy]');
+    if (!b) return;
+    var t = b.dataset.copy, done = function () {
+      b.textContent = '已复制'; setTimeout(function () { b.textContent = '复制链接'; }, 1500);
+    };
+    if (navigator.clipboard) navigator.clipboard.writeText(t).then(done, function () { prompt('复制这个链接', t); });
+    else prompt('复制这个链接', t);
+  });
 
   /* ---------- 门店档案（可直接编辑） ---------- */
   var REGION_HINTS = ['海曙', '江北', '鄞州', '镇海', '北仑', '奉化', '慈溪', '余姚',
