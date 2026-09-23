@@ -529,7 +529,9 @@ body.booted .tile .ink-draw{animation:inkdraw 1.6s ease .75s both}
 /* 高度 = 一整屏（2026-09-23 用户：「要能划到日期标题栏为止」）。原来是 100vh-320px，
    页面总高不够，整页划不上去，日期表头停在屏幕中间。现在整页能一直划到表头贴顶；
    往下划时先划整页、表头到顶了才划表里面 —— 这个交接在 board.js 的 bindGridScroll。 */
-.gridwrap{overflow:auto;max-height:100vh}
+.gridwrap{overflow:auto;max-height:100vh;overscroll-behavior:contain}
+/* 表格下面不能再留空：整页最多只能划到表格贴顶，多出来的 72px 底边会让表头被划出屏幕 */
+.content:has(#p-board.on){padding-bottom:0}
 table.board{border-collapse:separate;border-spacing:0;width:max-content;min-width:100%}
 table.board th,table.board td{border-bottom:1px solid var(--line)}
 

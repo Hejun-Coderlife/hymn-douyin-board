@@ -490,19 +490,28 @@
     window.addEventListener('scroll', hide, true);
   }
 
-  /* 往下划：表格顶还没贴到屏幕顶，就先划整页，别让表里面先把滚动吃掉。
-     往上划不用管：表里面划到顶以后浏览器自己会接着划整页。 */
+  /* 表头冻结靠「整页最多划到表格贴顶」+「表格里面自己滚」。滚轮在表格上时手动分配：
+     往下：表格顶还没到屏幕顶 → 先划整页，最多划到贴顶；贴顶后只划表里面，划到底也不再带动整页
+           （原来会带着整页继续往上走，表头就被划出屏幕了 —— 用户 2026-09-23）。
+     往上：表里面还没回到顶 → 先划表里面；回到顶了才划整页。
+     .gridwrap 上配了 overscroll-behavior:contain，浏览器不会自己把滚动串到整页。 */
   function bindGridScroll() {
     var wrap = $('.gridwrap');
     if (!wrap || wrap.__scrollbound) return;
     wrap.__scrollbound = true;
     wrap.addEventListener('wheel', function (e) {
-      if (e.deltaY <= 0 || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
-      var gap = wrap.getBoundingClientRect().top;
-      if (gap <= 1) return;
+      if (!e.deltaY || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
       var dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
-      e.preventDefault();
-      window.scrollBy(0, Math.min(dy, gap));
+      var gap = wrap.getBoundingClientRect().top;
+      if (dy > 0) {
+        if (gap <= 1) return;                        // 已贴顶：交给表里面滚
+        e.preventDefault();
+        window.scrollBy(0, Math.min(dy, gap));
+      } else {
+        if (wrap.scrollTop > 0) return;              // 表里面还没回到顶
+        e.preventDefault();
+        window.scrollBy(0, dy);
+      }
     }, { passive: false });
   }
 
