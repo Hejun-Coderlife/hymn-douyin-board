@@ -39,6 +39,14 @@
       a[statusOfScript(sc)]++; a.n++;
     });
 
+    // 门店列右边的「视频数」：这家店这个月一共发了几条（按脚本 + 自由发挥都算）
+    S.vByStoreYm = {};
+    S.videos.forEach(function (v) {
+      if (!v.pubDate) return;
+      var k = v.store + '|' + HY.ymOf(v.pubDate);
+      S.vByStoreYm[k] = (S.vByStoreYm[k] || 0) + 1;
+    });
+
     S.freeByStoreDate = {};
     S.freeByStore = {};
     S.m.free.forEach(function (v) {
@@ -368,8 +376,7 @@
   /** 月视图：该月每天一列 */
   function monthTable(rows) {
     var g = HY.buildMonthGrid(S.ym);
-    var h = '<thead><tr class="r1"><th class="stcol" rowspan="2">门店 <span class="muted">(' +
-            rows.length + ')</span></th>';
+    var h = '<thead><tr class="r1"><th class="stcol" rowspan="2">' + stHead(rows.length, '本月') + '</th>';
     // 第一行按周分组
     var i = 0;
     while (i < g.days.length) {
@@ -423,8 +430,7 @@
 
   /** 全年总览：每月一列，格子里是该店该月的完成情况条 */
   function yearTable(rows) {
-    var h = '<thead><tr class="r2"><th class="stcol">门店 <span class="muted">(' + rows.length +
-            ')</span></th>';
+    var h = '<thead><tr class="r2"><th class="stcol">' + stHead(rows.length, '合计') + '</th>';
     S.months.forEach(function (ym) {
       var now = ym === HY.ymOf(S.today);
       h += '<th class="mcol' + (now ? ' today' : '') + '">' + (+ym.slice(5)) + ' 月' +
@@ -458,11 +464,26 @@
     return h + '</tbody>';
   }
 
+  function stHead(n, lab) {
+    return '<div class="sth"><span>门店 <span class="muted">(' + n + ')</span></span>' +
+           '<span class="vlab">' + lab + '视频</span></div>';
+  }
+  /** 当前视图里这家店发了几条：月视图 = 该月；全年总览 = 所有月份加起来 */
+  function storeVideoCount(st) {
+    var yms = S.view === 'year' ? S.months : [S.ym], n = 0;
+    yms.forEach(function (ym) { n += S.vByStoreYm[st.douyinId + '|' + ym] || 0; });
+    return n;
+  }
+
+  /* 门店列收窄（2026-09-23 用户：「太宽了，浪费面积」）：抖音号不再占一行字，挪进悬停提示；
+     右边放这家店当前视图的视频总数。 */
   function storeCell(st) {
-    return '<td class="stcol"><div class="nm">' + esc(st.storeName) + '</div><div class="meta">' +
+    var n = storeVideoCount(st);
+    return '<td class="stcol" title="抖音号 ' + st.douyinId + '"><div class="stc"><div class="stl">' +
+      '<div class="nm">' + esc(st.storeName) + '</div><div class="meta">' +
       (st.brandLine ? '<span class="bl">' + esc(st.brandLine) + '</span>' : '') +
-      '<span class="mono">' + st.douyinId + '</span>' +
-      '<a class="mob" href="store.html?store=' + st.douyinId + '" target="_blank">门店页</a></div></td>';
+      '<a class="mob" href="store.html?store=' + st.douyinId + '" target="_blank">门店页</a></div></div>' +
+      '<div class="vn' + (n ? '' : ' zero') + '">' + n + '</div></div></td>';
   }
 
   /* 日历上的悬停提示：跟图块区一样自己画（原生 title 要等 1 秒、字还小）。
