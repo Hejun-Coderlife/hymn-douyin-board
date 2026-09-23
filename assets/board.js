@@ -490,8 +490,25 @@
     window.addEventListener('scroll', hide, true);
   }
 
+  /* 往下划：表格顶还没贴到屏幕顶，就先划整页，别让表里面先把滚动吃掉。
+     往上划不用管：表里面划到顶以后浏览器自己会接着划整页。 */
+  function bindGridScroll() {
+    var wrap = $('.gridwrap');
+    if (!wrap || wrap.__scrollbound) return;
+    wrap.__scrollbound = true;
+    wrap.addEventListener('wheel', function (e) {
+      if (e.deltaY <= 0 || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+      var gap = wrap.getBoundingClientRect().top;
+      if (gap <= 1) return;
+      var dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
+      e.preventDefault();
+      window.scrollBy(0, Math.min(dy, gap));
+    }, { passive: false });
+  }
+
   function bindCells() {
     bindBoardTip();
+    bindGridScroll();
     $$('#board .dot[data-id]').forEach(function (el) {
       el.onclick = function () { openScript(el.dataset.id); };
     });
