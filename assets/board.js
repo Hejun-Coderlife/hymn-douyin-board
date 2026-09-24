@@ -296,21 +296,7 @@
       kpi('自由发挥视频', HY.num(freeCount), 'free', '没对上任何脚本'),
       kpi('门店', rows.length + '<small>/' + S.stores.length + '</small>', '', '当前筛选结果')
     ].join('');
-
-    var late = {};
-    ws.forEach(function (s) { if (statusOfScript(s) === 'late') late[s.store] = (late[s.store] || 0) + 1; });
-    var arr = Object.keys(late).map(function (k) { return { id: k, n: late[k] }; })
-      .sort(function (a, b) { return b.n - a.n; }).slice(0, 15);
-    $('#ranks').innerHTML = arr.length ? arr.map(function (x) {
-      var st = S.storeById[x.id] || {};
-      return '<div class="it" data-store="' + x.id + '">' + esc(st.storeName || x.id) + ' <b>' + x.n + '</b></div>';
-    }).join('') : '<div class="empty">暂无逾期。（没导入视频数据时，这里不代表真实情况）</div>';
-    $$('#ranks .it').forEach(function (el) {
-      el.onclick = function () {
-        $('#fSearch').value = (S.storeById[el.dataset.store] || {}).storeName || '';
-        render();
-      };
-    });
+    // 「逾期未发排行」卡片 2026-09-24 删了（用户：「后台这部分不要」），别加回去
   }
 
   /* ---------- 月份选择条 ---------- */
