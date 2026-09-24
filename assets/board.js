@@ -468,10 +468,31 @@
 
   /* 门店列收窄（2026-09-23 用户：「太宽了，浪费面积」）：抖音号不再占一行字，挪进悬停提示；
      右边放这家店当前视图的视频总数。 */
+  /* 店名后面的完成率（2026-09-24 加）：口径跟顶上 KPI 一致 = 已发布 ÷ 已到期，范围 = 当前视图（本月 / 全年）。
+     一次扫完所有脚本存起来，别在每个格子里扫（见 CLAUDE.md「全年总览的计数」那条坑）。 */
+  var rateCache = { key: '', map: {} };
+  function storeRate(st) {
+    var key = S.view + '|' + S.ym + '|' + S.videos.length;
+    if (rateCache.key !== key) {
+      var map = {};
+      windowScripts().forEach(function (s) {
+        var t = statusOfScript(s);
+        if (t === 'todo') return;
+        var o = map[s.store] = map[s.store] || { done: 0, due: 0 };
+        o.due++; if (t === 'done') o.done++;
+      });
+      rateCache = { key: key, map: map };
+    }
+    var o = rateCache.map[st.douyinId];
+    return o && o.due ? { p: Math.round(o.done / o.due * 100), done: o.done, due: o.due } : null;
+  }
+
   function storeCell(st) {
-    var n = storeVideoCount(st);
+    var n = storeVideoCount(st), r = storeRate(st);
     return '<td class="stcol" title="抖音号 ' + st.douyinId + '"><div class="stc"><div class="stl">' +
-      '<div class="nm">' + esc(st.storeName) + '</div><div class="meta">' +
+      '<div class="nmrow"><span class="nm">' + esc(st.storeName) + '</span>' +
+      (r ? '<span class="rate" title="完成率：已发布 ' + r.done + ' / 已到期 ' + r.due + ' 条">' + r.p + '%</span>' : '') +
+      '</div><div class="meta">' +
       (st.brandLine ? '<span class="bl">' + esc(st.brandLine) + '</span>' : '') +
       '<a class="mob" href="store.html?store=' + st.douyinId + '" target="_blank">门店页</a></div></div>' +
       '<div class="vn' + (n ? '' : ' zero') + '">' + n + '</div></div></td>';
