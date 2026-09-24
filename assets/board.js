@@ -470,8 +470,16 @@
      右边放这家店当前视图的视频总数。 */
   /* 店名后面的完成率（2026-09-24 加）：口径跟顶上 KPI 一致 = 已发布 ÷ 已到期，范围 = 当前视图（本月 / 全年）。
      一次扫完所有脚本存起来，别在每个格子里扫（见 CLAUDE.md「全年总览的计数」那条坑）。 */
-  var rateCache = { key: '', map: {} };
+  var rateCache = { key: '', map: {} }, firstScript = { n: -1, d: '' };
   function storeRate(st) {
+    // 脚本从月中才开始排的月份（8 月只有 31 号一天有脚本）按完成率算只看得到一两天，也改显示发布率
+    if (S.view !== 'year' && S.scripts.length) {
+      if (firstScript.n !== S.scripts.length) {       // 每家店都要问一次，别每次扫 1.6 万条
+        firstScript = { n: S.scripts.length,
+          d: S.scripts.reduce(function (m, s) { return s.date < m ? s.date : m; }, S.scripts[0].date) };
+      }
+      if (HY.buildMonthGrid(S.ym).from < firstScript.d) return pubRate(st);
+    }
     var key = S.view + '|' + S.ym + '|' + S.videos.length;
     if (rateCache.key !== key) {
       var map = {};
@@ -484,14 +492,41 @@
       rateCache = { key: key, map: map };
     }
     var o = rateCache.map[st.douyinId];
-    return o && o.due ? { p: Math.round(o.done / o.due * 100), done: o.done, due: o.due } : null;
+    if (o && o.due) return { p: Math.round(o.done / o.due * 100), done: o.done, due: o.due };
+    return S.view === 'year' ? null : pubRate(st);
+  }
+
+  /* 没有脚本的月份（7 月及以前）显示「视频发布率」= 这个月有几天发了视频 ÷ 天数
+     （2026-09-24 用户：「没有脚本的月份，就显示视频发布率」）。
+     天数只算到今天和抖音数据截至日为止，没到的日子不算进分母。灰色，跟绿色的完成率区分开。 */
+  var pubCache = { key: '', days: {} };
+  function pubRate(st) {
+    var key = S.ym + '|' + S.videos.length;
+    if (pubCache.key !== key) {
+      var days = {};
+      S.videos.forEach(function (v) {
+        if (v.pubDate && HY.ymOf(v.pubDate) === S.ym) (days[v.store] = days[v.store] || {})[v.pubDate] = 1;
+      });
+      var g = HY.buildMonthGrid(S.ym), end = g.to;
+      var upto = window.HY_VIDEOS_PUB && window.HY_VIDEOS_PUB.upto;
+      if (S.today < end) end = S.today;
+      if (upto && upto < end && !HY.Videos.meta().imports.length) end = upto;
+      var total = 0;
+      for (var d = g.from; d <= end; d = HY.ymd(HY.addDays(HY.parseYmd(d), 1))) total++;
+      pubCache = { key: key, days: days, total: total };
+    }
+    if (!pubCache.total) return null;
+    var n = Object.keys(pubCache.days[st.douyinId] || {}).length;
+    return { p: Math.round(n / pubCache.total * 100), pub: 1, n: n, total: pubCache.total };
   }
 
   function storeCell(st) {
     var n = storeVideoCount(st), r = storeRate(st);
     return '<td class="stcol" title="抖音号 ' + st.douyinId + '"><div class="stc"><div class="stl">' +
       '<div class="nmrow"><span class="nm">' + esc(st.storeName) + '</span>' +
-      (r ? '<span class="rate" title="完成率：已发布 ' + r.done + ' / 已到期 ' + r.due + ' 条">' + r.p + '%</span>' : '') +
+      (r ? (r.pub
+        ? '<span class="rate pub" title="这个月没有脚本，显示视频发布率：' + r.total + ' 天里有 ' + r.n + ' 天发了视频">' + r.p + '%</span>'
+        : '<span class="rate" title="完成率：已发布 ' + r.done + ' / 已到期 ' + r.due + ' 条">' + r.p + '%</span>') : '') +
       '</div><div class="meta">' +
       (st.brandLine ? '<span class="bl">' + esc(st.brandLine) + '</span>' : '') +
       '<a class="mob" href="store.html?store=' + st.douyinId + '" target="_blank">门店页</a></div></div>' +
