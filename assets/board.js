@@ -1077,14 +1077,16 @@
      判断不了视频是不是照脚本拍的，那些分组没有意义。现在只放导出表里真有的东西：
        ① 门店表现（发布天数、断更、播放、千播以上、成交、无标题）  ② 播放 / 成交最高的视频
        ③ 几点发、星期几发      ④ 发得勤有没有用      ⑤ 标题写没写
-     比较一律看「一半视频不到」（中位数），平均数会被一条爆款带飞。 */
+     比较一律看「普通一条的播放」（中位数），平均数会被一条爆款带飞。
+     「一半视频不到」这个叫法用户看不懂（2026-09-24），改叫「普通一条的播放」，表头悬停有解释。 */
+  var MED_TIP = '把视频按播放从少到多排队，站在正中间那条的播放。不会被一两条爆款拉高，比平均数更能代表一般水平';
   var EFF_COLS2 = [
     { k: 'lab', t: '门店', txt: 1 },
     { k: 'n', t: '视频数' },
     { k: 'pubDays', t: '发布天数', fmt: function (x) { return x.pubDays + '/' + x.nDays; } },
     { k: 'gap', t: '最长断更', fmt: function (x) { return x.gap + ' 天'; } },
     { k: 'avgPlay', t: '平均每条播放' },
-    { k: 'medPlay', t: '一半视频不到' },
+    { k: 'medPlay', t: '普通一条的播放', tip: MED_TIP },
     { k: 'k1', t: '千播以上' },
     { k: 'gmv', t: '成交总额', money: 1 },
     { k: 'noTitle', t: '没写标题' }
@@ -1113,8 +1115,8 @@
   function grpTable(head, groups) {
     var maxMed = 0;
     groups.forEach(function (g) { if (g[1].length >= FEW) maxMed = Math.max(maxMed, aggV(g[1]).medPlay); });
-    return '<table class="mini eff"><thead><tr><th>' + head + '</th><th>视频数</th><th>一半视频不到</th>' +
-      '<th>平均每条播放</th><th class="barh">一半视频不到（对比）</th></tr></thead><tbody>' +
+    return '<table class="mini eff"><thead><tr><th>' + head + '</th><th>视频数</th><th title="' + MED_TIP + '">普通一条的播放</th>' +
+      '<th>平均每条播放</th><th class="barh">普通一条的播放（对比）</th></tr></thead><tbody>' +
       groups.map(function (g) { return grpRow(g[0], g[1], maxMed); }).join('') + '</tbody></table>';
   }
 
@@ -1151,7 +1153,7 @@
       return (q[sk] - p[sk]) * dir;
     });
     var head = cols.map(function (c) {
-      return '<th class="s' + (c.k === sk ? ' on' : '') + '" data-k="' + c.k + '">' + c.t +
+      return '<th class="s' + (c.k === sk ? ' on' : '') + '" data-k="' + c.k + '"' + (c.tip ? ' title="' + c.tip + '"' : '') + '>' + c.t +
         '<i>' + (c.k === sk ? (EFF.desc ? '▾' : '▴') : '▾') + '</i></th>';
     }).join('');
     $('#effStores').innerHTML = '<table class="mini eff"><thead><tr>' + head + '</tr></thead><tbody>' +
@@ -1162,8 +1164,8 @@
           return '<td class="mono' + (x.n < FEW ? ' dim' : '') + '">' + t + '</td>';
         }).join('') + '</tr>';
       }).join('') + '</tbody></table>' +
-      '<p class="note" style="margin-top:10px">点表头换排序。「一半视频不到」= 这家店一半的视频播放不到这个数，' +
-      '比平均数靠谱（平均数会被一条爆款拉高）。「最长断更」= 统计期里连着几天一条都没发。</p>';
+      '<p class="note" style="margin-top:10px">点表头换排序。「普通一条的播放」= 把这家店的视频按播放从少到多排队，站在正中间那条的播放，' +
+      '代表这家店一般一条能有多少播放；平均数会被一两条爆款拉高，不准。「最长断更」= 统计期里连着几天一条都没发。</p>';
     $$('#effStores th.s').forEach(function (th) {
       th.onclick = function () {
         var k = th.dataset.k;
@@ -1220,7 +1222,7 @@
     });
     var maxWk = Math.max.apply(null, freqRows.map(function (x) { return x.weeks >= FEW ? x.wk : 0; })) || 1;
     $('#effFreq').innerHTML = '<table class="mini eff"><thead><tr><th>那一周发了</th><th>店·周数</th>' +
-      '<th>每条：一半视频不到</th><th>整周播放（中位）</th><th class="barh">整周播放（对比）</th></tr></thead><tbody>' +
+      '<th title="' + MED_TIP + '">普通一条的播放</th><th>普通一周的总播放</th><th class="barh">整周播放（对比）</th></tr></thead><tbody>' +
       freqRows.map(function (x) {
         var few = x.weeks < FEW;
         return '<tr' + (few ? ' class="dim"' : '') + '><td>' + x.lab + (few && x.weeks ? '<span class="few">样本 ' + x.weeks + ' 个</span>' : '') +
