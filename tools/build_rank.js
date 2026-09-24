@@ -17,7 +17,10 @@ const root = path.join(__dirname, '..');
 const dir = path.join(root, '视频数据');
 const out = path.join(root, 'data', 'rank.js');
 
-const ctx = { window: {}, console: console }; vm.createContext(ctx);
+// core.js 顶层会碰 document / setTimeout（浏览器里的加载逻辑），给空壳就行
+const ctx = { window: {}, console: console, document: { querySelector: () => null },
+              setTimeout: () => 0 };
+vm.createContext(ctx);
 vm.runInContext(fs.readFileSync(path.join(root, 'assets/core.js'), 'utf8'), ctx);
 const HY = ctx.window.HY;
 

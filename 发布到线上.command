@@ -1,6 +1,6 @@
 #!/bin/bash
 # 双击我 = 重建数据分片 + 推到 GitHub + 触发线上更新
-# （换了 data/scripts.json 或改了 data/stores.json 之后跑这个）
+# （换了 data/scripts.json、改了 data/stores.json、或往「视频数据/」放了新导出的 xlsx 之后跑这个）
 cd "$(dirname "$0")" || exit 1
 echo "════════════════════════════════════════════"
 echo "  赫眉抖音脚本看板 · 发布到线上"
@@ -14,6 +14,9 @@ fi
 
 echo "① 重建索引和分片…"
 python3 tools/sync_data.py || { echo "❌ 生成失败，先看上面的报错"; read -n 1 -s -r -p "按任意键关闭"; exit 1; }
+
+# 门店手机页「排行」的数据：从「视频数据/」里的 xlsx 汇总各店每天发了几条 -> data/rank.js
+node tools/build_rank.js || { echo "❌ 生成排行数据失败，先看上面的报错"; read -n 1 -s -r -p "按任意键关闭"; exit 1; }
 
 # 给 css/js 打版本戳。GitHub Pages 对静态资源发 max-age=600，不打戳的话
 # 推完 10 分钟内手机上刷新看到的还是旧版（2026-09-20 被坑了三次）。

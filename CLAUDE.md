@@ -385,6 +385,13 @@ node tools/dom_check.js '#view=effect' '#p-effect' --seed=/tmp/fakevideos.json
 `tools/dom_check.js` 会把页面真跑一遍，打印报错 + 指定选择器的文字，还能 `--click=<选择器>`
 先点几下（切维度、点表头排序都能这么验）。**它只验逻辑和文字，验不了样式**，配色/排版还是得让用户自己看。
 
+## 门店页「排行」标签（2026-09-24）
+
+门店手机页底部第一个标签原来是「今天」，换成了**门店视频发布排行**（本周 / 本月切换，43 店全列，本店那行左边黑竖条加粗）。
+店员手机上没有视频数据，所以排行读的是 `data/rank.js`：把抖音来客导出的 xlsx 丢进根目录 `视频数据/`
+（已 .gitignore，含成交金额不上线），`node tools/build_rank.js` 汇总成**每店每天条数**，发布脚本会自动跑。
+条数口径 = 按发布日期数，脚本视频 + 自由发挥都算，按视频ID去重。标题旁「数据截至」= 导出统计范围终点。
+
 ## 发布到线上
 
 GitHub Pages：**https://hejun-coderlife.github.io/hymn-douyin-board/**（仓库 `Hejun-Coderlife/hymn-douyin-board`，公开）。

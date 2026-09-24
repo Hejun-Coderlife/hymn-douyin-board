@@ -1,7 +1,8 @@
 /* 门店页（手机）—— store.html?store=<抖音号>
    2026-09-21 整页重做：杂志式排版 + 底部固定标签栏（设计经过见 assets/store-mobile.css 的头注释）。
 
-   四个标签：今天 / 本周 / 日历 / 我的。
+   四个标签：排行 / 本周 / 日历 / 我的。
+   （「排行」2026-09-24 替换了原来的「今天」：今天那条脚本在「本周」列表里本来就有黑底标出）
    数据来自 data/scripts-index.js（日期、内容方向、拍摄形式）+ 按需加载的
    data/scripts/<门店编号>-<年月>.js 分片（开头 3 秒、分镜、标签）。
    **分片只在要用到那个月时才拉**，一次一个月约 70KB，手机上不会卡。
@@ -146,7 +147,7 @@
         // 第三个值 = 给哪个数上色：1=品牌粉（要处理的），2=墨绿（已完成的）
         ? [['已发布', c.done, 2], ['逾期', c.late, 1], ['今天', c.now, 0]]
         : [['已到期', c.late, 1], ['待拍', c.todo, 0], ['今天', c.now, 0]];
-      $('.sum').innerHTML = sum.map(function (x) {
+      $('#viewA .sum').innerHTML = sum.map(function (x) {
         return '<div><div class="v' + (x[2] === 1 ? ' p' : x[2] === 2 ? ' g' : '') + '">' + x[1] + '</div>' +
                '<div class="l">' + x[0] + '</div></div>';
       }).join('');
@@ -160,6 +161,52 @@
           '<div class="go">›</div></div>';
       }).join('') || '<div class="none" style="padding:26px 0;color:var(--dim)">这段时间还没有脚本</div>';
     });
+  }
+
+  /* ---------- 门店视频发布排行 ----------
+     数据是 data/rank.js（tools/build_rank.js 在发布时从「视频数据/」里的 xlsx 汇总出来的，
+     只有每店每天的条数）。店员手机上没有视频数据，所以不能像总部看板那样现算。
+     43 家店全列，没发的算 0；条数一样名次并列；本店那行标出来。 */
+  var rankKey = 'week';
+  function paintRank() {
+    var R = window.HY_RANK;
+    if (!R || !R.counts) {
+      $('#rankBody').innerHTML = '<div class="none" style="padding:26px 0;color:var(--dim)">还没有视频数据，等总部更新</div>';
+      return;
+    }
+    var r = rankKey === 'week' ? RANGES.week() : RANGES.month();
+    if (rankKey === 'month') {                       // RANGES.month 的 to 写死 31 号，标题上换成真月底
+      var d = HY.parseYmd(r.from);
+      r.to = HY.ymd(new Date(d.getFullYear(), d.getMonth() + 1, 0));
+    }
+    var rows = D.stores.map(function (st) {
+      var c = R.counts[st.douyinId] || {}, n = 0;
+      Object.keys(c).forEach(function (d) { if (d >= r.from && d <= r.to) n += c[d]; });
+      return { st: st, n: n };
+    }).sort(function (a, b) { return b.n - a.n; });
+    var max = rows.length ? rows[0].n : 0, total = 0, place = 0, mine = null;
+    rows.forEach(function (x, i) {
+      total += x.n;
+      place = i && x.n === rows[i - 1].n ? place : i + 1;
+      x.i = place;
+      if (x.st.douyinId === id) mine = x;
+    });
+    var upto = R.upto && R.upto < r.to ? '数据截至 ' + HY.md(R.upto) : '';
+    $('#rankBody').innerHTML =
+      '<div class="sum">' +
+        '<div><div class="v">' + (mine ? mine.i : '–') + '</div><div class="l">本店名次</div></div>' +
+        '<div><div class="v p">' + (mine ? mine.n : '–') + '</div><div class="l">本店发布</div></div>' +
+        '<div><div class="v">' + total + '</div><div class="l">全部门店合计</div></div>' +
+      '</div>' +
+      '<div class="sec"><h2>' + r.t + ' ' + HY.md(r.from) + '–' + HY.md(r.to) + '</h2>' +
+        '<span class="more">' + (upto || rows.length + ' 家') + '</span></div>' +
+      rows.map(function (x) {
+        return '<div class="rk' + (x.st.douyinId === id ? ' me' : '') + '">' +
+          '<span class="i">' + x.i + '</span>' +
+          '<span class="nm">' + esc(x.st.storeName) + '</span>' +
+          '<span class="bar"><u style="width:' + (max ? Math.round(x.n / max * 100) : 0) + '%"></u></span>' +
+          '<b>' + x.n + '</b></div>';
+      }).join('');
   }
 
   /* ---------- 日历 ---------- */
@@ -307,14 +354,11 @@
     $('#stRate').textContent = thisMo.length;
     $('#stPast').textContent = past.length;
 
-    VIEWS = { week: $('#viewA'), today: $('#viewToday'), cal: $('#viewCal'), me: $('#viewMe') };
+    VIEWS = { week: $('#viewA'), rank: $('#viewRank'), cal: $('#viewCal'), me: $('#viewMe') };
     calYm = ymOf(TODAY);
+    paintRank();
 
-    /* 今天 */
     return needMonths([ymOf(TODAY)]).then(function () {
-      var s = MINE[TODAY];
-      $('#viewToday').innerHTML = s ? scriptHTML(s, {}) :
-        '<div class="dh"><div class="d">' + TODAY + '</div><h1>今天没有排脚本</h1></div>';
       paintList();
       HY.bootDone();
     });
@@ -328,6 +372,11 @@
     if ((t = e.target.closest('[data-back]'))) { $('#viewB').classList.add('hide'); show(backTo); return; }
     if ((t = e.target.closest('.row[data-id], .day[data-id]'))) { openDay(t.dataset.id); return; }
     if ((t = e.target.closest('#tabbar a[data-v]'))) { show(t.dataset.v); return; }
+    if ((t = e.target.closest('.rkchips a'))) {
+      rankKey = t.dataset.r;
+      $$('.rkchips a').forEach(function (x) { x.classList.toggle('on', x === t); });
+      paintRank(); return;
+    }
     if ((t = e.target.closest('.chips a'))) {
       var keys = ['week', 'next', 'month', 'nextmo'];
       $$('.chips a').forEach(function (x, i) { x.classList.toggle('on', x === t); if (x === t) curRange = keys[i]; });

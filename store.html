@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>赫眉·STUDIO</title>
-<link rel="stylesheet" href="assets/store-mobile.css?v=20260923-1634">
+<link rel="stylesheet" href="assets/store-mobile.css?v=20260924-1359">
 </head>
 <body class="hastab">
 <div id="boot"><div class="bmark"><img src="assets/logo-ink.png" alt="赫眉 HYMN"></div></div>
@@ -14,8 +14,11 @@
   <div class="bar"><span class="av l"></span><span class="lock"><span class="lg"></span><em>·</em><b>STUDIO</b></span><span class="av" id="avIni"></span></div>
   <div class="store" id="storeLine">—</div>
 
-  <!-- ===== 今天 ===== -->
-  <div id="viewToday" class="hide"></div>
+  <!-- ===== 排行（2026-09-24 原「今天」标签换成门店视频发布排行）===== -->
+  <div id="viewRank" class="hide rank">
+    <div class="rkchips"><a class="on" data-r="week">本周</a><a data-r="month">本月</a></div>
+    <div id="rankBody"></div>
+  </div>
 
   <!-- ===== 本周（含分类胶囊） ===== -->
   <div id="viewA">
@@ -78,7 +81,7 @@
 </div>
 
 <nav class="tabbar" id="tabbar">
-  <a data-v="today"><svg viewBox="0 0 24 24"><path d="M12 4.5 4.5 10.5V20h6v-5.5h3V20h6v-9.5z"/></svg><span>今天</span></a>
+  <a data-v="rank"><svg viewBox="0 0 24 24"><path d="M4.5 20V13h4v7M10 20V5h4v15M15.5 20v-10h4v10M3 20h18"/></svg><span>排行</span></a>
   <a class="on" data-v="week"><svg viewBox="0 0 24 24"><rect x="3.5" y="5.5" width="17" height="14"/>
     <path d="M3.5 10h17M8 3.5v4M16 3.5v4"/></svg><span>本周</span></a>
   <a data-v="cal"><svg viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15"/>
@@ -88,9 +91,10 @@
     <path d="M4.5 20c0-4 3.4-6.2 7.5-6.2S19.5 16 19.5 20"/></svg><span>我的</span></a>
 </nav>
 
-<script src="data/stores.js?v=20260923-1634"></script>
-<script src="data/scripts-index.js?v=20260923-1634"></script>
-<script src="assets/core.js?v=20260923-1634"></script>
-<script src="assets/store.js?v=20260923-1634"></script>
+<script src="data/stores.js?v=20260924-1359"></script>
+<script src="data/scripts-index.js?v=20260924-1359"></script>
+<script src="data/rank.js?v=20260924-1359"></script>
+<script src="assets/core.js?v=20260924-1359"></script>
+<script src="assets/store.js?v=20260924-1359"></script>
 </body>
 </html>
