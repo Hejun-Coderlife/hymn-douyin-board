@@ -1038,7 +1038,7 @@
      口径陷阱：播放数只统计导出的「数据日期范围」内，范围外的老视频大量为 0，
      混进来会把均值压垮 —— 所以先按发布时间筛一遍。
      另一个陷阱：平均值会被一条爆款整个带飞，每行都同时给中位数，两个数差得远就说明是个别视频撑的。 */
-  var EFF = { dim: 'store', sort: 'medPlay', desc: true };
+  var EFF = { dim: 'store', sort: 'hit', desc: true };
   var FEW = 5;                       // 少于这么多条就标「样本少」，别拿它下结论
 
   function median(a) {
@@ -1077,16 +1077,15 @@
      判断不了视频是不是照脚本拍的，那些分组没有意义。现在只放导出表里真有的东西：
        ① 门店表现（发布天数、断更、播放、千播以上、成交、无标题）  ② 播放 / 成交最高的视频
        ③ 几点发、星期几发      ④ 发得勤有没有用      ⑤ 标题写没写
-     比较一律看「普通一条的播放」（中位数），平均数会被一条爆款带飞。
-     「一半视频不到」这个叫法用户看不懂（2026-09-24），改叫「普通一条的播放」，表头悬停有解释。 */
-  var MED_TIP = '把视频按播放从少到多排队，站在正中间那条的播放。不会被一两条爆款拉高，比平均数更能代表一般水平';
+     中位数这个概念试了两个叫法（「一半视频不到」「普通一条播放量」）用户都看不懂（2026-09-24），整个拿掉了。
+     平均数又会被一条爆款带飞，所以比较一律用「播放量过 10 次的占几成」（HIT）——大白话、也拉得开。 */
   var EFF_COLS2 = [
     { k: 'lab', t: '门店', txt: 1 },
     { k: 'n', t: '视频数' },
     { k: 'pubDays', t: '发布天数', fmt: function (x) { return x.pubDays + '/' + x.nDays; } },
     { k: 'gap', t: '最长断更', fmt: function (x) { return x.gap + ' 天'; } },
     { k: 'avgPlay', t: '平均每条播放量（次）' },
-    { k: 'medPlay', t: '普通一条播放量（次）', tip: MED_TIP },
+    { k: 'hit', t: '播放量过 10 次的占比', fmt: function (x) { return x.n ? Math.round(x.hit * 100) + '%' : '—'; } },
     { k: 'k1', t: '播放过千的（条）' },
     { k: 'gmv', t: '成交总额', money: 1 },
     { k: 'noTitle', t: '没写标题' }
@@ -1153,11 +1152,12 @@
       days.forEach(function (d) { if (dayset[d]) run = 0; else { run++; if (run > gap) gap = run; } });
       x.lab = sc.ok[id].storeName; x.pubDays = Object.keys(dayset).length; x.nDays = days.length; x.gap = gap;
       x.k1 = arr.filter(function (v) { return v.play >= 1000; }).length;
+      x.hit = hitRate(arr);
       x.noTitle = arr.filter(function (v) { return !hasTitle(v); }).length;
       return x;
     });
     var cols = EFF_COLS2.filter(function (c) { return c.k !== 'gmv' || gmvKnown; });
-    if (!cols.some(function (c) { return c.k === EFF.sort; })) EFF.sort = 'medPlay';
+    if (!cols.some(function (c) { return c.k === EFF.sort; })) EFF.sort = 'hit';
     var sk = EFF.sort, dir = EFF.desc ? 1 : -1;
     rows.sort(function (p, q) {
       if (sk === 'lab') return p.lab.localeCompare(q.lab, 'zh') * -dir;
@@ -1175,8 +1175,8 @@
           return '<td class="mono' + (x.n < FEW ? ' dim' : '') + '">' + t + '</td>';
         }).join('') + '</tr>';
       }).join('') + '</tbody></table>' +
-      '<p class="note" style="margin-top:10px">点表头换排序。「普通一条播放量」= 把这家店的视频按播放量从少到多排队，站在正中间那条被看了几次，' +
-      '代表这家店一般一条能被看几次；平均数会被一两条爆款拉高，不准。「最长断更」= 统计期里连着几天一条都没发。</p>';
+      '<p class="note" style="margin-top:10px">点表头换排序。「播放量过 10 次的占比」= 这家店的视频里，有几成被看过 10 次以上，' +
+      '比平均播放量准（平均会被一两条爆款拉高，比如古林店有一条 1.9 万）。「最长断更」= 统计期里连着几天一条都没发。</p>';
     $$('#effStores th.s').forEach(function (th) {
       th.onclick = function () {
         var k = th.dataset.k;
@@ -1225,23 +1225,29 @@
       (wk[k] = wk[k] || []).push(v);
     });
     var FB = [['一周 1–2 条', 1, 2], ['一周 3–4 条', 3, 4], ['一周 5–7 条', 5, 7], ['一周 8 条以上', 8, 999]];
+    // 每个「店·周」算：这一周有几条视频播放量过 10 次，再按一周发几条分组取平均
     var freqRows = FB.map(function (b) {
       var weeks = Object.keys(wk).map(function (k) { return wk[k]; })
         .filter(function (a) { return a.length >= b[1] && a.length <= b[2]; });
-      var all = [].concat.apply([], weeks);
-      var wkPlay = weeks.map(function (a) { return a.reduce(function (s, v) { return s + v.play; }, 0); });
-      return { lab: b[0], weeks: weeks.length, med: aggV(all).medPlay, wk: median(wkPlay) };
+      var hits = weeks.map(function (a) { return a.filter(function (v) { return v.play >= HIT; }).length; });
+      return { lab: b[0], weeks: weeks.length, avg: weeks.length ? hits.reduce(function (x, y) { return x + y; }, 0) / weeks.length : 0 };
     });
-    var maxWk = Math.max.apply(null, freqRows.map(function (x) { return x.weeks >= FEW ? x.wk : 0; })) || 1;
-    $('#effFreq').innerHTML = '<table class="mini eff"><thead><tr><th>那一周发了</th><th>店·周数</th>' +
-      '<th title="' + MED_TIP + '">普通一条播放量（次）</th><th>普通一周总播放量（次）</th><th class="barh">整周播放（对比）</th></tr></thead><tbody>' +
+    var okF = freqRows.filter(function (x) { return x.weeks >= FEW; });
+    var maxF = Math.max.apply(null, okF.map(function (x) { return x.avg; })) || 1;
+    var fv = '';
+    if (okF.length >= 2) {
+      var lo = okF[0], hi = okF[okF.length - 1];
+      fv = '一周发 ' + hi.lab.replace('一周 ', '') + '的，平均有 <b>' + hi.avg.toFixed(1) + ' 条</b>视频播放量过 ' + HIT +
+        ' 次；一周只发 ' + lo.lab.replace('一周 ', '') + '的，平均只有 <b>' + lo.avg.toFixed(1) + ' 条</b>。';
+    }
+    $('#effFreq').innerHTML = '<p class="verdict" style="margin:0 0 10px">' + fv + '</p><div class="hitlist">' +
       freqRows.map(function (x) {
         var few = x.weeks < FEW;
-        return '<tr' + (few ? ' class="dim"' : '') + '><td>' + x.lab + (few && x.weeks ? '<span class="few">样本 ' + x.weeks + ' 个</span>' : '') +
-          '</td><td class="mono">' + x.weeks + '</td><td class="mono">' + HY.num(x.med) + '</td><td class="mono">' + HY.num(x.wk) +
-          '</td><td class="barc"><span class="track"><i style="width:' + Math.round(x.wk / maxWk * 100) + '%"></i></span></td></tr>';
-      }).join('') + '</tbody></table>' +
-      '<p class="note" style="margin-top:10px">把每家店的每一周单独算一次（「店·周」），看发得多的那些周，整周加起来的播放是不是也更多。</p>';
+        return '<div class="hit' + (few ? ' dim' : '') + '"><span class="lab">' + x.lab + '</span>' +
+          '<span class="track"><i style="width:' + Math.round((few ? 0 : x.avg) / maxF * 100) + '%"></i></span>' +
+          '<b>' + x.avg.toFixed(1) + '</b><em>条过 ' + HIT + ' 次 · ' + x.weeks + ' 个店·周' + (few ? '，太少不算' : '') + '</em></div>';
+      }).join('') + '</div>' +
+      '<p class="note" style="margin-top:10px">把每家店的每一周单独算一次（「店·周」），看一周发得多的时候，被看过 ' + HIT + ' 次以上的视频是不是也更多。</p>';
 
     /* ⑤ 标题 */
     $('#effTitle').innerHTML = grpTable('写法', [
