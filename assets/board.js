@@ -862,7 +862,6 @@
           }).join('')
         : '<span class="none">还没有经理，先在右边加一个</span>') +
       '<span class="add"><input id="mgrNew" placeholder="新名字，回车添加">' +
-      '<button class="btn sm" id="mgrAdd">添加</button>' +
       '<button class="btn sm" id="mgrManage">分配门店…</button></span>';
 
     var h = '<thead><tr><th style="width:52px">编号</th><th>门店</th><th>抖音号</th><th style="width:120px">区域经理</th>' +
@@ -892,7 +891,7 @@
     });
     $('#storelist').innerHTML = h + '</tbody>';
 
-    var addBtn = $('#mgrAdd'), addIn = $('#mgrNew');
+    var addIn = $('#mgrNew');   // 「添加」按钮 2026-09-24 删了（用户觉得没用），输入框回车照样能加
     function doAdd() {
       var v = addIn.value.trim();
       if (!v) return;
@@ -902,7 +901,6 @@
       renderStoreList();
       HY.toast('已添加 ' + v);
     }
-    addBtn.onclick = doAdd;
     addIn.onkeydown = function (e) { if (e.key === 'Enter') doAdd(); };
     $('#mgrManage').onclick = openMgrModal;
     $$('#mgrBar .chip .x').forEach(function (el) {
