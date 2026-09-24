@@ -677,7 +677,7 @@
   function videoInfo(v) {
     var h = '<div class="vtitle">' + esc(v.title || '（无标题）') + '</div>' +
       '<div class="vmeta mono">发布 ' + v.pubDate + ' · 播放 ' + HY.num(v.play) +
-      ' · 成交 ¥' + HY.num(v.gmv) + '</div>';
+      (v.noGmv ? '' : ' · 成交 ¥' + HY.num(v.gmv)) + '</div>';
     if (!v.url) return h + '<div class="vmeta">导入的数据里这条没有链接</div>';
     return h + '<div class="vbtns"><a class="btn primary" href="' + esc(v.url) +
       '" target="_blank" rel="noopener">打开视频 ↗</a>' +
@@ -904,9 +904,10 @@
     var ranges = {};
     S.videos.forEach(function (v) { if (v.rangeFrom) ranges[v.rangeFrom + '~' + v.rangeTo] = 1; });
     $('#datahint').innerHTML = '已累计 <b>' + HY.num(n) + '</b> 条视频<br>统计范围 ' +
-      Object.keys(ranges).sort().join('、') + '<br>最近导入 ' +
-      (last ? new Date(last.at).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric',
-              hour: '2-digit', minute: '2-digit' }) : '—');
+      Object.keys(ranges).sort().join('、') +
+      (last ? '<br>本机最近导入 ' + new Date(last.at).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric',
+              hour: '2-digit', minute: '2-digit' }) : '') +
+      (window.HY_VIDEOS_PUB ? '<br>线上数据截至 ' + (window.HY_VIDEOS_PUB.upto || '—') : '');
   }
 
   /* ---------- 效果统计 ---------- */
@@ -923,9 +924,9 @@
     return n % 2 ? b[h] : Math.round((b[h - 1] + b[h]) / 2);
   }
   function aggV(arr) {
-    var play = 0, gmv = 0, plays = [];
-    arr.forEach(function (v) { play += v.play; gmv += v.gmv; plays.push(v.play); });
-    return { n: arr.length,
+    var play = 0, gmv = 0, gk = 0, plays = [];
+    arr.forEach(function (v) { play += v.play; gmv += v.gmv; plays.push(v.play); if (!v.noGmv) gk++; });
+    return { n: arr.length, gk: gk,   // gk = 有成交金额的条数（只有线上数据的视频没有）
              avgPlay: arr.length ? Math.round(play / arr.length) : 0,
              medPlay: median(plays),
              maxPlay: plays.length ? Math.max.apply(null, plays) : 0,
@@ -963,8 +964,8 @@
       return '<tr><td>' + name + (sub ? '<span class="few">' + sub + '</span>' : '') +
         '</td><td class="mono">' + HY.num(x.n) + '</td><td class="mono">' + HY.num(x.avgPlay) +
         '</td><td class="mono">' + HY.num(x.medPlay) + '</td><td class="mono">' + HY.num(x.maxPlay) +
-        '</td><td class="mono">¥' + HY.num(Math.round(x.gmv)) +
-        '</td><td class="mono">¥' + x.avgGmv.toFixed(1) + '</td></tr>';
+        '</td><td class="mono">' + (x.gk ? '¥' + HY.num(Math.round(x.gmv)) : '—') +
+        '</td><td class="mono">' + (x.gk ? '¥' + x.avgGmv.toFixed(1) : '—') + '</td></tr>';
     }
 
     // 一句人话的结论；两边样本都够才敢说
@@ -988,7 +989,8 @@
       '<th>最高播放</th><th>总成交价值</th><th>篇均成交</th></tr></thead><tbody>' +
       row('按脚本拍', a, '计划当天发的') + row('自由发挥', b, '没对上任何脚本') +
       '</tbody></table>' +
-      '<p class="verdict">' + verdict + '</p>';
+      '<p class="verdict">' + verdict + '</p>' +
+      (a.gk || b.gk ? '' : '<p class="verdict">成交金额不上线，在本机「视频数据导入」导入 xlsx 后才显示。</p>');
 
     renderEffDim();
   }
@@ -1074,7 +1076,7 @@
             (x.n < FEW ? '<span class="few">样本 ' + x.n + ' 条</span>' : '') + '</td>';
         }
         var v = x[c.k];
-        var txt = c.money ? '¥' + (c.dec ? v.toFixed(1) : HY.num(Math.round(v))) : HY.num(v);
+        var txt = c.money ? (x.gk ? '¥' + (c.dec ? v.toFixed(1) : HY.num(Math.round(v))) : '—') : HY.num(v);
         return '<td class="mono' + (x.n < FEW ? ' dim' : '') + '">' + txt + '</td>';
       }).join('');
       var w = maxAvg ? Math.round(x.avgPlay / maxAvg * 100) : 0;

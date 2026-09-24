@@ -392,6 +392,10 @@ node tools/dom_check.js '#view=effect' '#p-effect' --seed=/tmp/fakevideos.json
 （已 .gitignore，含成交金额不上线），`node tools/build_rank.js` 汇总成**每店每天条数**，发布脚本会自动跑。
 条数口径 = 按发布日期数，脚本视频 + 自由发挥都算，按视频ID去重。标题旁「数据截至」= 导出统计范围终点。
 
+同一步还生成 `data/videos.js`（`window.HY_VIDEOS_PUB`，视频明细**去掉成交金额**，用户选的「除成交金额外都传」），
+index.html 加载它，`HY.Videos.list()` 用它打底、本机 localStorage 导入的盖在上面 → **总部看板打开就有数据，不用再导入**。
+只有线上数据的视频带 `noGmv`，效果统计 / 抽屉里成交金额显示「—」不显示 0；要看成交还是得本机导入 xlsx。
+
 ## 发布到线上
 
 GitHub Pages：**https://hejun-coderlife.github.io/hymn-douyin-board/**（仓库 `Hejun-Coderlife/hymn-douyin-board`，公开）。
@@ -410,7 +414,7 @@ python3 tools/sync_data.py && git add -A && git commit -m "更新脚本数据" &
   git 认不出改动 → **每次只提交真正变了的月份**，仓库不会每次胖 36MB。
 - **`data/scripts.json`（40MB）和 `reference/` 不进仓库**（见 .gitignore）：前者站点不加载、每次整文件替换会撑爆仓库；
   后者那份样例 xlsx 里有视频成交金额。**这也意味着 scripts.json 只存在你本机，要另外备份。**
-- **视频数据不会随着上线**：它在各自浏览器的 localStorage 里，线上（github.io）和本地（file://）是两套存储。
+- ~~**视频数据不会随着上线**~~（2026-09-24 起有 data/videos.js，见「门店页『排行』标签」一节；下面这句只对成交金额还成立）：它在各自浏览器的 localStorage 里，线上（github.io）和本地（file://）是两套存储。
   线上要有数据，得在本机「导出备份 JSON」再到线上「导入备份」。
 - 国内访问 github.io 偶尔不稳；真成问题就把同一套文件搬到国内静态托管，代码不用改。
 

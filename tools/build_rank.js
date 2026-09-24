@@ -1,4 +1,11 @@
-/* 门店视频发布排行：把「视频数据/」里的抖音来客 xlsx 汇总成 data/rank.js，给门店手机页用。
+/* 把「视频数据/」里的抖音来客 xlsx 汇总成两份线上数据：
+     data/rank.js    每店每天条数 —— 门店手机页「排行」用
+     data/videos.js  视频明细（**不含成交金额**）—— 总部看板打开就有，不用再在页面上导入
+                     （2026-09-24 用户：「那你一起同步了」，并选定「除成交金额外都传」）
+   成交金额只在本机「视频数据导入」导入 xlsx 后才有，看板上本机数据会盖在线上数据上面。
+
+   以下是原来只做排行时的说明：
+   门店视频发布排行：把「视频数据/」里的抖音来客 xlsx 汇总成 data/rank.js，给门店手机页用。
    （2026-09-24 用户：门店页底部「今天」标签换成门店视频发布排行，本周 / 本月可切换）
 
    为什么要这一步：视频数据只存在总部电脑浏览器的 localStorage 里，店员手机上没有，
@@ -16,6 +23,7 @@ const XLSX = require('../vendor/xlsx.full.min.js');
 const root = path.join(__dirname, '..');
 const dir = path.join(root, '视频数据');
 const out = path.join(root, 'data', 'rank.js');
+const outV = path.join(root, 'data', 'videos.js');
 
 // core.js 顶层会碰 document / setTimeout（浏览器里的加载逻辑），给空壳就行
 const ctx = { window: {}, console: console, document: { querySelector: () => null },
@@ -58,4 +66,14 @@ const upto = /^\d{8}$/.test(rangeTo)
 fs.writeFileSync(out,
   '/* 由 tools/build_rank.js 生成，别手改。每店每天发布的视频条数 */\n' +
   'window.HY_RANK = ' + JSON.stringify({ upto: upto, counts: counts }) + ';\n');
+// 明细：去掉成交金额（直接成交 / 总成交价值），其余字段抖音上本来就公开
+const pub = Object.keys(videos).map(k => {
+  const v = videos[k];
+  return { id: v.id, store: v.store, title: v.title, url: v.url, pubDate: v.pubDate, pubTs: v.pubTs,
+           play: v.play, validPlay: v.validPlay, rangeFrom: v.rangeFrom, rangeTo: v.rangeTo };
+}).sort((a, b) => a.pubTs - b.pubTs || (a.id < b.id ? -1 : 1));   // 固定顺序：没变就不产生 git 改动
+fs.writeFileSync(outV,
+  '/* 由 tools/build_rank.js 生成，别手改。视频明细（不含成交金额） */\n' +
+  'window.HY_VIDEOS_PUB = ' + JSON.stringify({ upto: upto, videos: pub }) + ';\n');
+console.log('   看板视频明细：' + pub.length + ' 条（不含成交金额）');
 console.log('   排行数据：' + Object.keys(counts).length + ' 店 ' + n + ' 条视频' + (upto ? '，数据截至 ' + upto : ''));

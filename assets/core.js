@@ -111,9 +111,17 @@ window.HY = (function () {
       }
     },
     write: function (o) { localStorage.setItem(LS_KEY, JSON.stringify(o)); },
+    /** 线上数据（data/videos.js，发布时生成，不含成交金额）打底，本机导入的盖在上面。
+        只有线上数据的视频标 noGmv —— 成交金额显示「—」，别当成 0 */
     list: function () {
-      var o = this.read(), out = [];
-      for (var k in o.videos) out.push(o.videos[k]);
+      var o = this.read(), map = {}, out = [];
+      var pub = (window.HY_VIDEOS_PUB && window.HY_VIDEOS_PUB.videos) || [];
+      pub.forEach(function (v) { map[v.id] = Object.assign({ gmv: 0, direct: 0, noGmv: 1 }, v); });
+      for (var k in o.videos) {
+        map[k] = map[k] ? Object.assign({}, map[k], o.videos[k]) : o.videos[k];
+        delete map[k].noGmv;
+      }
+      for (var id in map) out.push(map[id]);
       return out;
     },
     meta: function () { return this.read().meta; },
