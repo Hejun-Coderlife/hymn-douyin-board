@@ -191,7 +191,6 @@
       x.i = place;
       if (x.st.douyinId === id) mine = x;
     });
-    var upto = R.upto && R.upto < r.to ? '数据截至 ' + HY.md(R.upto) : '';
     var upd = R.updated
       ? '<div class="rkupd">更新于 ' + (+R.updated.slice(5, 7)) + ' 月 ' + (+R.updated.slice(8, 10)) + ' 日 ' +
         R.updated.slice(11) + (R.upto ? ' · 抖音数据截至 ' + (+R.upto.slice(5, 7)) + ' 月 ' + (+R.upto.slice(8, 10)) + ' 日' : '') + '</div>'
@@ -203,7 +202,7 @@
         '<div><div class="v">' + total + '</div><div class="l">全部门店合计</div></div>' +
       '</div>' +
       '<div class="sec"><h2>' + r.t + ' ' + HY.md(r.from) + '–' + HY.md(r.to) + '</h2>' +
-        '<span class="more">' + (upto || rows.length + ' 家') + '</span></div>' +
+        '<span class="more">' + rows.length + ' 家</span></div>' +
       rows.map(function (x) {
         return '<div class="rk' + (x.st.douyinId === id ? ' me' : '') + '">' +
           '<span class="i">' + x.i + '</span>' +
