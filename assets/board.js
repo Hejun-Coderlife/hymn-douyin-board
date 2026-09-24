@@ -1253,12 +1253,26 @@
     var mgrOpts = managerNames().map(function (m) { return { v: m, t: m }; });
     fill($('#fMgr'), '全部区域经理', mgrOpts);
     if ($('#eMgr')) fill($('#eMgr'), '全部区域经理', mgrOpts);   // 效果统计那张表也按经理筛
-    fill($('#fStore'), '全部门店', S.stores.slice().sort(function (a, c) {
-      return a.storeName.localeCompare(c.storeName, 'zh');
-    }).map(function (s) {
-      return { v: s.douyinId, t: s.storeName + (s.brandLine ? '（' + s.brandLine + '）' : '') };
-    }));
+    fillStoreOpts();
     xselAll();
+  }
+
+  /* 门店下拉只列当前区域经理名下的店（2026-09-24 用户：选了经理再选店，选到别人的店日历就空了）。
+     换经理时，已勾的店不在新经理名下的自动去掉。 */
+  function fillStoreOpts() {
+    var sel = $('#fStore'), mgr = $('#fMgr').value;
+    var keep = selValues(sel);
+    var list = S.stores.filter(function (s) { return !mgr || (s.manager || '') === mgr; });
+    sel.innerHTML = '<option value="">' + (mgr ? mgr + '的全部门店' : '全部门店') + '</option>';
+    list.slice().sort(function (a, c) {
+      return a.storeName.localeCompare(c.storeName, 'zh');
+    }).forEach(function (s) {
+      var o = document.createElement('option');
+      o.value = s.douyinId; o.textContent = s.storeName + (s.brandLine ? '（' + s.brandLine + '）' : '');
+      o.selected = keep.indexOf(s.douyinId) !== -1;
+      sel.appendChild(o);
+    });
+    sel.disabled = false;
   }
 
   /* ---------- 自定义下拉（原生 select 在 Mac 上长得跟整站不搭） ----------
@@ -1553,7 +1567,8 @@
     };
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeDrawer(); });
 
-    ['#fMgr', '#fStore', '#fLate'].forEach(function (s) { $(s).onchange = render; });
+    ['#fStore', '#fLate'].forEach(function (s) { $(s).onchange = render; });
+    $('#fMgr').onchange = function () { fillStoreOpts(); xsel($('#fStore')); render(); };
 
     // 效果统计：维度切换 + 按经理筛（只重画那张表，别惊动日历）
     $$('#effDims .segbtn').forEach(function (b) {
