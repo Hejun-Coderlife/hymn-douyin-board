@@ -262,7 +262,7 @@
     var pitchPx = 600 / bars.length * scale;
     var maxDigits = 0;
     texts.forEach(function (t) { maxDigits = Math.max(maxDigits, t.textContent.length); });
-    var fontPx = 12, need = maxDigits * fontPx * 0.62 + 3;      // 数字字形约 0.6 个字号宽，再留 3px 缝
+    var fontPx = 15, need = maxDigits * fontPx * 0.62 + 3;      // 数字字形约 0.6 个字号宽，再留 3px 缝
     var fit = pitchPx >= need;
     g.style.display = fit ? '' : 'none';
     texts.forEach(function (t) { t.setAttribute('font-size', (fontPx / scale).toFixed(2)); });

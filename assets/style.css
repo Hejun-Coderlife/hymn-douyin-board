@@ -836,7 +836,7 @@ table.list td .code{display:block;font-size:10.5px;color:var(--t4);margin-top:2p
 .spark rect.bar{transition:fill .12s ease}
 .spark rect.bar.on{fill:#B58B3E}        /* 悬停=色系里的棕（驼黄），别用黑也别用深绿（用户 2026-09-17 两次纠正）*/
 .spark rect.hot{cursor:default}
-.spark .bnums text{fill:#3A3A42;font-variant-numeric:tabular-nums;pointer-events:none}
+.spark .bnums text{fill:#000;font-family:var(--num);font-weight:400;pointer-events:none}   /* 跟 KPI 大数字同一套 Didot（用户 2026-09-24 指定），黑色 */
 #tiles rect.seg{transition:opacity .12s ease}
 #tiles rect.seg:hover,#tiles rect.seg.on{opacity:.75}
 
