@@ -1054,6 +1054,9 @@
     var a = aggV(inRange.filter(function (v) { return claimed[v.id]; }));
     var b = aggV(inRange.filter(function (v) { return !claimed[v.id]; }));
 
+    /* 2026-09-24 用户：「这些，有点看不懂」—— 全部换成大白话：
+       「按脚本拍 / 自由发挥」→「照脚本拍 / 自己拍的」，「中位播放」→「一半视频不到」，
+       结论用「几倍」不用「高 300%」，统计范围的口径说明缩成表下一行小字。 */
     function row(name, x, sub) {
       return '<tr><td>' + name + (sub ? '<span class="few">' + sub + '</span>' : '') +
         '</td><td class="mono">' + HY.num(x.n) + '</td><td class="mono">' + HY.num(x.avgPlay) +
@@ -1064,26 +1067,31 @@
 
     // 一句人话的结论；两边样本都够才敢说
     var verdict;
+    function times(p, q) {                       // 52 vs 13 →「4 倍」；差不多就说差不多
+      if (!q) return p ? '更多' : '一样';
+      var r = p / q;
+      if (r >= 1.15) return '是自己拍的 <b>' + (r >= 10 ? Math.round(r) : r.toFixed(1).replace(/\.0$/, '')) + ' 倍</b>';
+      if (r <= 1 / 1.15) return '只有自己拍的 <b>' + Math.round(r * 100) + '%</b>';
+      return '<b>跟自己拍的差不多</b>';
+    }
     if (a.n < FEW || b.n < FEW) {
-      verdict = '两边各要够 ' + FEW + ' 条才好比，现在是「按脚本」' + a.n + ' 条 vs「自由发挥」' +
-                b.n + ' 条，先别下结论。';
+      verdict = '视频太少，先别下结论（照脚本拍 ' + a.n + ' 条，自己拍的 ' + b.n + ' 条，两边各要够 ' + FEW + ' 条）。';
     } else {
-      var dAvg = pct(a.avgPlay, b.avgPlay), dMed = pct(a.medPlay, b.medPlay);
-      verdict = '按脚本拍的<b>平均播放' + signed(dAvg) + '</b>，<b>中位播放' + signed(dMed) + '</b>。' +
-        ((dAvg >= 0) !== (dMed >= 0)
-          ? '两个方向不一致 —— 均值是被个别爆款带的，<b>以中位数为准</b>。'
+      verdict = '照脚本拍的视频，平均每条播放' + times(a.avgPlay, b.avgPlay) +
+        '（' + HY.num(a.avgPlay) + ' 次 vs ' + HY.num(b.avgPlay) + ' 次）。' +
+        ((a.avgPlay >= b.avgPlay) !== (a.medPlay >= b.medPlay)
+          ? '不过大多数视频的播放其实反过来，平均数是被几条爆款拉上去的。'
           : '');
     }
 
     $('#effectBody').innerHTML =
-      '<div class="kvs" style="margin-bottom:10px"><div class="k">统计范围</div><div class="mono">' +
-      r.f + ' ~ ' + r.t + '</div><div class="k">纳入对比</div><div>' + HY.num(S.videos.length) +
-      ' 条里有 ' + HY.num(inRange.length) + ' 条发布于范围内</div></div>' +
-      '<table class="mini"><thead><tr><th>口径</th><th>视频数</th><th>平均播放</th><th>中位播放</th>' +
-      '<th>最高播放</th><th>总成交价值</th><th>篇均成交</th></tr></thead><tbody>' +
-      row('按脚本拍', a, '计划当天发的') + row('自由发挥', b, '没对上任何脚本') +
+      '<p class="verdict" style="margin:0 0 14px">' + verdict + '</p>' +
+      '<table class="mini"><thead><tr><th></th><th>视频数</th><th>平均每条播放</th><th>一半视频播放不到</th>' +
+      '<th>播放最多的一条</th><th>成交总额</th><th>平均每条成交</th></tr></thead><tbody>' +
+      row('照脚本拍', a, '计划那天发的') + row('自己拍的', b, '没对上脚本') +
       '</tbody></table>' +
-      '<p class="verdict">' + verdict + '</p>' +
+      '<p class="note" style="margin-top:10px">只算 ' + HY.md(r.f) + '–' + HY.md(r.t) + ' 发布的 ' + HY.num(inRange.length) +
+      ' 条视频（抖音导出的统计期；更早的视频播放没统计进来，混进来会全是 0）。</p>' +
       (a.gk || b.gk ? '' : '<p class="verdict">成交金额不上线，在本机「视频数据导入」导入 xlsx 后才显示。</p>');
 
     renderEffDim();
@@ -1094,15 +1102,15 @@
   var EFF_COLS = {
     store: [
       { k: 'lab', t: '门店', txt: 1 },
-      { k: 'n', t: '视频数' }, { k: 'ns', t: '按脚本' }, { k: 'nf', t: '自由发挥' },
-      { k: 'avgPlay', t: '平均播放' }, { k: 'medPlay', t: '中位播放' },
-      { k: 'gmv', t: '总成交价值', money: 1 }
+      { k: 'n', t: '视频数' }, { k: 'ns', t: '照脚本拍' }, { k: 'nf', t: '自己拍的' },
+      { k: 'avgPlay', t: '平均每条播放' }, { k: 'medPlay', t: '一半视频不到' },
+      { k: 'gmv', t: '成交总额', money: 1 }
     ],
     topic: [
       { k: 'lab', t: '内容方向', txt: 1 },
-      { k: 'n', t: '视频数' }, { k: 'avgPlay', t: '平均播放' }, { k: 'medPlay', t: '中位播放' },
-      { k: 'maxPlay', t: '最高播放' }, { k: 'gmv', t: '总成交价值', money: 1 },
-      { k: 'avgGmv', t: '篇均成交', money: 1, dec: 1 }
+      { k: 'n', t: '视频数' }, { k: 'avgPlay', t: '平均每条播放' }, { k: 'medPlay', t: '一半视频不到' },
+      { k: 'maxPlay', t: '最多的一条' }, { k: 'gmv', t: '成交总额', money: 1 },
+      { k: 'avgGmv', t: '平均每条成交', money: 1, dec: 1 }
     ]
   };
   EFF_COLS.format = EFF_COLS.topic.map(function (c) {
@@ -1141,8 +1149,8 @@
     }).filter(function (x) { return x.n > 0; });
 
     $('#effDimNote').innerHTML = dim === 'store'
-      ? '这张表统计全部视频（脚本 + 自由发挥）'
-      : '只统计「按脚本拍」的视频 —— 自由发挥没有内容方向 / 拍摄形式';
+      ? '这张表算全部视频（照脚本拍 + 自己拍的）'
+      : '只算照脚本拍的视频（自己拍的没有内容方向 / 拍摄形式）';
 
     if (!rows.length) {
       body.innerHTML = '<div class="emptyrow">这个范围里没有可比的视频。</div>';
