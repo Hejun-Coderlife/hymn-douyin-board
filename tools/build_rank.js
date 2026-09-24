@@ -63,9 +63,13 @@ Object.keys(videos).forEach(k => {
 const upto = /^\d{8}$/.test(rangeTo)
   ? rangeTo.slice(0, 4) + '-' + rangeTo.slice(4, 6) + '-' + rangeTo.slice(6) : '';
 
+// 更新时间 = 这次生成的时间（门店排行页上显示「更新于」）
+const now = new Date(), p2 = x => String(x).padStart(2, '0');
+const updated = now.getFullYear() + '-' + p2(now.getMonth() + 1) + '-' + p2(now.getDate()) +
+  ' ' + p2(now.getHours()) + ':' + p2(now.getMinutes());
 fs.writeFileSync(out,
   '/* 由 tools/build_rank.js 生成，别手改。每店每天发布的视频条数 */\n' +
-  'window.HY_RANK = ' + JSON.stringify({ upto: upto, counts: counts }) + ';\n');
+  'window.HY_RANK = ' + JSON.stringify({ updated: updated, upto: upto, counts: counts }) + ';\n');
 // 明细：去掉成交金额（直接成交 / 总成交价值），其余字段抖音上本来就公开
 const pub = Object.keys(videos).map(k => {
   const v = videos[k];

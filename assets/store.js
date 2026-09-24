@@ -192,7 +192,11 @@
       if (x.st.douyinId === id) mine = x;
     });
     var upto = R.upto && R.upto < r.to ? '数据截至 ' + HY.md(R.upto) : '';
-    $('#rankBody').innerHTML =
+    var upd = R.updated
+      ? '<div class="rkupd">更新于 ' + (+R.updated.slice(5, 7)) + ' 月 ' + (+R.updated.slice(8, 10)) + ' 日 ' +
+        R.updated.slice(11) + (R.upto ? ' · 抖音数据截至 ' + (+R.upto.slice(5, 7)) + ' 月 ' + (+R.upto.slice(8, 10)) + ' 日' : '') + '</div>'
+      : '';
+    $('#rankBody').innerHTML = upd +
       '<div class="sum">' +
         '<div><div class="v">' + (mine ? mine.i : '–') + '</div><div class="l">本店名次</div></div>' +
         '<div><div class="v p">' + (mine ? mine.n : '–') + '</div><div class="l">本店发布</div></div>' +

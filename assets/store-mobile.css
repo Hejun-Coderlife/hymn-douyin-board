@@ -166,6 +166,8 @@ html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans)
   border:1px solid var(--chip);color:var(--ink);text-decoration:none;cursor:pointer}
 .rkchips a.on{background:var(--ink);border-color:var(--ink);color:var(--bg)}
 .rank .sum{margin-top:14px;border-top:1px solid var(--line)}
+.rkupd{padding:12px 0 0;font-size:11.5px;letter-spacing:.06em;color:var(--dim)}
+.rank .rkupd + .sum{margin-top:12px}
 .rk{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line-2);font-size:14.5px}
 .rk .i{width:22px;flex:none;text-align:right;font-family:var(--serif);font-size:15px;color:var(--dim)}
 .rk .nm{flex:0 0 38%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
