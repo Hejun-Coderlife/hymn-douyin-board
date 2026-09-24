@@ -338,18 +338,13 @@
     ws.forEach(function (s) { c[statusOfScript(s)]++; });
     var due = c.done + c.late;
     var rate = due ? Math.round(c.done / due * 100) : 0;
-    var freeCount = 0;
-    var vr = viewRange();   // 只算当前视图范围内发布的（2026-09-24 改，原来是所有月份总数）
-    rows.forEach(function (st) {
-      (S.freeByStore[st.douyinId] || []).forEach(function (v) { if (v.pubDate >= vr.from && v.pubDate <= vr.to) freeCount++; });
-    });
+    // 「自由发挥视频」那格 2026-09-24 删了（用户：「这个不要」）
 
     $('#kpis').innerHTML = [
       kpi('完成率', rate + '<small>%</small>', '', rangeLabel() + ' · 已到期 ' + due + ' 条'),
       kpi('已发布', c.done, 'done', '计划当天发的才算'),
       kpi('逾期未发', c.late, 'late', '过了计划日仍没匹配到'),
       kpi('待拍', c.todo, '', '计划日期还没到'),
-      kpi('自由发挥视频', HY.num(freeCount), 'free', rangeLabel() + ' · 没对上任何脚本'),
       kpi('门店', rows.length + '<small>/' + S.stores.length + '</small>', '', '当前筛选结果')
     ].join('');
     // 「逾期未发排行」卡片 2026-09-24 删了（用户：「后台这部分不要」），别加回去
@@ -1311,7 +1306,9 @@
     }
     var menu = box.querySelector('.xmenu');
     var multi = sel.multiple, vals = selValues(sel);
-    menu.innerHTML = Array.prototype.map.call(sel.options, function (o) {
+    // 多选勾了两家以上，菜单顶上钉一个「清空」（2026-09-24 用户要一键清空；原来的「全部门店」滑下去就找不到了）
+    menu.innerHTML = (multi && vals.length > 1 ? '<a data-v="" class="clr">✕ 清空已选的 ' + vals.length + ' 家</a>' : '') +
+      Array.prototype.map.call(sel.options, function (o) {
       if (o.value === '') {                                  // 「全部 xx」= 清空选择
         return '<a data-v="" class="' + (vals.length ? '' : 'on') + '">' + esc(o.textContent) + '</a>';
       }

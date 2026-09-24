@@ -750,6 +750,8 @@ body.storepage .sechead.row{padding-bottom:10px}
   width:12px;height:12px;flex-shrink:0;border:1px solid var(--line-2);background:var(--card);
 }
 .xsel .xmenu a.ck.on .box{background:var(--ink);border-color:var(--ink)}
+.xsel .xmenu a.clr{position:sticky;top:0;z-index:1;background:var(--ink);color:#fff;font-size:12.5px}
+.xsel .xmenu a.clr:hover{background:#333;color:#fff}
 .xsel .xmenu a.more{border-top:1px solid var(--line);color:var(--t1);font-size:12.5px}
 
 table.list td .code{display:block;font-size:10.5px;color:var(--t4);margin-top:2px}
