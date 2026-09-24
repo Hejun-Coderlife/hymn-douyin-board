@@ -1298,3 +1298,11 @@ body.hasfx.focusday .emptyday{display:none}
 .pst-preview{margin-top:10px;border:1px solid var(--line-2);max-height:56vh;overflow:auto;background:#fff}
 .pst-preview canvas{display:block}
 #btnPoster{margin-left:4px}
+
+/* 效果统计重做（2026-09-24） */
+#p-effect h4{font-size:13px;font-weight:600;margin:4px 0 6px;color:var(--t1)}
+.effgrid{display:grid;grid-template-columns:1fr 1fr;gap:28px}
+@media (max-width:1100px){.effgrid{grid-template-columns:1fr}}
+table.mini.vtop td.tt{text-align:left;max-width:420px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--t2)}
+table.mini.vtop th:nth-child(3){text-align:left}
+table.mini tr.dim td{color:var(--t4)}

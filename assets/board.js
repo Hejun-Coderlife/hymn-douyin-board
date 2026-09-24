@@ -1038,7 +1038,7 @@
      口径陷阱：播放数只统计导出的「数据日期范围」内，范围外的老视频大量为 0，
      混进来会把均值压垮 —— 所以先按发布时间筛一遍。
      另一个陷阱：平均值会被一条爆款整个带飞，每行都同时给中位数，两个数差得远就说明是个别视频撑的。 */
-  var EFF = { dim: 'store', sort: 'avgPlay', desc: true };
+  var EFF = { dim: 'store', sort: 'medPlay', desc: true };
   var FEW = 5;                       // 少于这么多条就标「样本少」，别拿它下结论
 
   function median(a) {
@@ -1072,166 +1072,171 @@
   function pct(a, b) { return b ? Math.round((a - b) / b * 100) : 0; }
   function signed(n) { return (n >= 0 ? '高 ' : '低 ') + Math.abs(n) + '%'; }
 
-  function renderEffect() {
-    if (!S.videos.length) {
-      $('#effectBody').innerHTML = '<div class="emptyrow">还没有视频数据，先去「视频数据导入」。</div>';
-      $('#effDimBody').innerHTML = '';
-      $('#effDimNote').textContent = '';
-      return;
-    }
-    var r = effRange(), inRange = effVideos(), claimed = S.m.claimed;
-    var a = aggV(inRange.filter(function (v) { return claimed[v.id]; }));
-    var b = aggV(inRange.filter(function (v) { return !claimed[v.id]; }));
+  /* 2026-09-24 整页重做（用户：「我们真实能统计的效果有哪些」→「都改」）。
+     原来的「计划日发的 vs 计划外」「按内容方向 / 拍摄形式」都拿掉了：看板只看得到发布日期，
+     判断不了视频是不是照脚本拍的，那些分组没有意义。现在只放导出表里真有的东西：
+       ① 门店表现（发布天数、断更、播放、千播以上、成交、无标题）  ② 播放 / 成交最高的视频
+       ③ 几点发、星期几发      ④ 发得勤有没有用      ⑤ 标题写没写
+     比较一律看「一半视频不到」（中位数），平均数会被一条爆款带飞。 */
+  var EFF_COLS2 = [
+    { k: 'lab', t: '门店', txt: 1 },
+    { k: 'n', t: '视频数' },
+    { k: 'pubDays', t: '发布天数', fmt: function (x) { return x.pubDays + '/' + x.nDays; } },
+    { k: 'gap', t: '最长断更', fmt: function (x) { return x.gap + ' 天'; } },
+    { k: 'avgPlay', t: '平均每条播放' },
+    { k: 'medPlay', t: '一半视频不到' },
+    { k: 'k1', t: '千播以上' },
+    { k: 'gmv', t: '成交总额', money: 1 },
+    { k: 'noTitle', t: '没写标题' }
+  ];
+  function effScopeVideos() {
+    var mgr = $('#eMgr') ? $('#eMgr').value : '', ok = {};
+    S.stores.forEach(function (st) { if (!mgr || (st.manager || '') === mgr) ok[st.douyinId] = st; });
+    return { ok: ok, vids: effVideos().filter(function (v) { return ok[v.store]; }) };
+  }
+  function effDays(r) {
+    var out = [];
+    for (var d = r.f; d <= r.t; d = HY.ymd(HY.addDays(HY.parseYmd(d), 1))) out.push(d);
+    return out;
+  }
+  function vHour(v) { return v.pubTs ? new Date(v.pubTs).getHours() : null; }
+  function hasTitle(v) { return String(v.title || '').trim() !== ''; }
 
-    /* 2026-09-24 用户：「这些，有点看不懂」—— 全部换成大白话：
-       「中位播放」→「一半视频不到」，
-       2026-09-24 同一天又改：看板只看发布日期、看不到视频内容，**判断不了是不是照脚本拍的**
-       （用户：「把按脚本拍的这个说法去掉，因为我们无法判断」）。所以两组只叫
-       「计划日发的」（排了脚本那天发的第一条）/「计划外的」，别再写「照脚本拍 / 自己拍 / 自由发挥」。
-       结论用「几倍」不用「高 300%」，统计范围的口径说明缩成表下一行小字。 */
-    function row(name, x, sub) {
-      return '<tr><td>' + name + (sub ? '<span class="few">' + sub + '</span>' : '') +
-        '</td><td class="mono">' + HY.num(x.n) + '</td><td class="mono">' + HY.num(x.avgPlay) +
-        '</td><td class="mono">' + HY.num(x.medPlay) + '</td><td class="mono">' + HY.num(x.maxPlay) +
-        '</td><td class="mono">' + (x.gk ? '¥' + HY.num(Math.round(x.gmv)) : '—') +
-        '</td><td class="mono">' + (x.gk ? '¥' + x.avgGmv.toFixed(1) : '—') + '</td></tr>';
-    }
-
-    // 一句人话的结论；两边样本都够才敢说
-    var verdict;
-    function times(p, q) {                       // 52 vs 13 →「4 倍」；差不多就说差不多
-      if (!q) return p ? '更多' : '一样';
-      var r = p / q;
-      if (r >= 1.15) return '是计划外的 <b>' + (r >= 10 ? Math.round(r) : r.toFixed(1).replace(/\.0$/, '')) + ' 倍</b>';
-      if (r <= 1 / 1.15) return '只有计划外的 <b>' + Math.round(r * 100) + '%</b>';
-      return '<b>跟计划外的差不多</b>';
-    }
-    if (a.n < FEW || b.n < FEW) {
-      verdict = '视频太少，先别下结论（计划日发的 ' + a.n + ' 条，计划外的 ' + b.n + ' 条，两边各要够 ' + FEW + ' 条）。';
-    } else {
-      verdict = '计划日发的视频，平均每条播放' + times(a.avgPlay, b.avgPlay) +
-        '（' + HY.num(a.avgPlay) + ' 次 vs ' + HY.num(b.avgPlay) + ' 次）。' +
-        ((a.avgPlay >= b.avgPlay) !== (a.medPlay >= b.medPlay)
-          ? '不过大多数视频的播放其实反过来，平均数是被几条爆款拉上去的。'
-          : '');
-    }
-
-    $('#effectBody').innerHTML =
-      '<p class="verdict" style="margin:0 0 14px">' + verdict + '</p>' +
-      '<table class="mini"><thead><tr><th></th><th>视频数</th><th>平均每条播放</th><th>一半视频播放不到</th>' +
-      '<th>播放最多的一条</th><th>成交总额</th><th>平均每条成交</th></tr></thead><tbody>' +
-      row('计划日发的', a, '排了脚本那天发的') + row('计划外的', b, '其他日子 / 当天多发的') +
-      '</tbody></table>' +
-      '<p class="note" style="margin-top:10px">只算 ' + HY.md(r.f) + '–' + HY.md(r.t) + ' 发布的 ' + HY.num(inRange.length) +
-      ' 条视频（抖音导出的统计期）。只按发布日期分组，看不出视频内容是不是照脚本拍的。</p>' +
-      (a.gk || b.gk ? '' : '<p class="verdict">成交金额不上线，在本机「视频数据导入」导入 xlsx 后才显示。</p>');
-
-    renderEffDim();
+  /** 一组视频 → 条数 / 中位 / 平均，给「几点发」这类小表用 */
+  function grpRow(lab, arr, maxMed) {
+    var x = aggV(arr), w = maxMed ? Math.round(x.medPlay / maxMed * 100) : 0, few = x.n < FEW;
+    return '<tr' + (few ? ' class="dim"' : '') + '><td>' + lab + (few && x.n ? '<span class="few">样本 ' + x.n + ' 条</span>' : '') +
+      '</td><td class="mono">' + HY.num(x.n) + '</td><td class="mono">' + HY.num(x.medPlay) +
+      '</td><td class="mono">' + HY.num(x.avgPlay) + '</td>' +
+      '<td class="barc"><span class="track"><i style="width:' + w + '%"></i></span></td></tr>';
+  }
+  function grpTable(head, groups) {
+    var maxMed = 0;
+    groups.forEach(function (g) { if (g[1].length >= FEW) maxMed = Math.max(maxMed, aggV(g[1]).medPlay); });
+    return '<table class="mini eff"><thead><tr><th>' + head + '</th><th>视频数</th><th>一半视频不到</th>' +
+      '<th>平均每条播放</th><th class="barh">一半视频不到（对比）</th></tr></thead><tbody>' +
+      groups.map(function (g) { return grpRow(g[0], g[1], maxMed); }).join('') + '</tbody></table>';
   }
 
-  /* 拆维度：按门店 / 按内容方向 / 按拍摄形式。
-     内容方向和拍摄形式只有脚本视频才有，自由发挥的直接不进这两张表。 */
-  var EFF_COLS = {
-    store: [
-      { k: 'lab', t: '门店', txt: 1 },
-      { k: 'n', t: '视频数' }, { k: 'ns', t: '计划日发的' }, { k: 'nf', t: '计划外的' },
-      { k: 'avgPlay', t: '平均每条播放' }, { k: 'medPlay', t: '一半视频不到' },
-      { k: 'gmv', t: '成交总额', money: 1 }
-    ],
-    topic: [
-      { k: 'lab', t: '内容方向', txt: 1 },
-      { k: 'n', t: '视频数' }, { k: 'avgPlay', t: '平均每条播放' }, { k: 'medPlay', t: '一半视频不到' },
-      { k: 'maxPlay', t: '最多的一条' }, { k: 'gmv', t: '成交总额', money: 1 },
-      { k: 'avgGmv', t: '平均每条成交', money: 1, dec: 1 }
-    ]
-  };
-  EFF_COLS.format = EFF_COLS.topic.map(function (c) {
-    return c.k === 'lab' ? { k: 'lab', t: '拍摄形式', txt: 1 } : c;
-  });
-
-  function renderEffDim() {
-    var body = $('#effDimBody');
-    if (!body || !S.videos.length) return;
-    var dim = EFF.dim;
-    var mgrSel = $('#eMgr'), mgr = mgrSel ? mgrSel.value : '';
-    var ok = {};
-    S.stores.forEach(function (st) { if (!mgr || (st.manager || '') === mgr) ok[st.douyinId] = st; });
-
-    var claimed = S.m.claimed, groups = {};
-    effVideos().forEach(function (v) {
-      var st = ok[v.store];
-      if (!st) return;
-      var sid = claimed[v.id], sc = sid ? S.scriptById[sid] : null;
-      var key;
-      if (dim === 'store') key = v.store;
-      else if (!sc) return;                              // 自由发挥没有方向/形式
-      else key = sc[dim] || '（未填）';
-      var g = groups[key] || (groups[key] = {
-        lab: dim === 'store' ? (st.storeName || v.store) : key, scripted: [], free: [], all: []
-      });
-      g.all.push(v);
-      (sc ? g.scripted : g.free).push(v);
-    });
-
-    // 门店那张表统计全部视频（脚本 + 自由），另外两张只统计脚本视频
-    var rows = Object.keys(groups).map(function (k) {
-      var g = groups[k], x = aggV(dim === 'store' ? g.all : g.scripted);
-      x.lab = g.lab; x.ns = g.scripted.length; x.nf = g.free.length;
-      return x;
-    }).filter(function (x) { return x.n > 0; });
-
-    $('#effDimNote').innerHTML = dim === 'store'
-      ? '这张表算全部视频（计划日发的 + 计划外的）'
-      : '只算计划日发的视频，方向/形式取自当天的脚本，不代表视频真拍了这个';
-
-    if (!rows.length) {
-      body.innerHTML = '<div class="emptyrow">这个范围里没有可比的视频。</div>';
+  function renderEffect() {
+    if (!S.videos.length) {
+      $('#effStores').innerHTML = '<div class="emptyrow">还没有视频数据，先去「视频数据导入」。</div>';
+      ['#effTop', '#effWhen', '#effFreq', '#effTitle'].forEach(function (s) { $(s).innerHTML = ''; });
       return;
     }
+    var r = effRange(), sc = effScopeVideos(), vids = sc.vids, days = effDays(r);
+    var gmvKnown = vids.some(function (v) { return !v.noGmv; });
+    $('#effNote').textContent = '统计 ' + HY.md(r.f) + '–' + HY.md(r.t) + ' 发布的 ' + HY.num(vids.length) +
+      ' 条视频（抖音导出的统计期，播放只算这段时间内的）';
 
-    var cols = EFF_COLS[dim];
-    if (!cols.some(function (c) { return c.k === EFF.sort; })) EFF.sort = 'avgPlay';
+    /* ① 门店表现 */
+    var by = {};
+    Object.keys(sc.ok).forEach(function (id) { by[id] = []; });
+    vids.forEach(function (v) { by[v.store].push(v); });
+    var rows = Object.keys(by).map(function (id) {
+      var arr = by[id], x = aggV(arr), dayset = {};
+      arr.forEach(function (v) { dayset[v.pubDate] = 1; });
+      var gap = 0, run = 0;
+      days.forEach(function (d) { if (dayset[d]) run = 0; else { run++; if (run > gap) gap = run; } });
+      x.lab = sc.ok[id].storeName; x.pubDays = Object.keys(dayset).length; x.nDays = days.length; x.gap = gap;
+      x.k1 = arr.filter(function (v) { return v.play >= 1000; }).length;
+      x.noTitle = arr.filter(function (v) { return !hasTitle(v); }).length;
+      return x;
+    });
+    var cols = EFF_COLS2.filter(function (c) { return c.k !== 'gmv' || gmvKnown; });
+    if (!cols.some(function (c) { return c.k === EFF.sort; })) EFF.sort = 'medPlay';
     var sk = EFF.sort, dir = EFF.desc ? 1 : -1;
     rows.sort(function (p, q) {
       if (sk === 'lab') return p.lab.localeCompare(q.lab, 'zh') * -dir;
       return (q[sk] - p[sk]) * dir;
     });
-
-    var maxAvg = rows.reduce(function (m, x) { return Math.max(m, x.avgPlay); }, 0);
     var head = cols.map(function (c) {
       return '<th class="s' + (c.k === sk ? ' on' : '') + '" data-k="' + c.k + '">' + c.t +
         '<i>' + (c.k === sk ? (EFF.desc ? '▾' : '▴') : '▾') + '</i></th>';
-    }).join('') + '<th class="barh">平均播放对比</th>';
-
-    var tb = rows.map(function (x) {
-      var tds = cols.map(function (c) {
-        if (c.txt) {
-          return '<td>' + esc(x.lab) +
-            (x.n < FEW ? '<span class="few">样本 ' + x.n + ' 条</span>' : '') + '</td>';
-        }
-        var v = x[c.k];
-        var txt = c.money ? (x.gk ? '¥' + (c.dec ? v.toFixed(1) : HY.num(Math.round(v))) : '—') : HY.num(v);
-        return '<td class="mono' + (x.n < FEW ? ' dim' : '') + '">' + txt + '</td>';
-      }).join('');
-      var w = maxAvg ? Math.round(x.avgPlay / maxAvg * 100) : 0;
-      return '<tr>' + tds + '<td class="barc"><span class="track"><i style="width:' + w +
-             '%"></i></span></td></tr>';
     }).join('');
-
-    body.innerHTML = '<table class="mini eff"><thead><tr>' + head + '</tr></thead><tbody>' +
-      tb + '</tbody></table>' +
-      '<p class="note" style="margin-top:12px">点表头换排序。' +
-      '灰掉的行不到 ' + FEW + ' 条视频，平均值意义不大，别拿来排优劣。</p>';
-
-    $$('#effDimBody th.s').forEach(function (th) {
+    $('#effStores').innerHTML = '<table class="mini eff"><thead><tr>' + head + '</tr></thead><tbody>' +
+      rows.map(function (x) {
+        return '<tr>' + cols.map(function (c) {
+          if (c.txt) return '<td>' + esc(x.lab) + (x.n < FEW ? '<span class="few">样本 ' + x.n + ' 条</span>' : '') + '</td>';
+          var t = c.fmt ? c.fmt(x) : c.money ? '¥' + HY.num(Math.round(x[c.k])) : HY.num(x[c.k]);
+          return '<td class="mono' + (x.n < FEW ? ' dim' : '') + '">' + t + '</td>';
+        }).join('') + '</tr>';
+      }).join('') + '</tbody></table>' +
+      '<p class="note" style="margin-top:10px">点表头换排序。「一半视频不到」= 这家店一半的视频播放不到这个数，' +
+      '比平均数靠谱（平均数会被一条爆款拉高）。「最长断更」= 统计期里连着几天一条都没发。</p>';
+    $$('#effStores th.s').forEach(function (th) {
       th.onclick = function () {
         var k = th.dataset.k;
-        if (EFF.sort === k) EFF.desc = !EFF.desc;
-        else { EFF.sort = k; EFF.desc = k !== 'lab'; }
-        renderEffDim();
+        if (EFF.sort === k) EFF.desc = !EFF.desc; else { EFF.sort = k; EFF.desc = k !== 'lab'; }
+        renderEffect();
       };
     });
+
+    /* ② 播放 / 成交最高的视频 */
+    function vlist(arr, key, unit) {
+      return '<table class="mini eff vtop"><thead><tr><th>门店</th><th>发布</th><th>标题</th><th>' + unit + '</th><th></th></tr></thead><tbody>' +
+        arr.map(function (v) {
+          var st = S.storeById[v.store] || {};
+          return '<tr><td>' + esc(st.storeName || v.store) + '</td><td class="mono">' + HY.md(v.pubDate) + '</td>' +
+            '<td class="tt">' + esc(hasTitle(v) ? v.title : '（没写标题）') + '</td>' +
+            '<td class="mono">' + (key === 'gmv' ? '¥' + HY.num(Math.round(v.gmv)) : HY.num(v.play)) + '</td>' +
+            '<td>' + (v.url ? '<a href="' + esc(v.url) + '" target="_blank" rel="noopener">打开 ↗</a>' : '') + '</td></tr>';
+        }).join('') + '</tbody></table>';
+    }
+    var topPlay = vids.slice().sort(function (a, b) { return b.play - a.play; }).slice(0, 10);
+    var topGmv = gmvKnown ? vids.filter(function (v) { return v.gmv > 0; })
+      .sort(function (a, b) { return b.gmv - a.gmv; }).slice(0, 10) : [];
+    $('#effTop').innerHTML = '<h4>播放最高的 10 条</h4>' + vlist(topPlay, 'play', '播放') +
+      (gmvKnown
+        ? '<h4 style="margin-top:22px">成交最高的 10 条</h4>' + (topGmv.length ? vlist(topGmv, 'gmv', '成交') : '<p class="note">这段时间没有带来成交的视频。</p>')
+        : '<p class="note" style="margin-top:14px">成交金额不上线，在本机「视频数据导入」导入 xlsx 后，这里会多一张「成交最高的 10 条」。</p>');
+
+    /* ③ 几点发、星期几发 */
+    var HB = [['早上 8 点前', 0, 8], ['上午 8–11 点', 8, 11], ['中午 11–14 点', 11, 14],
+              ['下午 14–17 点', 14, 17], ['傍晚 17–20 点', 17, 20], ['晚上 20 点后', 20, 24]];
+    var hourG = HB.map(function (b) {
+      return [b[0], vids.filter(function (v) { var h = vHour(v); return h != null && h >= b[1] && h < b[2]; })];
+    });
+    var WD = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+    var wdG = WD.map(function (w, i) {
+      return [w, vids.filter(function (v) { return (HY.parseYmd(v.pubDate).getDay() + 6) % 7 === i; })];
+    });
+    $('#effWhen').innerHTML = '<div class="effgrid"><div>' + grpTable('几点发', hourG) + '</div><div>' +
+      grpTable('星期几发', wdG) + '</div></div>';
+
+    /* ④ 发得勤有没有用：每家店每周发几条 → 那一周视频的播放 */
+    var wk = {};
+    vids.forEach(function (v) {
+      var k = v.store + '|' + HY.ymd(HY.monday(HY.parseYmd(v.pubDate)));
+      (wk[k] = wk[k] || []).push(v);
+    });
+    var FB = [['一周 1–2 条', 1, 2], ['一周 3–4 条', 3, 4], ['一周 5–7 条', 5, 7], ['一周 8 条以上', 8, 999]];
+    var freqRows = FB.map(function (b) {
+      var weeks = Object.keys(wk).map(function (k) { return wk[k]; })
+        .filter(function (a) { return a.length >= b[1] && a.length <= b[2]; });
+      var all = [].concat.apply([], weeks);
+      var wkPlay = weeks.map(function (a) { return a.reduce(function (s, v) { return s + v.play; }, 0); });
+      return { lab: b[0], weeks: weeks.length, med: aggV(all).medPlay, wk: median(wkPlay) };
+    });
+    var maxWk = Math.max.apply(null, freqRows.map(function (x) { return x.weeks >= FEW ? x.wk : 0; })) || 1;
+    $('#effFreq').innerHTML = '<table class="mini eff"><thead><tr><th>那一周发了</th><th>店·周数</th>' +
+      '<th>每条：一半视频不到</th><th>整周播放（中位）</th><th class="barh">整周播放（对比）</th></tr></thead><tbody>' +
+      freqRows.map(function (x) {
+        var few = x.weeks < FEW;
+        return '<tr' + (few ? ' class="dim"' : '') + '><td>' + x.lab + (few && x.weeks ? '<span class="few">样本 ' + x.weeks + ' 个</span>' : '') +
+          '</td><td class="mono">' + x.weeks + '</td><td class="mono">' + HY.num(x.med) + '</td><td class="mono">' + HY.num(x.wk) +
+          '</td><td class="barc"><span class="track"><i style="width:' + Math.round(x.wk / maxWk * 100) + '%"></i></span></td></tr>';
+      }).join('') + '</tbody></table>' +
+      '<p class="note" style="margin-top:10px">把每家店的每一周单独算一次（「店·周」），看发得多的那些周，整周加起来的播放是不是也更多。</p>';
+
+    /* ⑤ 标题 */
+    $('#effTitle').innerHTML = grpTable('标题', [
+      ['没写标题', vids.filter(function (v) { return !hasTitle(v); })],
+      ['写了标题，没带 # 话题', vids.filter(function (v) { return hasTitle(v) && v.title.indexOf('#') === -1; })],
+      ['写了标题，带了 # 话题', vids.filter(function (v) { return hasTitle(v) && v.title.indexOf('#') !== -1; })]
+    ]);
   }
+  function renderEffDim() { renderEffect(); }   // 老调用点（经理下拉）还叫这个名字
 
   /* ---------- 筛选项 ---------- */
   /* 两个下拉都是「重建式」：经理名字在门店表里改完，这里重新灌一遍就有了 */

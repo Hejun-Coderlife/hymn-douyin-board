@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>赫眉 HYMN · 视频脚本看板</title>
-<link rel="stylesheet" href="assets/style.css?v=20260924-1555">
+<link rel="stylesheet" href="assets/style.css?v=20260924-1559">
 </head>
 <body>
 <div id="boot"><div class="bmark"><img src="assets/logo-ink.png" alt="赫眉 HYMN"></div></div>
@@ -123,23 +123,17 @@
     <!-- 效果统计 -->
     <section class="panel" id="p-effect">
       <div class="card">
-        <h3>计划日发的视频，播放怎么样？</h3>
-        <div id="effectBody"></div>
-      </div>
-
-      <div class="card" id="effDimCard">
-        <h3>拆开看</h3>
+        <h3>门店表现</h3>
         <div class="effbar">
-          <div class="segbtns" id="effDims">
-            <button type="button" class="segbtn on" data-dim="store">按门店</button>
-            <button type="button" class="segbtn" data-dim="topic">按内容方向</button>
-            <button type="button" class="segbtn" data-dim="format">按拍摄形式</button>
-          </div>
           <select id="eMgr"><option value="">全部区域经理</option></select>
-          <span class="note" id="effDimNote"></span>
+          <span class="note" id="effNote"></span>
         </div>
-        <div id="effDimBody"></div>
+        <div id="effStores"></div>
       </div>
+      <div class="card"><h3>最火的视频</h3><div id="effTop"></div></div>
+      <div class="card"><h3>什么时候发，播放更好</h3><div id="effWhen"></div></div>
+      <div class="card"><h3>发得勤，有没有用</h3><div id="effFreq"></div></div>
+      <div class="card"><h3>标题写没写，差多少</h3><div id="effTitle"></div></div>
     </section>
 
   </div>
@@ -202,12 +196,12 @@
   <div class="db" id="dBody"></div>
 </aside>
 
-<script src="data/stores.js?v=20260924-1555"></script>
-<script src="data/scripts-index.js?v=20260924-1555"></script>
+<script src="data/stores.js?v=20260924-1559"></script>
+<script src="data/scripts-index.js?v=20260924-1559"></script>
 <script src="vendor/xlsx.full.min.js"></script>
-<script src="data/videos.js?v=20260924-1555"></script>
-<script src="assets/core.js?v=20260924-1555"></script>
-<script src="assets/board.js?v=20260924-1555"></script>
+<script src="data/videos.js?v=20260924-1559"></script>
+<script src="assets/core.js?v=20260924-1559"></script>
+<script src="assets/board.js?v=20260924-1559"></script>
 
 </body>
 </html>
