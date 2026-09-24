@@ -715,6 +715,7 @@ body.storepage .sechead.row{padding-bottom:10px}
 .xsel.open .xbtn i{transform:rotate(180deg)}
 .xsel .xmenu{
   display:none;position:fixed;z-index:120;max-height:340px;overflow:auto;
+  overscroll-behavior:contain;-webkit-overflow-scrolling:touch;   /* 划到底别带着整页滚（整页一滚菜单就收了） */
   background:var(--card);border:1px solid var(--ink);
 }
 /* 表格格子里的紧凑版 */

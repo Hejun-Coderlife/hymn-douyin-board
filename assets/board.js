@@ -1145,8 +1145,17 @@
       };
       document.addEventListener('click', closeAllXsel);
       document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeAllXsel(); });
-      window.addEventListener('resize', closeAllXsel);
-      document.addEventListener('scroll', closeAllXsel, true);   // 表格滚动时把菜单收掉
+      // 手机上滑动时地址栏伸缩会触发 resize，只有宽度真变了才收
+      var lastW = window.innerWidth;
+      window.addEventListener('resize', function () {
+        if (window.innerWidth !== lastW) { lastW = window.innerWidth; closeAllXsel(); }
+      });
+      // 表格滚动时把菜单收掉 —— 但菜单自己里面的滚动不算，否则门店多选菜单一滑就关，
+      // 手机上根本划不下去（2026-09-24 用户：「这里没法上下滑动？」）
+      document.addEventListener('scroll', function (e) {
+        if (e.target && e.target.closest && e.target.closest('.xmenu')) return;
+        closeAllXsel();
+      }, true);
     }
     var menu = box.querySelector('.xmenu');
     var multi = sel.multiple, vals = selValues(sel);
