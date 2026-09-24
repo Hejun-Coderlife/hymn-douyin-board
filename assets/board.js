@@ -18,12 +18,17 @@
 
   /* ---------- 计算 ---------- */
   function recompute() {
-    S.months = HY.monthsIn(S.scripts);
+    S.videos = HY.Videos.list();
+    // 月份条 = 有脚本的月 ∪ 有视频发布的月。脚本从 8 月底才开始排，只按脚本算的话
+    // 7 月及以前翻不到，那几个月店里自己发的视频就看不见（2026-09-24 用户：「我没法拉到7月」）
+    var mo = {};
+    HY.monthsIn(S.scripts).forEach(function (m) { mo[m] = 1; });
+    S.videos.forEach(function (v) { if (v.pubDate) mo[HY.ymOf(v.pubDate)] = 1; });
+    S.months = Object.keys(mo).sort();
     if (!S.ym || S.months.indexOf(S.ym) === -1) {
       var cur = HY.ymOf(S.today);
       S.ym = S.months.indexOf(cur) >= 0 ? cur : (S.months[0] || cur);
     }
-    S.videos = HY.Videos.list();
     S.m = HY.match(S.scripts, S.videos);
 
     S.byStoreDate = {};
