@@ -1548,6 +1548,7 @@
     $('#dClose').onclick = closeDrawer;
     $('#backdrop').onclick = function () {
       if ($('#mgrModal').classList.contains('open')) closeMgrModal();
+      else if ($('#posterModal').classList.contains('open')) closePoster();
       else closeDrawer();
     };
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeDrawer(); });
@@ -1626,12 +1627,273 @@
     };
   }
 
+  /* ---------- 生成战报图（2026-09-24 用户：选某一天 / 某一周 / 某一月 + 某几家店，
+     把完成率这些数据生成图片发微信群，要有赫眉的品牌感） ----------
+     门店范围 = 看板当前的筛选结果（区域经理 / 门店多选 / 搜索），弹窗里只选时间。
+     直接用 Canvas 画（不引第三方截图库），输出 1080px 宽的 PNG。
+     口径：
+       - 应发 = 范围内计划日期 <= 数据截至日 的脚本（抖音导出只到前一天，截至日之后的还没法判断，不算逾期）
+       - 完成率 = 当天发了的 ÷ 应发，跟看板一致
+       - 范围内一条脚本都没到期（比如脚本开排之前的日子）→ 改算「发布率」= 有发视频的天数 ÷ 天数 */
+  var PST = { mode: 'week', date: '' };
+
+  function pstRange() {
+    var d = HY.parseYmd(PST.date), from, to, title;
+    if (PST.mode === 'day') {
+      from = to = PST.date;
+      title = (d.getMonth() + 1) + ' 月 ' + d.getDate() + ' 日';
+    } else if (PST.mode === 'week') {
+      from = HY.ymd(HY.monday(d)); to = HY.ymd(HY.addDays(HY.parseYmd(from), 6));
+      var f = HY.parseYmd(from), t = HY.parseYmd(to);
+      title = (f.getMonth() + 1) + '/' + f.getDate() + ' – ' + (t.getMonth() + 1) + '/' + t.getDate() + ' 这一周';
+    } else {
+      var g = HY.buildMonthGrid(HY.ymOf(PST.date));
+      from = g.from; to = g.to;
+      title = d.getFullYear() + ' 年 ' + (d.getMonth() + 1) + ' 月';
+    }
+    return { from: from, to: to, title: title };
+  }
+
+  /** 视频数据截到哪天：各导出文件「数据日期范围」终点里最晚的，再不晚于昨天 */
+  function pstCutoff() {
+    var t = '';
+    S.videos.forEach(function (v) { if (v.rangeTo && v.rangeTo > t) t = v.rangeTo; });
+    var y = HY.ymd(HY.addDays(HY.parseYmd(S.today), -1));
+    var c = /^\d{8}$/.test(t) ? t.slice(0, 4) + '-' + t.slice(4, 6) + '-' + t.slice(6) : y;
+    return c < y ? c : y;
+  }
+
+  function pstScope(rows) {
+    var mgr = $('#fMgr').value, picked = selValues($('#fStore'));
+    if (picked.length) return '已选 ' + rows.length + ' 家店';
+    if (mgr) return mgr + ' · ' + rows.length + ' 家店';
+    return rows.length === S.stores.length ? '全部 ' + rows.length + ' 家店' : rows.length + ' 家店';
+  }
+
+  function pstData() {
+    var rows = filtered(), r = pstRange(), cut = pstCutoff();
+    var ids = {}; rows.forEach(function (st) { ids[st.douyinId] = 1; });
+    var per = {};
+    rows.forEach(function (st) { per[st.douyinId] = { st: st, due: 0, done: 0, vids: 0, days: {} }; });
+    S.scripts.forEach(function (s) {
+      if (!ids[s.store] || s.date < r.from || s.date > r.to || s.date > cut) return;
+      var o = per[s.store]; o.due++;
+      if (S.m.byScript[s.id]) o.done++;
+    });
+    S.videos.forEach(function (v) {
+      if (!ids[v.store] || !v.pubDate || v.pubDate < r.from || v.pubDate > r.to) return;
+      per[v.store].vids++; per[v.store].days[v.pubDate] = 1;
+    });
+    var end = r.to < cut ? r.to : cut, nDays = 0;
+    for (var d = r.from; d <= end; d = HY.ymd(HY.addDays(HY.parseYmd(d), 1))) nDays++;
+    var list = Object.keys(per).map(function (k) { return per[k]; });
+    var due = 0, done = 0, vids = 0;
+    list.forEach(function (o) { due += o.due; done += o.done; vids += o.vids; });
+    var mode = due ? 'rate' : 'pub';
+    list.forEach(function (o) {
+      var n = Object.keys(o.days).length;
+      o.p = mode === 'rate' ? (o.due ? o.done / o.due : null) : (nDays ? n / nDays : null);
+      o.nDays = n;
+    });
+    list.sort(function (a, b) {
+      if (a.p == null || b.p == null) return a.p == null ? (b.p == null ? 0 : 1) : -1;
+      return b.p - a.p || b.vids - a.vids;
+    });
+    var dayHits = 0;
+    list.forEach(function (o) { dayHits += o.nDays; });
+    var total = mode === 'rate' ? (due ? done / due : 0) : (nDays && list.length ? dayHits / (nDays * list.length) : 0);
+    return { r: r, cut: cut, list: list, due: due, done: done, vids: vids, mode: mode, total: total,
+             nDays: nDays, scope: pstScope(rows), future: r.from > cut };
+  }
+
+  var pstLogo = null;
+  function pstLoadLogo() {
+    if (pstLogo) return Promise.resolve(pstLogo);
+    return new Promise(function (ok) {
+      var im = new Image();
+      im.onload = function () { pstLogo = im; ok(im); };
+      im.onerror = function () { ok(null); };
+      im.src = 'assets/logo-ink.png';
+    });
+  }
+
+  function pstDraw(D, logo) {
+    var W = 540, PAD = 36, ROW = 38, S2 = 2;
+    var C = { ink: '#16140F', t2: '#4A453C', t3: '#9C958A', line: '#E3DFD6', done: TILE_C.done,
+              late: TILE_C.late, track: '#EFEBE3', paper: '#FAF7F2', pink: '#D9A6AE' };
+    var NUM = 'Didot, "Bodoni 72", Georgia, serif';
+    var SANS = '"PingFang SC", "Helvetica Neue", sans-serif';   // 别写 -apple-system：canvas 的 font 串解析不了会整条作废
+    var SONG = '"Songti SC", "STSong", serif';
+    var listH = D.list.length * ROW;
+    var H = 250 + 44 + listH + 70;
+    var cv = document.createElement('canvas');
+    cv.width = W * S2; cv.height = H * S2;
+    var g = cv.getContext('2d');
+    g.scale(S2, S2);
+    g.fillStyle = '#FFFFFF'; g.fillRect(0, 0, W, H);
+    // 顶上一条品牌粉细带
+    g.fillStyle = C.pink; g.fillRect(0, 0, W, 4);
+
+    // 头部：logo + STUDIO / 右边小字标签
+    var y = 44;
+    if (logo) g.drawImage(logo, PAD, y - 16, 84, 84 * logo.height / logo.width);
+    else { g.fillStyle = C.ink; g.font = '600 18px ' + SANS; g.fillText('赫眉 HYMN', PAD, y); }
+    g.font = '10px ' + SANS; g.fillStyle = C.t3; g.textAlign = 'right';
+    pstSpaced(g, '抖音视频发布战报', W - PAD, y, 2.5, 'right');
+    g.textAlign = 'left';
+
+    // 标题：时间范围（宋体大字）+ 门店范围
+    y = 104;
+    g.fillStyle = C.ink; g.font = '26px ' + SONG;
+    g.fillText(D.r.title, PAD, y);
+    g.font = '12px ' + SANS; g.fillStyle = C.t3;
+    g.fillText(D.scope + (D.r.to > D.cut && !D.future ? ' · 统计到 ' + HY.md(D.cut) : '') +
+      (D.mode === 'pub' ? ' · 这段时间还没排脚本，按发布天数算' : ''), PAD, y + 24);
+
+    // 大数字
+    y = 196;
+    var pct = Math.round(D.total * 100);
+    g.fillStyle = D.mode === 'rate' ? C.done : C.ink;
+    g.font = '64px ' + NUM;
+    g.fillText(D.future ? '—' : String(pct), PAD - 2, y);
+    var pw = g.measureText(D.future ? '—' : String(pct)).width;
+    g.font = '22px ' + NUM; g.fillText(D.future ? '' : '%', PAD + pw + 2, y);
+    g.font = '11px ' + SANS; g.fillStyle = C.t3;
+    g.fillText(D.mode === 'rate' ? '完成率' : '发布率', PAD, y + 22);
+    // 右边两个小数：跟大数字三等分排，各占一栏，不会挤在一起
+    var colW = (W - PAD * 2) / 3;
+    var stats = D.mode === 'rate'
+      ? [[D.done + '/' + D.due, '已发布 / 应发'], [String(D.vids), '视频总数（条）']]
+      : [[String(D.vids), '视频总数（条）'], [String(D.nDays), '统计天数']];
+    stats.forEach(function (s, i) {
+      var x = PAD + colW * (i + 1) + 10;
+      g.fillStyle = C.line; g.fillRect(x - 12, y - 44, 1, 70);
+      g.fillStyle = C.ink; g.font = '30px ' + NUM; g.fillText(s[0], x, y);
+      g.fillStyle = C.t3; g.font = '11px ' + SANS; g.fillText(s[1], x, y + 22);
+    });
+
+    // 分隔 + 小标题
+    y = 250;
+    g.fillStyle = C.ink; g.fillRect(PAD, y, W - PAD * 2, 1);
+    g.font = '11px ' + SANS; g.fillStyle = C.t3;
+    pstSpaced(g, '门店排名', PAD, y + 26, 2);
+    g.textAlign = 'right';
+    g.fillText(D.mode === 'rate' ? '完成率 · 已发/应发 · 视频' : '发布率 · 发布天数 · 视频', W - PAD, y + 26);
+    g.textAlign = 'left';
+
+    // 门店行
+    y += 44;
+    var nameW = 150, barX = PAD + 28 + nameW, barW = 150;
+    D.list.forEach(function (o, i) {
+      var cy = y + i * ROW;
+      if (i % 2 === 1) { g.fillStyle = C.paper; g.fillRect(PAD - 8, cy, W - PAD * 2 + 16, ROW); }
+      var mid = cy + ROW / 2 + 4;
+      var rank = i + 1;
+      g.fillStyle = rank <= 3 && o.p ? C.done : C.t3; g.font = '15px ' + NUM; g.textAlign = 'right';
+      g.fillText(String(rank), PAD + 18, mid);
+      g.textAlign = 'left'; g.fillStyle = C.ink; g.font = '13px ' + SANS;
+      g.fillText(pstFit(g, o.st.storeName, nameW - 8), PAD + 28, mid);
+      // 进度条
+      g.fillStyle = C.track; g.fillRect(barX, mid - 7, barW, 6);
+      if (o.p) { g.fillStyle = o.p < 0.5 ? C.late : C.done; g.fillRect(barX, mid - 7, Math.max(2, barW * o.p), 6); }
+      // 百分比
+      g.textAlign = 'right'; g.font = '17px ' + NUM;
+      g.fillStyle = o.p == null ? C.t3 : (o.p < 0.5 ? C.late : C.ink);
+      g.fillText(o.p == null ? '—' : Math.round(o.p * 100) + '%', barX + barW + 58, mid);
+      g.font = '11px ' + SANS; g.fillStyle = C.t3;
+      g.fillText((D.mode === 'rate' ? o.done + '/' + o.due : o.nDays + ' 天') + ' · ' + o.vids + ' 条', W - PAD, mid);
+      g.textAlign = 'left';
+    });
+
+    // 页脚
+    y += listH + 30;
+    g.fillStyle = C.line; g.fillRect(PAD, y - 14, W - PAD * 2, 1);
+    g.font = '10.5px ' + SANS; g.fillStyle = C.t3;
+    var now = new Date();
+    g.fillText('抖音数据截至 ' + HY.md(D.cut) + ' · 生成于 ' + (now.getMonth() + 1) + '/' + now.getDate() + ' ' +
+      String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0'), PAD, y + 6);
+    pstSpaced(g, 'HYMN STUDIO', W - PAD, y + 6, 3, 'right');
+    return cv;
+  }
+  /** 字距拉开的小字（canvas 的 letterSpacing 老浏览器没有，手动一个字一个字画） */
+  function pstSpaced(g, text, x, y, sp, align) {
+    var chars = text.split(''), w = 0;
+    chars.forEach(function (c) { w += g.measureText(c).width + sp; });
+    w -= sp;
+    var cx = align === 'right' ? x - w : x, old = g.textAlign;
+    g.textAlign = 'left';
+    chars.forEach(function (c) { g.fillText(c, cx, y); cx += g.measureText(c).width + sp; });
+    g.textAlign = old;
+  }
+  function pstFit(g, s, w) {
+    if (g.measureText(s).width <= w) return s;
+    while (s.length > 1 && g.measureText(s + '…').width > w) s = s.slice(0, -1);
+    return s + '…';
+  }
+
+  var pstCanvas = null;
+  function pstRender() {
+    $$('#pstModes .segbtn').forEach(function (b) { b.classList.toggle('on', b.dataset.m === PST.mode); });
+    var D = pstData();
+    $('#pstInfo').textContent = D.r.from + ' ~ ' + D.r.to + ' · ' + D.scope +
+      '（门店范围跟看板上的筛选走）' + (D.future ? ' · 这段时间还没有视频数据' : '');
+    pstLoadLogo().then(function (logo) {
+      pstCanvas = pstDraw(D, logo);
+      var box = $('#pstPreview');
+      box.innerHTML = '';
+      pstCanvas.style.width = '100%';
+      box.appendChild(pstCanvas);
+    });
+  }
+  function pstFileName() {
+    var r = pstRange();
+    return '赫眉视频战报_' + r.from + (r.to !== r.from ? '_' + r.to : '') + '.png';
+  }
+  function openPoster() {
+    if (!PST.date) PST.date = pstCutoff();
+    $('#pstDate').value = PST.date;
+    $('#posterModal').classList.add('open');
+    $('#backdrop').classList.add('on');
+    pstRender();
+  }
+  function closePoster() {
+    $('#posterModal').classList.remove('open');
+    $('#backdrop').classList.remove('on');
+  }
+  function bindPoster() {
+    $('#btnPoster').onclick = openPoster;
+    $('#pstClose').onclick = closePoster;
+    $$('#pstModes .segbtn').forEach(function (b) {
+      b.onclick = function () { PST.mode = b.dataset.m; pstRender(); };
+    });
+    $('#pstDate').onchange = function () { if (this.value) { PST.date = this.value; pstRender(); } };
+    $('#pstDownload').onclick = function () {
+      if (!pstCanvas) return;
+      try {
+        var a = document.createElement('a');
+        a.download = pstFileName();
+        a.href = pstCanvas.toDataURL('image/png');
+        a.click();
+      } catch (e) { HY.toast('下载失败：请用线上网址打开看板再试'); }
+    };
+    $('#pstCopy').onclick = function () {
+      if (!pstCanvas) return;
+      if (!navigator.clipboard || !window.ClipboardItem) { HY.toast('这个浏览器不支持复制图片，请用「下载图片」'); return; }
+      pstCanvas.toBlob(function (blob) {
+        navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
+          .then(function () { HY.toast('已复制，去微信里粘贴就行'); })
+          .catch(function () { HY.toast('复制失败，请用「下载图片」'); });
+      }, 'image/png');
+    };
+  }
+
   /* ---------- 启动 ---------- */
   HY.loadData().then(function (d) {
     S.stores = d.stores; S.storeById = d.storeById; S.scripts = d.scripts;
     S.scripts.forEach(function (s) { S.scriptById[s.id] = s; });
     fillFilters();
     bind();
+    bindPoster();
     refreshAll();
     showPanel(hashView());
     window.addEventListener('hashchange', function () { showPanel(hashView()); });

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>赫眉 HYMN · 视频脚本看板</title>
-<link rel="stylesheet" href="assets/style.css?v=20260924-1516">
+<link rel="stylesheet" href="assets/style.css?v=20260924-1526">
 </head>
 <body>
 <div id="boot"><div class="bmark"><img src="assets/logo-ink.png" alt="赫眉 HYMN"></div></div>
@@ -58,6 +58,7 @@
         <select id="fStore" multiple><option value="">全部门店</option></select>
         <input type="search" id="fSearch" placeholder="搜门店 / 抖音号">
         <label class="chk"><input type="checkbox" id="fLate"> 只看有逾期</label>
+        <button class="btn sm" id="btnPoster" type="button">生成战报图</button>
         <div class="legend">
           <span><i style="background:var(--todo)"></i>待拍</span>
           <span><i style="background:var(--late)"></i>逾期未发</span>
@@ -169,6 +170,25 @@
     <span class="note" id="mmStat"></span>
   </div>
 </div>
+<!-- 生成战报图：选时间，门店范围跟看板筛选走，出 PNG 发微信群 -->
+<div class="modal postermodal" id="posterModal">
+  <h3>生成战报图</h3>
+  <div class="pst-bar">
+    <div class="segbtns" id="pstModes">
+      <button type="button" class="segbtn" data-m="day">某一天</button>
+      <button type="button" class="segbtn on" data-m="week">某一周</button>
+      <button type="button" class="segbtn" data-m="month">某一月</button>
+    </div>
+    <input type="date" id="pstDate">
+  </div>
+  <p class="note" id="pstInfo"></p>
+  <div class="pst-preview" id="pstPreview"></div>
+  <div class="rowbtns">
+    <button class="btn primary" id="pstCopy" type="button">复制图片</button>
+    <button class="btn" id="pstDownload" type="button">下载图片</button>
+    <button class="btn" id="pstClose" type="button">关闭</button>
+  </div>
+</div>
 <aside class="drawer" id="drawer">
   <div class="dh">
     <div>
@@ -180,12 +200,12 @@
   <div class="db" id="dBody"></div>
 </aside>
 
-<script src="data/stores.js?v=20260924-1516"></script>
-<script src="data/scripts-index.js?v=20260924-1516"></script>
+<script src="data/stores.js?v=20260924-1526"></script>
+<script src="data/scripts-index.js?v=20260924-1526"></script>
 <script src="vendor/xlsx.full.min.js"></script>
-<script src="data/videos.js?v=20260924-1516"></script>
-<script src="assets/core.js?v=20260924-1516"></script>
-<script src="assets/board.js?v=20260924-1516"></script>
+<script src="data/videos.js?v=20260924-1526"></script>
+<script src="assets/core.js?v=20260924-1526"></script>
+<script src="assets/board.js?v=20260924-1526"></script>
 
 </body>
 </html>

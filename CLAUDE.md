@@ -396,6 +396,13 @@ node tools/dom_check.js '#view=effect' '#p-effect' --seed=/tmp/fakevideos.json
 index.html 加载它，`HY.Videos.list()` 用它打底、本机 localStorage 导入的盖在上面 → **总部看板打开就有数据，不用再导入**。
 只有线上数据的视频带 `noGmv`，效果统计 / 抽屉里成交金额显示「—」不显示 0；要看成交还是得本机导入 xlsx。
 
+## 生成战报图（2026-09-24）
+
+日历筛选栏的「生成战报图」按钮 → `#posterModal`：选 某一天 / 某一周 / 某一月 + 日期，**门店范围跟看板筛选走**，
+Canvas 直接画 1080px 宽 PNG（`pstDraw()`），可「复制图片」贴微信或「下载图片」。
+口径：应发只算到**数据截至日**（导出统计范围终点，且不晚于昨天），之后的不算逾期；范围内一条到期脚本都没有 → 改算发布率。
+canvas 的 font 串**别写 `-apple-system`**，解析失败整条作废。验证画面用 jsdom + `canvas` 包（`npm install --prefix /tmp/jsdomtest canvas`）把 canvas 导出 PNG 看。
+
 ## 发布到线上
 
 GitHub Pages：**https://hejun-coderlife.github.io/hymn-douyin-board/**（仓库 `Hejun-Coderlife/hymn-douyin-board`，公开）。
