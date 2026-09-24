@@ -477,12 +477,12 @@
                ' data-id="' + esc(sc.id) +
                '" data-tip="' + esc(st.storeName + ' · ' + d.date + '（周' + d.dow + '）\n' +
                sc.topic + '·' + sc.format + '\n' + HY.STATUS_CN[stt] +
-               (nf ? '\n当天共发 ' + n + ' 条（其中自由发挥 ' + nf + ' 条）' : '')) + '"></span>';
+               (nf ? '\n当天共发 ' + n + ' 条（其中计划外 ' + nf + ' 条）' : '')) + '"></span>';
         } else if (free) {
           h += '<span class="dot free"' + (nf > 1 ? ' data-n="' + nf + '"' : '') +
                ' data-free="' + st.douyinId + '|' + d.date +
                '" data-tip="' + esc(st.storeName + ' · ' + d.date + '（周' + d.dow + '）\n' +
-               '当天发了 ' + nf + ' 条自由发挥视频，点开看链接') + '"></span>';
+               '当天发了 ' + nf + ' 条计划外视频，点开看链接') + '"></span>';
         } else {
           h += '<span class="dot none"></span>';
         }
@@ -790,7 +790,7 @@
   function openFree(key) {
     var arr = (S.freeByStoreDate[key] || []).slice();
     var p = key.split('|'), st = S.storeById[p[0]] || {};
-    $('#dTitle').textContent = st.storeName + '｜自由发挥';
+    $('#dTitle').textContent = st.storeName + '｜计划外视频';
     $('#dSub').textContent = p[1] + ' 当天没对上任何脚本的视频 ' + arr.length + ' 条';
     $('#dBody').innerHTML = arr.map(function (v) {
       return '<div class="statusbox" style="margin-top:10px">' + videoInfo(v) + '</div>';
@@ -1084,7 +1084,10 @@
     var b = aggV(inRange.filter(function (v) { return !claimed[v.id]; }));
 
     /* 2026-09-24 用户：「这些，有点看不懂」—— 全部换成大白话：
-       「按脚本拍 / 自由发挥」→「照脚本拍 / 自己拍的」，「中位播放」→「一半视频不到」，
+       「中位播放」→「一半视频不到」，
+       2026-09-24 同一天又改：看板只看发布日期、看不到视频内容，**判断不了是不是照脚本拍的**
+       （用户：「把按脚本拍的这个说法去掉，因为我们无法判断」）。所以两组只叫
+       「计划日发的」（排了脚本那天发的第一条）/「计划外的」，别再写「照脚本拍 / 自己拍 / 自由发挥」。
        结论用「几倍」不用「高 300%」，统计范围的口径说明缩成表下一行小字。 */
     function row(name, x, sub) {
       return '<tr><td>' + name + (sub ? '<span class="few">' + sub + '</span>' : '') +
@@ -1099,14 +1102,14 @@
     function times(p, q) {                       // 52 vs 13 →「4 倍」；差不多就说差不多
       if (!q) return p ? '更多' : '一样';
       var r = p / q;
-      if (r >= 1.15) return '是自己拍的 <b>' + (r >= 10 ? Math.round(r) : r.toFixed(1).replace(/\.0$/, '')) + ' 倍</b>';
-      if (r <= 1 / 1.15) return '只有自己拍的 <b>' + Math.round(r * 100) + '%</b>';
-      return '<b>跟自己拍的差不多</b>';
+      if (r >= 1.15) return '是计划外的 <b>' + (r >= 10 ? Math.round(r) : r.toFixed(1).replace(/\.0$/, '')) + ' 倍</b>';
+      if (r <= 1 / 1.15) return '只有计划外的 <b>' + Math.round(r * 100) + '%</b>';
+      return '<b>跟计划外的差不多</b>';
     }
     if (a.n < FEW || b.n < FEW) {
-      verdict = '视频太少，先别下结论（照脚本拍 ' + a.n + ' 条，自己拍的 ' + b.n + ' 条，两边各要够 ' + FEW + ' 条）。';
+      verdict = '视频太少，先别下结论（计划日发的 ' + a.n + ' 条，计划外的 ' + b.n + ' 条，两边各要够 ' + FEW + ' 条）。';
     } else {
-      verdict = '照脚本拍的视频，平均每条播放' + times(a.avgPlay, b.avgPlay) +
+      verdict = '计划日发的视频，平均每条播放' + times(a.avgPlay, b.avgPlay) +
         '（' + HY.num(a.avgPlay) + ' 次 vs ' + HY.num(b.avgPlay) + ' 次）。' +
         ((a.avgPlay >= b.avgPlay) !== (a.medPlay >= b.medPlay)
           ? '不过大多数视频的播放其实反过来，平均数是被几条爆款拉上去的。'
@@ -1117,10 +1120,10 @@
       '<p class="verdict" style="margin:0 0 14px">' + verdict + '</p>' +
       '<table class="mini"><thead><tr><th></th><th>视频数</th><th>平均每条播放</th><th>一半视频播放不到</th>' +
       '<th>播放最多的一条</th><th>成交总额</th><th>平均每条成交</th></tr></thead><tbody>' +
-      row('照脚本拍', a, '计划那天发的') + row('自己拍的', b, '没对上脚本') +
+      row('计划日发的', a, '排了脚本那天发的') + row('计划外的', b, '其他日子 / 当天多发的') +
       '</tbody></table>' +
       '<p class="note" style="margin-top:10px">只算 ' + HY.md(r.f) + '–' + HY.md(r.t) + ' 发布的 ' + HY.num(inRange.length) +
-      ' 条视频（抖音导出的统计期；更早的视频播放没统计进来，混进来会全是 0）。</p>' +
+      ' 条视频（抖音导出的统计期）。只按发布日期分组，看不出视频内容是不是照脚本拍的。</p>' +
       (a.gk || b.gk ? '' : '<p class="verdict">成交金额不上线，在本机「视频数据导入」导入 xlsx 后才显示。</p>');
 
     renderEffDim();
@@ -1131,7 +1134,7 @@
   var EFF_COLS = {
     store: [
       { k: 'lab', t: '门店', txt: 1 },
-      { k: 'n', t: '视频数' }, { k: 'ns', t: '照脚本拍' }, { k: 'nf', t: '自己拍的' },
+      { k: 'n', t: '视频数' }, { k: 'ns', t: '计划日发的' }, { k: 'nf', t: '计划外的' },
       { k: 'avgPlay', t: '平均每条播放' }, { k: 'medPlay', t: '一半视频不到' },
       { k: 'gmv', t: '成交总额', money: 1 }
     ],
@@ -1178,8 +1181,8 @@
     }).filter(function (x) { return x.n > 0; });
 
     $('#effDimNote').innerHTML = dim === 'store'
-      ? '这张表算全部视频（照脚本拍 + 自己拍的）'
-      : '只算照脚本拍的视频（自己拍的没有内容方向 / 拍摄形式）';
+      ? '这张表算全部视频（计划日发的 + 计划外的）'
+      : '只算计划日发的视频，方向/形式取自当天的脚本，不代表视频真拍了这个';
 
     if (!rows.length) {
       body.innerHTML = '<div class="emptyrow">这个范围里没有可比的视频。</div>';
