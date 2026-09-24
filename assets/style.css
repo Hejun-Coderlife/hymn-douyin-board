@@ -390,7 +390,9 @@ body.booted .pagehead p{animation:headfade .55s ease .46s both}
    四块灰底方块，里面是会动的数据图 + 一张线描插画。
    配色沿用状态色，已过 dataviz 校验：CVD 分离 ΔE 17.7 / 正常视觉 20.5 / 对比度全过；
    「彩度偏低」那条是有意的（爱马仕色系要克制），靠每块都带文字标签做二次编码来兜。 */
-.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin:0 0 26px}
+.tiles{display:grid;grid-template-columns:1fr 3fr;gap:18px;margin:0 0 26px}
+/* 发布量图占三格（2026-09-24 用户：「这个可以放大点」）；4:1 让它跟左边 4:3 的圆环一样高 */
+.tile-wide .box{aspect-ratio:4/1}
 .tile figure{margin:0}
 /* 图块底改纯白（2026-09-20 用户要求）。白底压在白页面上就没边界了，
    所以必须补一条发丝边 —— 原来靠「米色底 vs 白页面」的色差分区，现在那个差没了。 */
@@ -437,7 +439,7 @@ body.booted .tile .ink-draw{animation:inkdraw 1.6s ease .75s both}
   body.booted .tiles .tile,body.booted .tile .ring-val,body.booted .tile .spark rect,
   body.booted .tile .seg,body.booted .tile .ink-draw{animation:none}
 }
-@media (max-width:1180px){.tiles{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:1180px){.tiles{grid-template-columns:1fr}.tiles .tile:first-child .box{aspect-ratio:auto;height:220px}.tile-wide .box{aspect-ratio:auto;height:220px}}
 @media (max-width:640px){.tiles{grid-template-columns:1fr}}
 
 /* ===== KPI：四格白板，靠发丝线分隔 ===== */
@@ -570,6 +572,11 @@ td.stcol .rate{flex:none;font-size:11.5px;color:var(--done);font-variant-numeric
 td.stcol .rate.pub{color:var(--t3)}   /* 没脚本的月份 = 视频发布率，灰色 */
 .stl{min-width:0;flex:1}
 .sth .vlab{font-size:10.5px;color:var(--t4)}
+/* 表头排序按钮：完成率 / 本月视频 */
+.sth .sk{font-size:10.5px;color:var(--t3);cursor:pointer;white-space:nowrap;margin-left:6px;user-select:none}
+.sth .sk:hover{color:var(--t1)}
+.sth .sk.on{color:var(--t1);font-weight:600}
+.sth .sk i{font-style:normal;margin-left:2px;font-size:9px}
 td.stcol .vn{font-size:15px;color:var(--ink);font-variant-numeric:tabular-nums;flex:0 0 auto}
 td.stcol .vn.zero{color:var(--t4)}
 td.stcol .meta{font-size:11px;color:var(--t3);margin-top:2px;display:flex;gap:8px;align-items:center;white-space:nowrap}

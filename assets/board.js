@@ -105,7 +105,8 @@
     var rate = due ? Math.round(c.done / due * 100) : 0;
 
     $('#tiles').innerHTML =
-      tileRing(rate, due, c) + tileSpark(visible) + tileStack(c, ws.length) + tileToday(visible);
+      // 「状态构成」「今天的活」两块 2026-09-24 删了（用户：「这2个不要」），发布量图放大占三格
+      tileRing(rate, due, c) + tileSpark(visible);
     bindSparkHover();
     layoutSparkNums();
     if (!renderTiles.__rs) {
@@ -220,7 +221,8 @@
     });
     var max = Math.max.apply(null, buckets.map(function (w) { return w.n; })) || 1;
     var total = buckets.reduce(function (a, w) { return a + w.n; }, 0);
-    var nb = buckets.length, W = 196, H = 112, pitch = W / nb, bw = Math.max(3, Math.min(9, pitch * 0.62));
+    // 宽图（占三格，box 4:1）：viewBox 也按 4:1 左右排
+    var nb = buckets.length, W = 600, H = 112, pitch = W / nb, bw = Math.max(4, Math.min(22, pitch * 0.6));
     var bars = '', nums = '', hots = '';
     buckets.forEach(function (w, i) {
       var h = Math.max(w.n ? 3 : 1, Math.round(w.n / max * (H - 26)));
@@ -238,12 +240,12 @@
     });
     var foot = S.view === 'year' ? '' :
       (HY.ymOf(S.today) === S.ym ? '今天 ' + (buckets[idx[S.today]] || { n: 0 }).n : '');
-    var svg = '<svg class="spark" viewBox="-6 -22 208 152" data-w="208" role="img" aria-label="' + esc(rangeLabel()) + ' 发布量">' +
+    var svg = '<svg class="spark" viewBox="-6 -22 612 152" data-w="612" role="img" aria-label="' + esc(rangeLabel()) + ' 发布量">' +
       '<text x="' + W + '" y="-8" text-anchor="end" font-size="11" fill="#3A3A42">峰值 ' + max + '</text>' +
       bars + '<g class="bnums">' + nums + '</g>' + hots +
       (foot ? '<text x="' + W + '" y="' + (H + 16) + '" text-anchor="end" font-size="11" fill="#7A6E60">' + foot + '</text>' : '') +
       '</svg>';
-    return tile(svg, S.view === 'year' ? '每月发布量' : '每天发布量',
+    return tile(svg, S.view === 'year' ? '每月发布量' : '每天发布量', null, 'tile-wide',
       total ? rangeLabel() + ' · 合计 ' + HY.num(total) + ' 条' : rangeLabel() + ' · 没有视频数据');
   }
 
@@ -257,10 +259,10 @@
     if (!px) return;
     var scale = px / +svg.getAttribute('data-w');
     var bars = svg.querySelectorAll('rect.bar');
-    var pitchPx = (208 - 12) / bars.length * scale;
+    var pitchPx = 600 / bars.length * scale;
     var maxDigits = 0;
     texts.forEach(function (t) { maxDigits = Math.max(maxDigits, t.textContent.length); });
-    var fontPx = 10, need = maxDigits * fontPx * 0.62 + 3;      // 数字字形约 0.6 个字号宽，再留 3px 缝
+    var fontPx = 12, need = maxDigits * fontPx * 0.62 + 3;      // 数字字形约 0.6 个字号宽，再留 3px 缝
     var fit = pitchPx >= need;
     g.style.display = fit ? '' : 'none';
     texts.forEach(function (t) { t.setAttribute('font-size', (fontPx / scale).toFixed(2)); });
@@ -316,8 +318,9 @@
     return tile(svg, '今天的活（' + HY.md(S.today) + '）', rangeLabel() + (late ? ' 另有 ' + late + ' 条逾期待补' : ' 没有积压的逾期'));
   }
 
-  function tile(inner, cap, sub) {
-    return '<figure class="tile"><div class="box">' + inner + '</div>' +
+  function tile(inner, cap, sub, cls, sub2) {
+    if (cls) sub = sub2;                      // tile(svg, 标题, null, 类名, 小字)
+    return '<figure class="tile' + (cls ? ' ' + cls : '') + '"><div class="box">' + inner + '</div>' +
       '<figcaption>' + cap + '<span>' + esc(sub) + '</span></figcaption></figure>';
   }
 
@@ -403,13 +406,41 @@
     });
   }
 
+  /* 日历门店列排序（2026-09-24 用户：「无法通过筛选排名吗」）：
+     点表头「完成率」「本月视频」排，第一下从高到低，再点从低到高，第三下回到默认顺序。
+     完成率没有的店（没脚本也没发视频）一律排最后。图块和 KPI 不受排序影响。 */
+  var SORT = { k: '', desc: true };
+  function sortRows(rows) {
+    if (!SORT.k) return rows;
+    var val = SORT.k === 'rate'
+      ? function (st) { var r = storeRate(st); return r ? r.p : null; }
+      : storeVideoCount;
+    var d = SORT.desc ? -1 : 1;
+    return rows.map(function (st, i) { return { st: st, v: val(st), i: i }; })
+      .sort(function (a, b) {
+        if (a.v == null || b.v == null) return a.v == null ? (b.v == null ? a.i - b.i : 1) : -1;
+        return a.v === b.v ? a.i - b.i : (a.v - b.v) * d;
+      })
+      .map(function (x) { return x.st; });
+  }
+
   function render() {
     var rows = filtered();
     renderTiles(rows);
     renderKpis(rows);
     renderMonthBar();
+    rows = sortRows(rows);
     $('#board').innerHTML = S.view === 'year' ? yearTable(rows) : monthTable(rows);
     bindCells();
+    $$('#board .sk').forEach(function (el) {
+      el.onclick = function () {
+        var k = el.dataset.k;
+        if (SORT.k !== k) SORT = { k: k, desc: true };
+        else if (SORT.desc) SORT.desc = false;
+        else SORT = { k: '', desc: true };
+        render();
+      };
+    });
   }
 
   /** 月视图：该月每天一列 */
@@ -504,8 +535,13 @@
   }
 
   function stHead(n, lab) {
-    return '<div class="sth"><span>门店 <span class="muted">(' + n + ')</span></span>' +
-           '<span class="vlab">' + lab + '视频</span></div>';
+    function sk(k, t) {
+      var on = SORT.k === k;
+      return '<span class="sk' + (on ? ' on' : '') + '" data-k="' + k + '" title="点一下排序">' + t +
+        '<i>' + (on ? (SORT.desc ? '▾' : '▴') : '↕') + '</i></span>';
+    }
+    return '<div class="sth"><span>门店 <span class="muted">(' + n + ')</span>' + sk('rate', '完成率') + '</span>' +
+           sk('videos', lab + '视频') + '</div>';
   }
   /** 当前视图里这家店发了几条：月视图 = 该月；全年总览 = 所有月份加起来 */
   function storeVideoCount(st) {
