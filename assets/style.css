@@ -744,14 +744,14 @@ body.storepage .sechead.row{padding-bottom:10px}
   cursor:pointer;white-space:nowrap;
 }
 .xsel .xmenu a:hover{background:var(--paper);color:var(--t1)}
-.xsel .xmenu a.on{color:var(--t1);font-weight:600;box-shadow:inset 2px 0 0 var(--ink)}
+.xsel .xmenu a.on{color:var(--t1);font-weight:600;box-shadow:inset 2px 0 0 var(--done)}
 .xsel .xmenu a.ck{display:flex;align-items:center;gap:9px}
 .xsel .xmenu a.ck .box{
   width:12px;height:12px;flex-shrink:0;border:1px solid var(--line-2);background:var(--card);
 }
-.xsel .xmenu a.ck.on .box{background:var(--ink);border-color:var(--ink)}
-.xsel .xmenu a.clr{position:sticky;top:0;z-index:1;background:var(--ink);color:#fff;font-size:12.5px}
-.xsel .xmenu a.clr:hover{background:#333;color:#fff}
+.xsel .xmenu a.ck.on .box{background:var(--done);border-color:var(--done)}   /* 2026-09-24 用户：黑色太深，改墨绿 */
+.xsel .xmenu a.clr{position:sticky;top:0;z-index:1;background:var(--paper);color:var(--t1);font-size:12.5px;border-bottom:1px solid var(--line-2)}
+.xsel .xmenu a.clr:hover{background:var(--line-2);color:var(--t1)}
 .xsel .xmenu a.more{border-top:1px solid var(--line);color:var(--t1);font-size:12.5px}
 
 table.list td .code{display:block;font-size:10.5px;color:var(--t4);margin-top:2px}
