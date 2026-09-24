@@ -33,7 +33,7 @@ vm.runInContext(fs.readFileSync(path.join(root, 'assets/core.js'), 'utf8'), ctx)
 const HY = ctx.window.HY;
 
 const files = fs.existsSync(dir)
-  ? fs.readdirSync(dir).filter(f => /\.xlsx$/i.test(f) && !f.startsWith('~$')) : [];
+  ? fs.readdirSync(dir).filter(f => /\.xlsx$/i.test(f) && !/^(~\$|\.)/.test(f)) : [];
 if (!files.length) {
   console.log('   「视频数据」文件夹里没有 xlsx，排行沿用上次的数据');
   process.exit(0);
