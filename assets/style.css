@@ -1313,3 +1313,6 @@ table.mini tr.dim td{color:var(--t4)}
 .hit b{font-family:var(--num);font-weight:400;font-size:17px;text-align:right}
 .hit em{font-style:normal;font-size:11.5px;color:var(--t3)}
 .hit.dim .track i{background:var(--t4)}.hit.dim b{color:var(--t4)}
+/* 表头冻结（2026-09-24 用户：「划上去以后，标题栏都要冻结」）。祖先链上不能有 overflow，否则 sticky 失效；
+   border-collapse 下 th 的底线滚动时会丢，用 inset 阴影画 */
+table.mini thead th{position:sticky;top:0;z-index:5;background:var(--card);box-shadow:inset 0 -1px 0 var(--line-2)}
