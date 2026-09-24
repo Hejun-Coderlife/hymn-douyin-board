@@ -1306,3 +1306,10 @@ body.hasfx.focusday .emptyday{display:none}
 table.mini.vtop td.tt{text-align:left;max-width:420px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--t2)}
 table.mini.vtop th:nth-child(3){text-align:left}
 table.mini tr.dim td{color:var(--t4)}
+.hitlist{display:flex;flex-direction:column;gap:2px}
+.hit{display:grid;grid-template-columns:120px 1fr 48px 100px;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+.hit .track{height:8px;background:var(--todo);display:block}
+.hit .track i{display:block;height:100%;background:var(--done)}
+.hit b{font-family:var(--num);font-weight:400;font-size:17px;text-align:right}
+.hit em{font-style:normal;font-size:11.5px;color:var(--t3)}
+.hit.dim .track i{background:var(--t4)}.hit.dim b{color:var(--t4)}

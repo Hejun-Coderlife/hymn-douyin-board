@@ -1104,20 +1104,31 @@
   function vHour(v) { return v.pubTs ? new Date(v.pubTs).getHours() : null; }
   function hasTitle(v) { return String(v.title || '').trim() !== ''; }
 
-  /** 一组视频 → 条数 / 中位 / 平均，给「几点发」这类小表用 */
-  function grpRow(lab, arr, maxMed) {
-    var x = aggV(arr), w = maxMed ? Math.round(x.medPlay / maxMed * 100) : 0, few = x.n < FEW;
-    return '<tr' + (few ? ' class="dim"' : '') + '><td>' + lab + (few && x.n ? '<span class="few">样本 ' + x.n + ' 条</span>' : '') +
-      '</td><td class="mono">' + HY.num(x.n) + '</td><td class="mono">' + HY.num(x.medPlay) +
-      '</td><td class="mono">' + HY.num(x.avgPlay) + '</td>' +
-      '<td class="barc"><span class="track"><i style="width:' + w + '%"></i></span></td></tr>';
-  }
+  /* 「几点发 / 星期几发 / 标题」三张小表（2026-09-24 第二版）：
+     第一版放了 条数 / 普通一条的播放 / 平均 / 对比条 四列，用户：「你这里的表达方式我看不懂」。
+     而且普通一条的播放各组都只有 2~3 次，根本拉不开。改成只看一个数：
+     **播放过 10 次的视频占几成**（门槛 HIT），每组一根横条 + 百分比，表上面一句话直接说结论。 */
+  var HIT = 10;
+  function hitRate(arr) { return arr.length ? arr.filter(function (v) { return v.play >= HIT; }).length / arr.length : 0; }
   function grpTable(head, groups) {
-    var maxMed = 0;
-    groups.forEach(function (g) { if (g[1].length >= FEW) maxMed = Math.max(maxMed, aggV(g[1]).medPlay); });
-    return '<table class="mini eff"><thead><tr><th>' + head + '</th><th>视频数</th><th title="' + MED_TIP + '">普通一条的播放</th>' +
-      '<th>平均每条播放</th><th class="barh">普通一条的播放（对比）</th></tr></thead><tbody>' +
-      groups.map(function (g) { return grpRow(g[0], g[1], maxMed); }).join('') + '</tbody></table>';
+    var ok = groups.filter(function (g) { return g[1].length >= 30; });   // 太少的组不参与下结论
+    var rates = groups.map(function (g) { return hitRate(g[1]); });
+    var max = Math.max.apply(null, rates) || 1;
+    var verdict = '';
+    if (ok.length >= 2) {
+      ok.sort(function (x, y) { return hitRate(y[1]) - hitRate(x[1]); });
+      var hi = ok[0], lo = ok[ok.length - 1], ph = Math.round(hitRate(hi[1]) * 100), pl = Math.round(hitRate(lo[1]) * 100);
+      verdict = ph - pl < 5
+        ? '各' + head + '差别不大，都是 ' + pl + '%–' + ph + '% 的视频播放过 ' + HIT + ' 次。'
+        : '<b>' + hi[0] + '</b>最好：' + ph + '% 的视频播放过 ' + HIT + ' 次；<b>' + lo[0] + '</b>最差，只有 ' + pl + '%。';
+    }
+    return '<p class="verdict" style="margin:0 0 10px">' + verdict + '</p>' +
+      '<div class="hitlist">' + groups.map(function (g, i) {
+        var p = Math.round(rates[i] * 100), few = g[1].length < 30;
+        return '<div class="hit' + (few ? ' dim' : '') + '"><span class="lab">' + g[0] + '</span>' +
+          '<span class="track"><i style="width:' + Math.round(rates[i] / max * 100) + '%"></i></span>' +
+          '<b>' + p + '%</b><em>' + HY.num(g[1].length) + ' 条' + (few ? '，太少不算' : '') + '</em></div>';
+      }).join('') + '</div>';
   }
 
   function renderEffect() {
@@ -1203,8 +1214,9 @@
     var wdG = WD.map(function (w, i) {
       return [w, vids.filter(function (v) { return (HY.parseYmd(v.pubDate).getDay() + 6) % 7 === i; })];
     });
-    $('#effWhen').innerHTML = '<div class="effgrid"><div>' + grpTable('几点发', hourG) + '</div><div>' +
-      grpTable('星期几发', wdG) + '</div></div>';
+    $('#effWhen').innerHTML = '<p class="note" style="margin:0 0 14px">条子越长 = 这个时候发的视频里，播放过 ' + HIT +
+      ' 次的越多。</p><div class="effgrid"><div><h4>几点发</h4>' + grpTable('时间段', hourG) + '</div><div><h4>星期几发</h4>' +
+      grpTable('天', wdG) + '</div></div>';
 
     /* ④ 发得勤有没有用：每家店每周发几条 → 那一周视频的播放 */
     var wk = {};
@@ -1232,7 +1244,7 @@
       '<p class="note" style="margin-top:10px">把每家店的每一周单独算一次（「店·周」），看发得多的那些周，整周加起来的播放是不是也更多。</p>';
 
     /* ⑤ 标题 */
-    $('#effTitle').innerHTML = grpTable('标题', [
+    $('#effTitle').innerHTML = grpTable('写法', [
       ['没写标题', vids.filter(function (v) { return !hasTitle(v); })],
       ['写了标题，没带 # 话题', vids.filter(function (v) { return hasTitle(v) && v.title.indexOf('#') === -1; })],
       ['写了标题，带了 # 话题', vids.filter(function (v) { return hasTitle(v) && v.title.indexOf('#') !== -1; })]
