@@ -1085,9 +1085,9 @@
     { k: 'n', t: '视频数' },
     { k: 'pubDays', t: '发布天数', fmt: function (x) { return x.pubDays + '/' + x.nDays; } },
     { k: 'gap', t: '最长断更', fmt: function (x) { return x.gap + ' 天'; } },
-    { k: 'avgPlay', t: '平均每条播放' },
-    { k: 'medPlay', t: '普通一条的播放', tip: MED_TIP },
-    { k: 'k1', t: '千播以上' },
+    { k: 'avgPlay', t: '平均每条播放量（次）' },
+    { k: 'medPlay', t: '普通一条播放量（次）', tip: MED_TIP },
+    { k: 'k1', t: '播放过千的（条）' },
     { k: 'gmv', t: '成交总额', money: 1 },
     { k: 'noTitle', t: '没写标题' }
   ];
@@ -1119,8 +1119,8 @@
       ok.sort(function (x, y) { return hitRate(y[1]) - hitRate(x[1]); });
       var hi = ok[0], lo = ok[ok.length - 1], ph = Math.round(hitRate(hi[1]) * 100), pl = Math.round(hitRate(lo[1]) * 100);
       verdict = ph - pl < 5
-        ? '各' + head + '差别不大，都是 ' + pl + '%–' + ph + '% 的视频播放过 ' + HIT + ' 次。'
-        : '<b>' + hi[0] + '</b>最好：' + ph + '% 的视频播放过 ' + HIT + ' 次；<b>' + lo[0] + '</b>最差，只有 ' + pl + '%。';
+        ? '各' + head + '差别不大，都是 ' + pl + '%–' + ph + '% 的视频播放量过 ' + HIT + ' 次。'
+        : '<b>' + hi[0] + '</b>最好：' + ph + '% 的视频播放量过 ' + HIT + ' 次；<b>' + lo[0] + '</b>最差，只有 ' + pl + '%。';
     }
     return '<p class="verdict" style="margin:0 0 10px">' + verdict + '</p>' +
       '<div class="hitlist">' + groups.map(function (g, i) {
@@ -1175,8 +1175,8 @@
           return '<td class="mono' + (x.n < FEW ? ' dim' : '') + '">' + t + '</td>';
         }).join('') + '</tr>';
       }).join('') + '</tbody></table>' +
-      '<p class="note" style="margin-top:10px">点表头换排序。「普通一条的播放」= 把这家店的视频按播放从少到多排队，站在正中间那条的播放，' +
-      '代表这家店一般一条能有多少播放；平均数会被一两条爆款拉高，不准。「最长断更」= 统计期里连着几天一条都没发。</p>';
+      '<p class="note" style="margin-top:10px">点表头换排序。「普通一条播放量」= 把这家店的视频按播放量从少到多排队，站在正中间那条被看了几次，' +
+      '代表这家店一般一条能被看几次；平均数会被一两条爆款拉高，不准。「最长断更」= 统计期里连着几天一条都没发。</p>';
     $$('#effStores th.s').forEach(function (th) {
       th.onclick = function () {
         var k = th.dataset.k;
@@ -1214,8 +1214,8 @@
     var wdG = WD.map(function (w, i) {
       return [w, vids.filter(function (v) { return (HY.parseYmd(v.pubDate).getDay() + 6) % 7 === i; })];
     });
-    $('#effWhen').innerHTML = '<p class="note" style="margin:0 0 14px">条子越长 = 这个时候发的视频里，播放过 ' + HIT +
-      ' 次的越多。</p><div class="effgrid"><div><h4>几点发</h4>' + grpTable('时间段', hourG) + '</div><div><h4>星期几发</h4>' +
+    $('#effWhen').innerHTML = '<p class="note" style="margin:0 0 14px">条子越长 = 这个时候发的视频里，播放量过 ' + HIT +
+      ' 次的越多（播放量 = 视频被看了几次）。</p><div class="effgrid"><div><h4>几点发</h4>' + grpTable('时间段', hourG) + '</div><div><h4>星期几发</h4>' +
       grpTable('天', wdG) + '</div></div>';
 
     /* ④ 发得勤有没有用：每家店每周发几条 → 那一周视频的播放 */
@@ -1234,7 +1234,7 @@
     });
     var maxWk = Math.max.apply(null, freqRows.map(function (x) { return x.weeks >= FEW ? x.wk : 0; })) || 1;
     $('#effFreq').innerHTML = '<table class="mini eff"><thead><tr><th>那一周发了</th><th>店·周数</th>' +
-      '<th title="' + MED_TIP + '">普通一条的播放</th><th>普通一周的总播放</th><th class="barh">整周播放（对比）</th></tr></thead><tbody>' +
+      '<th title="' + MED_TIP + '">普通一条播放量（次）</th><th>普通一周总播放量（次）</th><th class="barh">整周播放（对比）</th></tr></thead><tbody>' +
       freqRows.map(function (x) {
         var few = x.weeks < FEW;
         return '<tr' + (few ? ' class="dim"' : '') + '><td>' + x.lab + (few && x.weeks ? '<span class="few">样本 ' + x.weeks + ' 个</span>' : '') +
