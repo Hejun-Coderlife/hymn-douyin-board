@@ -77,7 +77,7 @@
   }
 
   /* ---------- 图块区（灰底方块 + 会动的数据图）----------
-     四块：完成率圆环 / 近 13 周发布量 / 本月状态构成 / 今天要拍（线描插画）。
+     四块：完成率圆环 / 当月每天发布量 / 本月状态构成 / 今天要拍（线描插画）。
      颜色沿用状态色，每块都带文字标签，不靠颜色单独表意。 */
   /* 图块（圆环/柱子/状态构成条）的配色。
      【坑，2026-09-20】这里原来写死成墨绿 '#2F5D45'，改整站配色时够不着 ——
@@ -107,6 +107,11 @@
     $('#tiles').innerHTML =
       tileRing(rate, due, c) + tileSpark(visible) + tileStack(c, ws.length) + tileToday(visible);
     bindSparkHover();
+    layoutSparkNums();
+    if (!renderTiles.__rs) {
+      renderTiles.__rs = true;
+      window.addEventListener('resize', layoutSparkNums);
+    }
   }
 
   /* 图块里的悬停标签：柱状图按周、堆叠条按状态，都在鼠标那块的正上方弹一个黑标签 */
@@ -183,45 +188,82 @@
     return tile(svg, '完成率', rangeLabel() + ' · 已到期 ' + due + ' 条');
   }
 
-  /* 2) 近 13 周发布量：单序列柱状，只标最高和本周 */
+  /* 2) 发布量：跟着选中的月份走（2026-09-24 用户要求，原来是固定的「近 13 周」）
+     月视图 = 该月每天一根柱；全年总览 = 每月一根柱。
+     柱顶标数字 —— 但只在排得下的时候标（用户：「前提是，数字能排得下」）：
+     画完后按 SVG 实际显示宽度量一次，一根柱的间距装不下最长的数字就整排不标，
+     改窗口大小会重新量（layoutSparkNums）。排不下时照旧靠悬停看。 */
+  function viewRange() {
+    if (S.view === 'year') {
+      return { from: HY.buildMonthGrid(S.months[0]).from, to: HY.buildMonthGrid(S.months[S.months.length - 1]).to };
+    }
+    var g = HY.buildMonthGrid(S.ym);
+    return { from: g.from, to: g.to };
+  }
   function tileSpark(visible) {
-    var weeks = [], end = HY.monday(HY.parseYmd(S.today));
-    for (var i = 12; i >= 0; i--) {
-      var from = HY.ymd(HY.addDays(end, -7 * i));
-      weeks.push({ from: from, to: HY.ymd(HY.addDays(HY.parseYmd(from), 6)), n: 0 });
+    var buckets = [], idx = {};
+    if (S.view === 'year') {
+      S.months.forEach(function (ym, i) {
+        idx[ym] = i;
+        buckets.push({ lab: HY.monthLabel(ym), short: +ym.slice(5) + '月', n: 0, future: ym > HY.ymOf(S.today) });
+      });
+    } else {
+      HY.buildMonthGrid(S.ym).days.forEach(function (d, i) {
+        idx[d.date] = i;
+        buckets.push({ lab: HY.md(d.date) + '（周' + d.dow + '）', short: '', n: 0, future: d.date > S.today });
+      });
     }
     S.videos.forEach(function (v) {
       if (!v.pubDate || !visible[v.store]) return;
-      for (var i = 0; i < weeks.length; i++) {
-        if (v.pubDate >= weeks[i].from && v.pubDate <= weeks[i].to) { weeks[i].n++; return; }
-      }
+      var k = S.view === 'year' ? HY.ymOf(v.pubDate) : v.pubDate;
+      if (idx[k] != null) buckets[idx[k]].n++;
     });
-    var max = Math.max.apply(null, weeks.map(function (w) { return w.n; })) || 1;
-    var total = weeks.reduce(function (a, w) { return a + w.n; }, 0);
-    var W = 196, H = 112, bw = 9, gap = (W - weeks.length * bw) / (weeks.length - 1);
-    var bars = weeks.map(function (w, i) {
+    var max = Math.max.apply(null, buckets.map(function (w) { return w.n; })) || 1;
+    var total = buckets.reduce(function (a, w) { return a + w.n; }, 0);
+    var nb = buckets.length, W = 196, H = 112, pitch = W / nb, bw = Math.max(3, Math.min(9, pitch * 0.62));
+    var bars = '', nums = '', hots = '';
+    buckets.forEach(function (w, i) {
       var h = Math.max(w.n ? 3 : 1, Math.round(w.n / max * (H - 26)));
-      var x = (bw + gap) * i, y = H - h;
-      // 鼠标悬停靠 bindSparkHover() 画自己的标签（原生 <title> 要等 1 秒才出、字又小）
-      return '<rect class="bar" x="' + x.toFixed(1) + '" y="' + y + '" width="' + bw + '" height="' + h + '" rx="2" ' +
-        'fill="' + (w.n ? TILE_C.done : TILE_C.todo) + '" ' +
-        'data-lab="' + HY.md(w.from) + '–' + HY.md(w.to) + '" data-n="' + w.n + '" ' +
-        'style="transform-origin:' + (x + bw / 2).toFixed(1) + 'px ' + H + 'px;animation-delay:' + (0.72 + i * 0.03).toFixed(2) + 's"></rect>';
-    }).join('');
-    // 透明热区：整列都能触发，不然 9px 宽的柱子太难瞄
-    var hots = weeks.map(function (w, i) {
-      var x = (bw + gap) * i - gap / 2, ww = bw + gap;
-      return '<rect class="hot" x="' + x.toFixed(1) + '" y="-20" width="' + ww.toFixed(1) + '" height="' + (H + 20) +
-        '" fill="transparent" data-lab="' + HY.md(w.from) + '–' + HY.md(w.to) + '" data-n="' + w.n + '" data-i="' + i + '"></rect>';
-    }).join('');
-    var lastN = weeks[weeks.length - 1].n;
-    var svg = '<svg class="spark" viewBox="-14 -22 224 152" role="img" aria-label="近 13 周发布量">' +
+      var x = pitch * i + (pitch - bw) / 2, y = H - h;
+      // 鼠标悬停靠 bindSparkHover() 画自己的标签（原生 <title> 要等 1 秒、字还小）
+      bars += '<rect class="bar" x="' + x.toFixed(1) + '" y="' + y + '" width="' + bw.toFixed(1) + '" height="' + h + '" rx="1" ' +
+        'fill="' + (w.n ? TILE_C.done : TILE_C.todo) + '" data-lab="' + w.lab + '" data-n="' + w.n + '" ' +
+        'style="transform-origin:' + (x + bw / 2).toFixed(1) + 'px ' + H + 'px;animation-delay:' + (0.72 + i * 0.015).toFixed(3) + 's"></rect>';
+      if (w.n) {
+        nums += '<text class="bnum" x="' + (x + bw / 2).toFixed(1) + '" y="' + (y - 3) + '" text-anchor="middle">' + w.n + '</text>';
+      }
+      // 透明热区：整列都能触发，不然细柱子太难瞄
+      hots += '<rect class="hot" x="' + (pitch * i).toFixed(1) + '" y="-20" width="' + pitch.toFixed(1) + '" height="' + (H + 20) +
+        '" fill="transparent" data-lab="' + w.lab + '" data-n="' + w.n + '" data-i="' + i + '"></rect>';
+    });
+    var foot = S.view === 'year' ? '' :
+      (HY.ymOf(S.today) === S.ym ? '今天 ' + (buckets[idx[S.today]] || { n: 0 }).n : '');
+    var svg = '<svg class="spark" viewBox="-6 -22 208 152" data-w="208" role="img" aria-label="' + esc(rangeLabel()) + ' 发布量">' +
       '<text x="' + W + '" y="-8" text-anchor="end" font-size="11" fill="#3A3A42">峰值 ' + max + '</text>' +
-      bars + hots +
-      '<text x="' + W + '" y="' + (H + 16) + '" text-anchor="end" font-size="11" fill="#7A6E60">本周 ' + lastN + '</text>' +
+      bars + '<g class="bnums">' + nums + '</g>' + hots +
+      (foot ? '<text x="' + W + '" y="' + (H + 16) + '" text-anchor="end" font-size="11" fill="#7A6E60">' + foot + '</text>' : '') +
       '</svg>';
-    return tile(svg, '近 13 周发布量',
-      total ? '合计 ' + HY.num(total) + ' 条 · 鼠标悬停看每周' : '还没导入视频数据');
+    return tile(svg, S.view === 'year' ? '每月发布量' : '每天发布量',
+      total ? rangeLabel() + ' · 合计 ' + HY.num(total) + ' 条' : rangeLabel() + ' · 没有视频数据');
+  }
+
+  /* 柱顶数字排不排得下：按实际显示宽度算。字号固定显示成 10px（viewBox 缩放多少就反过来除多少） */
+  function layoutSparkNums() {
+    var svg = $('#tiles svg.spark');
+    if (!svg) return;
+    var g = svg.querySelector('.bnums'), texts = g ? g.querySelectorAll('text') : [];
+    if (!texts.length) return;
+    var px = svg.getBoundingClientRect().width;
+    if (!px) return;
+    var scale = px / +svg.getAttribute('data-w');
+    var bars = svg.querySelectorAll('rect.bar');
+    var pitchPx = (208 - 12) / bars.length * scale;
+    var maxDigits = 0;
+    texts.forEach(function (t) { maxDigits = Math.max(maxDigits, t.textContent.length); });
+    var fontPx = 10, need = maxDigits * fontPx * 0.62 + 3;      // 数字字形约 0.6 个字号宽，再留 3px 缝
+    var fit = pitchPx >= need;
+    g.style.display = fit ? '' : 'none';
+    texts.forEach(function (t) { t.setAttribute('font-size', (fontPx / scale).toFixed(2)); });
   }
 
   /* 3) 本月状态构成：一根堆叠条 + 四个直接标注（段间留 2px 缝） */
@@ -251,7 +293,10 @@
     S.scripts.forEach(function (s) {
       if (!visible[s.store]) return;
       if (s.date === S.today) n++;
-      if (s.date < S.today && statusOfScript(s) === 'late') late++;
+    });
+    // 逾期只算当前视图（本月 / 全年），跟圆环和状态构成同一个范围（2026-09-24 改，原来是开排以来全部）
+    windowScripts().forEach(function (s) {
+      if (visible[s.store] && statusOfScript(s) === 'late') late++;
     });
     var svg =
       '<svg viewBox="0 0 200 196" fill="none" stroke="#7E6849" stroke-width="1.4" ' +
@@ -268,7 +313,7 @@
       '</svg>' +
       '<div class="tval" style="justify-content:flex-end;padding-bottom:16px">' +
         '<b>' + n + '<small> 条</small></b><i>今天要拍</i></div>';
-    return tile(svg, '今天的活', late ? '另有 ' + late + ' 条逾期待补' : '没有积压的逾期');
+    return tile(svg, '今天的活（' + HY.md(S.today) + '）', rangeLabel() + (late ? ' 另有 ' + late + ' 条逾期待补' : ' 没有积压的逾期'));
   }
 
   function tile(inner, cap, sub) {
@@ -291,14 +336,17 @@
     var due = c.done + c.late;
     var rate = due ? Math.round(c.done / due * 100) : 0;
     var freeCount = 0;
-    rows.forEach(function (st) { freeCount += (S.freeByStore[st.douyinId] || []).length; });
+    var vr = viewRange();   // 只算当前视图范围内发布的（2026-09-24 改，原来是所有月份总数）
+    rows.forEach(function (st) {
+      (S.freeByStore[st.douyinId] || []).forEach(function (v) { if (v.pubDate >= vr.from && v.pubDate <= vr.to) freeCount++; });
+    });
 
     $('#kpis').innerHTML = [
       kpi('完成率', rate + '<small>%</small>', '', rangeLabel() + ' · 已到期 ' + due + ' 条'),
       kpi('已发布', c.done, 'done', '计划当天发的才算'),
       kpi('逾期未发', c.late, 'late', '过了计划日仍没匹配到'),
       kpi('待拍', c.todo, '', '计划日期还没到'),
-      kpi('自由发挥视频', HY.num(freeCount), 'free', '没对上任何脚本'),
+      kpi('自由发挥视频', HY.num(freeCount), 'free', rangeLabel() + ' · 没对上任何脚本'),
       kpi('门店', rows.length + '<small>/' + S.stores.length + '</small>', '', '当前筛选结果')
     ].join('');
     // 「逾期未发排行」卡片 2026-09-24 删了（用户：「后台这部分不要」），别加回去
@@ -787,12 +835,15 @@
       '<button class="btn sm" id="mgrManage">分配门店…</button></span>';
 
     var h = '<thead><tr><th style="width:52px">编号</th><th>门店</th><th>抖音号</th><th style="width:120px">区域经理</th>' +
-      '<th style="width:130px">店铺手机号</th>' +
-      '<th style="width:96px">店里几个人</th>' +
+      '<th style="width:110px">店里几个人</th>' +
       '<th style="width:110px">区域</th>' +
-      '<th style="width:110px">门店类型</th><th style="width:150px">客群</th>' +
-      '<th style="width:170px">主推项目</th><th style="width:170px">可拍场景</th>' +
-      '<th style="width:150px">出镜条件</th><th>脚本</th><th>视频</th><th></th></tr></thead><tbody>';
+      '<th style="width:110px">门店类型</th>' +
+      '<th>脚本</th><th>视频</th><th></th></tr></thead><tbody>';
+    /* 2026-09-24 删掉的列（用户：「这些目前好像用不到」「有留着的必要吗」）：
+       - 客群 / 主推项目 / 可拍场景 / 出镜条件：43 家全空，生成脚本也没读它们
+       - 店铺手机号：这里填的只存本机，改不了登录；登录用的是 stores.json 的 phoneHash
+         （43 家都已有），要换号码走 tools/set_phones.py
+       字段都还在数据里，要加回来就是恢复这几行 cellInput。 */
     S.stores.forEach(function (st, i) {
       h += '<tr data-id="' + st.douyinId + '">' +
         '<td class="mono muted">' + (i + 1) + '<span class="code">' + esc(st.code || '') + '</span></td>' +
@@ -800,15 +851,10 @@
         (st.brandLine ? '<div class="bl">' + esc(st.brandLine) + '</div>' : '') + '</td>' +
         '<td class="mono muted">' + st.douyinId + '</td>' +
         cellSelect(st, 'manager', [''].concat(names)) +
-        cellInput(st, 'phone', '店铺手机号（只存本机）') +
         // 只有一个人的店，生成脚本时只派单人能拍的形式。改完记得导出 stores.json 再跑生成。
-        cellSelect(st, 'staff', ['', '1']) +
+        cellSelect(st, 'staff', ['', '1'], { '': '两个人', '1': '一个人' }) +
         cellInput(st, 'region', '区域', 'regionList') +
         cellSelect(st, 'storeType', TYPE_OPTS) +
-        cellInput(st, 'customer', '如 30-45 岁社区妈妈') +
-        cellInput(st, 'mainService', '如 皮肤管理 / 妆造') +
-        cellInput(st, 'scenes', '如 护理床、前台、门头（逗号分隔）') +
-        cellInput(st, 'onCamera', '如 店长可出镜') +
         '<td class="mono">' + (cntS[st.douyinId] || 0) + '</td>' +
         '<td class="mono">' + (cntV[st.douyinId] || 0) + '</td>' +
         '<td><a class="btn sm" href="store.html?store=' + st.douyinId + '" target="_blank">门店页</a></td></tr>';
@@ -873,11 +919,12 @@
     return '<td><input data-f="' + f + '" class="cellin' + (v ? ' edited' : '') + '" value="' +
       esc(v) + '" placeholder="' + esc(ph) + '"' + (listId ? ' list="' + listId + '"' : '') + '></td>';
   }
-  function cellSelect(st, f, opts) {
+  function cellSelect(st, f, opts, labels) {
     var v = val(st, f);
     return '<td><select data-f="' + f + '" class="cellin' + (v ? ' edited' : '') + '">' +
       opts.map(function (o) {
-        return '<option value="' + esc(o) + '"' + (o === v ? ' selected' : '') + '>' + (o || '—') + '</option>';
+        var lab = labels && labels[o] != null ? labels[o] : (o || '—');
+        return '<option value="' + esc(o) + '"' + (o === v ? ' selected' : '') + '>' + esc(lab) + '</option>';
       }).join('') + '</select></td>';
   }
 
