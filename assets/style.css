@@ -392,7 +392,7 @@ body.booted .pagehead p{animation:headfade .55s ease .46s both}
    「彩度偏低」那条是有意的（爱马仕色系要克制），靠每块都带文字标签做二次编码来兜。 */
 .tiles{display:grid;grid-template-columns:1fr 3fr;gap:18px;margin:0 0 26px}
 /* 发布量图占三格（2026-09-24 用户：「这个可以放大点」）；4:1 让它跟左边 4:3 的圆环一样高 */
-.tile-wide .box{aspect-ratio:4/1}
+.tile.tile-wide .box{aspect-ratio:4/1}   /* 要写 .tile.tile-wide：.tile .box 的 4:3 写在后面、权重一样，会把这条盖掉（踩过，图被撑到一整屏高） */
 .tile figure{margin:0}
 /* 图块底改纯白（2026-09-20 用户要求）。白底压在白页面上就没边界了，
    所以必须补一条发丝边 —— 原来靠「米色底 vs 白页面」的色差分区，现在那个差没了。 */
@@ -439,7 +439,7 @@ body.booted .tile .ink-draw{animation:inkdraw 1.6s ease .75s both}
   body.booted .tiles .tile,body.booted .tile .ring-val,body.booted .tile .spark rect,
   body.booted .tile .seg,body.booted .tile .ink-draw{animation:none}
 }
-@media (max-width:1180px){.tiles{grid-template-columns:1fr}.tiles .tile:first-child .box{aspect-ratio:auto;height:220px}.tile-wide .box{aspect-ratio:auto;height:220px}}
+@media (max-width:1180px){.tiles{grid-template-columns:1fr}.tiles .tile:first-child .box{aspect-ratio:auto;height:220px}.tile.tile-wide .box{aspect-ratio:auto;height:220px}}
 @media (max-width:640px){.tiles{grid-template-columns:1fr}}
 
 /* ===== KPI：四格白板，靠发丝线分隔 ===== */
