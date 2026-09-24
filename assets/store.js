@@ -204,7 +204,7 @@
         return '<div class="rk' + (x.st.douyinId === id ? ' me' : '') + '">' +
           '<span class="i">' + x.i + '</span>' +
           '<span class="nm">' + esc(x.st.storeName) + '</span>' +
-          '<span class="bar"><u style="width:' + (max ? Math.round(x.n / max * 100) : 0) + '%"></u></span>' +
+          '<span class="rkbar"><u style="width:' + (max ? Math.round(x.n / max * 100) : 0) + '%"></u></span>' +
           '<b>' + x.n + '</b></div>';
       }).join('');
   }

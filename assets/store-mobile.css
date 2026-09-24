@@ -169,12 +169,14 @@ html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans)
 .rk{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line-2);font-size:14.5px}
 .rk .i{width:22px;flex:none;text-align:right;font-family:var(--serif);font-size:15px;color:var(--dim)}
 .rk .nm{flex:0 0 38%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.rk .bar{flex:1;height:5px;background:var(--line-2)}
-.rk .bar u{display:block;height:100%;background:var(--pink)}
+/* 横条类名别叫 .bar —— 顶部 logo 栏占用了（带上下 padding 和底线），撞名后横条被撑成一个高米色块，
+   长短看不出来（2026-09-24 用户截图：「看不出有数字上的差异」） */
+.rk .rkbar{flex:1;height:8px;background:var(--line-2)}
+.rk .rkbar u{display:block;height:100%;background:var(--pink-deep)}
 .rk b{min-width:28px;text-align:right;font-weight:500;font-variant-numeric:tabular-nums}
 .rk.me{margin:0 -20px;padding:12px 20px 12px 18px;border-left:2px solid var(--ink)}
 .rk.me .nm{font-weight:600}
-.rk.me .bar u{background:var(--pink-deep)}
+.rk.me .rkbar u{background:var(--ink)}
 
 /* ---------- 分区标题 ---------- */
 .sec{display:flex;align-items:baseline;justify-content:space-between;gap:16px;
