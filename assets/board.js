@@ -1019,6 +1019,60 @@
     fr.readAsArrayBuffer(f);
   }
 
+  /* ---------- 已上传的数据表格（2026-09-28 用户：要看到清单，并且能下载） ----------
+     清单来自 data/videos.js 里的 files（发布时 build_rank.js 按「视频数据/」逐个文件生成）。
+     原表有成交金额，不进公开仓库，所以下载是按原表列名重新拼出来的，少了两列成交金额。
+     本机在页面上拖进来的表原文件没存，只列记录，下不了。 */
+  function rangeTxt(r) {   // 20260817~20260915 -> 2026-08-17 ~ 2026-09-15
+    return r.split('~').map(function (x) {
+      return /^\d{8}$/.test(x) ? x.slice(0, 4) + '-' + x.slice(4, 6) + '-' + x.slice(6) : x;
+    }).join(' ~ ');
+  }
+  function renderFiles() {
+    var host = $('#fileList'); if (!host) return;
+    var pub = window.HY_VIDEOS_PUB || {}, files = pub.files || [];
+    var local = HY.Videos.meta().imports || [];
+    var rows = files.map(function (f, i) {
+      return '<tr><td>' + esc(f.name) + '</td><td>' + esc(f.ranges.map(rangeTxt).join('、')) + '</td><td>' +
+        HY.num(f.rows.length) + '</td><td>' + f.stores + '</td><td><a class="dl" data-i="' + i + '">下载</a></td></tr>';
+    });
+    local.slice().reverse().forEach(function (m) {
+      rows.push('<tr><td>' + esc(m.file || '（未命名）') + ' <span class="note">本机导入 ' +
+        new Date(m.at).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) +
+        '</span></td><td>—</td><td>' + HY.num(m.added + m.updated) + '</td><td>—</td><td><span class="note">原表未保存</span></td></tr>');
+    });
+    host.innerHTML = rows.length
+      ? '<table class="mini"><thead><tr><th>文件</th><th>数据日期范围</th><th>视频条数</th><th>门店数</th><th></th></tr></thead><tbody>' +
+        rows.join('') + '</tbody></table>'
+      : '<p class="note">还没有发布过数据表格</p>';
+    $$('#fileList a.dl').forEach(function (a) {
+      a.onclick = function () { downloadFile(files[+a.dataset.i]); };
+    });
+  }
+  function downloadFile(f) {
+    var pub = window.HY_VIDEOS_PUB, byId = {}, acc = pub.accounts || {};
+    pub.videos.forEach(function (v) { byId[v.id] = v; });
+    var p2 = function (x) { return String(x).padStart(2, '0'); };
+    var ts = function (t) {
+      if (!t) return '';
+      var d = new Date(t);
+      return HY.ymd(d).replace(/-/g, '/') + ' ' + p2(d.getHours()) + ':' + p2(d.getMinutes());   // 同原表：2026/08/02 10:12
+    };
+    var aoa = [['数据日期范围', '视频ID', '跳转链接', '抖音号', '抖音号名称', '视频标题', '视频发布时间',
+                '视频播放次数', '视频有效播放次数']];
+    f.rows.forEach(function (r) {
+      var v = byId[r[0]] || {};
+      // 数据日期范围取这份表自己的（明细里是最后一份导出的范围）
+      aoa.push([f.ranges.length === 1 ? f.ranges[0] : (v.rangeFrom ? v.rangeFrom + '~' + v.rangeTo : ''), r[0], v.url || '', v.store || '',
+                acc[v.store] || '', r.length > 3 ? r[3] : (v.title || ''), ts(v.pubTs), r[1], r[2]]);
+    });
+    var ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws['!cols'] = [{ wch: 20 }, { wch: 22 }, { wch: 46 }, { wch: 14 }, { wch: 24 }, { wch: 50 }, { wch: 20 }, { wch: 12 }, { wch: 14 }];
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
+    XLSX.writeFile(wb, f.name.replace(/\.xlsx$/i, '') + '_不含成交金额.xlsx');
+  }
+
   function renderHint() {
     var n = HY.Videos.list().length;
     if (!n) { $('#datahint').innerHTML = '未导入视频数据'; return; }
@@ -1552,6 +1606,7 @@
     recompute();
     render();
     renderHint();
+    renderFiles();
     renderHeroSub();
     if ($('#p-effect').classList.contains('on')) renderEffect();
     if ($('#p-stores').classList.contains('on')) renderStoreList();

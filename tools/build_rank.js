@@ -41,12 +41,21 @@ if (!files.length) {
 
 const videos = {};
 let rangeTo = '';
-files.forEach(f => {
+// 每份表单独留一份清单（总部看板「已上传的数据表格」列表 + 下载用），同样不含成交金额。
+// 行里只存 [视频ID, 播放, 有效播放(, 这份表里的标题)]：同一条视频在不同导出里播放数不同，
+// 标题偶尔也不同（后一份导出里变空），不同时才带第 4 位；其余字段查 videos 明细
+const fileList = [], accounts = {};
+files.sort().forEach(f => {
   const wb = XLSX.read(fs.readFileSync(path.join(dir, f)), { type: 'buffer' });
   // raw:false 让大数按显示文本出来，19 位视频ID 才不会精度丢失（同 board.js）
   const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '', raw: false });
   const r = HY.rowsToVideos(rows);
   r.videos.forEach(v => { videos[v.id] = v; if (v.rangeTo > rangeTo) rangeTo = v.rangeTo; });
+  const rg = {}, st = {};
+  r.videos.forEach(v => { if (v.rangeFrom) rg[v.rangeFrom + '~' + v.rangeTo] = 1; st[v.store] = 1;
+                          if (v.account) accounts[v.store] = v.account; });
+  fileList.push({ name: f, ranges: Object.keys(rg).sort(), stores: Object.keys(st).length,
+                  rows: r.videos.map(v => [v.id, v.play, v.validPlay]), titles: r.videos.map(v => v.title) });
   console.log('   ' + f + '：' + r.videos.length + ' 条');
 });
 
@@ -76,8 +85,12 @@ const pub = Object.keys(videos).map(k => {
   return { id: v.id, store: v.store, title: v.title, url: v.url, pubDate: v.pubDate, pubTs: v.pubTs,
            play: v.play, validPlay: v.validPlay, rangeFrom: v.rangeFrom, rangeTo: v.rangeTo };
 }).sort((a, b) => a.pubTs - b.pubTs || (a.id < b.id ? -1 : 1));   // 固定顺序：没变就不产生 git 改动
+fileList.forEach(f => {
+  f.rows.forEach((r, i) => { if (f.titles[i] !== videos[r[0]].title) r.push(f.titles[i]); });
+  delete f.titles;
+});
 fs.writeFileSync(outV,
   '/* 由 tools/build_rank.js 生成，别手改。视频明细（不含成交金额） */\n' +
-  'window.HY_VIDEOS_PUB = ' + JSON.stringify({ upto: upto, videos: pub }) + ';\n');
+  'window.HY_VIDEOS_PUB = ' + JSON.stringify({ upto: upto, videos: pub, files: fileList, accounts: accounts }) + ';\n');
 console.log('   看板视频明细：' + pub.length + ' 条（不含成交金额）');
 console.log('   排行数据：' + Object.keys(counts).length + ' 店 ' + n + ' 条视频' + (upto ? '，数据截至 ' + upto : ''));
