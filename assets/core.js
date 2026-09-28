@@ -139,7 +139,8 @@ window.HY = (function () {
       });
       if (o.meta.imports.length > 40) o.meta.imports = o.meta.imports.slice(-40);
       this.write(o);
-      return { added: added, updated: updated, total: Object.keys(o.videos).length };
+      return { added: added, updated: updated, total: Object.keys(o.videos).length,
+               at: o.meta.imports[o.meta.imports.length - 1].at };   // 原文件按这个存（见 board.js RawFiles）
     },
     replaceAll: function (backup) {
       this.write({ videos: backup.videos || {}, meta: backup.meta || { imports: [] } });
