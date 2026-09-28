@@ -279,6 +279,30 @@ window.HY = (function () {
   // 空 = 两个人以上，走全部形式。**漏加进 EDITABLE 就存不住**，区域经理那次踩过。
   var EDITABLE = ['manager', 'region', 'storeType', 'customer', 'mainService', 'scenes', 'onCamera', 'note', 'phone', 'staff'];
 
+  /* 定时发布的人工标记：总部确认过「这家店这天已经排了定时视频」就标一下（2026-09-28 加）。
+     键 = 抖音号|日期。只是预先确认，**不算完成**——完成与否仍看导出数据里当天有没有视频。
+     存本机 localStorage，跟着「导出/导入备份 JSON」一起走。 */
+  var LS_MARK = 'hymn_sched_marks_v1';
+  var Marks = {
+    read: function () {
+      try { return JSON.parse(localStorage.getItem(LS_MARK)) || {}; } catch (e) { return {}; }
+    },
+    write: function (o) { localStorage.setItem(LS_MARK, JSON.stringify(o)); },
+    has: function (store, date) { return !!this.read()[store + '|' + date]; },
+    toggle: function (store, date) {
+      var o = this.read(), k = store + '|' + date;
+      if (o[k]) delete o[k]; else o[k] = 1;
+      this.write(o);
+      return !!o[k];
+    },
+    merge: function (m) {
+      var o = this.read(), n = 0;
+      Object.keys(m || {}).forEach(function (k) { if (!o[k]) { o[k] = 1; n++; } });
+      this.write(o);
+      return n;
+    }
+  };
+
   /* 区域经理名单：跟门店分配分开存，这样「加了名字还没分配门店」也留得住 */
   var LS_MGR = 'hymn_managers_v1';
   var Managers = {
@@ -506,7 +530,7 @@ window.HY = (function () {
     parsePub: parsePub, buildWeeks: buildWeeks, buildDayGrid: buildDayGrid, DOW: DOW,
     ymOf: ymOf, monthLabel: monthLabel, buildMonthGrid: buildMonthGrid, monthsIn: monthsIn,
     Videos: Videos, rowsToVideos: rowsToVideos,
-    StoreEdits: StoreEdits, EDITABLE: EDITABLE, Managers: Managers,
+    StoreEdits: StoreEdits, EDITABLE: EDITABLE, Managers: Managers, Marks: Marks,
     sha256: sha256, normPhone: normPhone, phoneHash: phoneHash, MyStore: MyStore,
     match: match, statusOf: statusOf, STATUS_CN: STATUS_CN, judgeDay: judgeDay,
     loadData: loadData, loadStores: loadStores, loadDetail: loadDetail, loadDetails: loadDetails, detail: detail, toast: toast, num: num,

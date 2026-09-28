@@ -422,6 +422,7 @@
 
   function render() {
     var rows = filtered();
+    S.mk = HY.Marks.read();
     renderTiles(rows);
     renderKpis(rows);
     renderMonthBar();
@@ -474,10 +475,13 @@
         if (sc) {
           var stt = statusOfScript(sc);
           var n = (stt === 'done' ? 1 : 0) + nf;
-          h += '<span class="dot ' + stt + '"' + (nf ? ' data-n="' + n + '"' : '') +
+          // 定时标记只改「待拍」的颜色；逾期的仍是粉，只在提示里说一句（标了但没发出来，更要查）
+          var mk = !!S.mk[st.douyinId + '|' + d.date] && stt !== 'done';
+          h += '<span class="dot ' + stt + (mk ? ' sched' : '') + '"' + (nf ? ' data-n="' + n + '"' : '') +
                ' data-id="' + esc(sc.id) +
                '" data-tip="' + esc(st.storeName + ' · ' + d.date + '（周' + d.dow + '）\n' +
                sc.topic + '·' + sc.format + '\n' + HY.STATUS_CN[stt] +
+               (mk ? (stt === 'late' ? '\n标过「已排定时」，但没查到当天的视频' : '\n已确认排了定时视频') : '') +
                (nf ? '\n当天共发 ' + n + ' 条（其中计划外 ' + nf + ' 条）' : '')) + '"></span>';
         } else if (free) {
           h += '<span class="dot free"' + (nf > 1 ? ' data-n="' + nf + '"' : '') +
@@ -667,7 +671,9 @@
     bindBoardTip();
     bindGridScroll();
     $$('#board .dot[data-id]').forEach(function (el) {
-      el.onclick = function () { openScript(el.dataset.id); };
+      el.onclick = function () {
+        if (S.markMode) toggleMark(el.dataset.id); else openScript(el.dataset.id);
+      };
     });
     $$('#board .dot[data-free]').forEach(function (el) {
       el.onclick = function () { openFree(el.dataset.free); };
@@ -723,6 +729,11 @@
       (s.duration ? ' · ' + esc(s.duration) : '') + ' · <span class="mono">' + esc(s.id) + '</span>';
 
     var h = '<span class="pill ' + stt + '">' + HY.STATUS_CN[stt] + '</span>';
+    if (stt !== 'done') {
+      var mk = HY.Marks.has(s.store, s.date);
+      h += '<button class="btn sm mkbtn' + (mk ? ' on' : '') + '" id="dMark" type="button">' +
+           (mk ? '✓ 已排定时（点击取消）' : '标记：已排定时') + '</button>';
+    }
 
     h += '<div class="statusbox">';
     if (m) {
@@ -773,10 +784,32 @@
     $('#dBody').innerHTML = h;
     $('#dBody').scrollTop = 0;
 
+    var dm = document.getElementById('dMark');
+    if (dm) dm.onclick = function () { toggleMark(s.id); drawScript(s.id); };
+
     var ca = document.getElementById('copyAll');
     if (ca) ca.onclick = function () {
       copy((s.hashtags || []).filter(function (t) { return t !== s.tag; }).join(' '), '标签已全部复制');
     };
+  }
+
+  /* 定时标记：侧栏按钮、以及「标记定时」模式下直接点格子，都走这里 */
+  function toggleMark(id) {
+    var sc = S.scriptById[id];
+    if (!sc) return;
+    var on = HY.Marks.toggle(sc.store, sc.date);
+    var st = S.storeById[sc.store] || {};
+    var wrap = $('.gridwrap'), top = wrap ? wrap.scrollTop : 0, left = wrap ? wrap.scrollLeft : 0;
+    render();
+    if (wrap) { wrap.scrollTop = top; wrap.scrollLeft = left; }
+    HY.toast(st.storeName + ' ' + HY.md(sc.date) + (on ? ' 已标记：排了定时' : ' 已取消定时标记'));
+  }
+  function setMarkMode(on) {
+    S.markMode = on;
+    document.body.classList.toggle('markmode', on);
+    var b = $('#btnMark');
+    b.classList.toggle('on', on);
+    b.textContent = on ? '完成标记' : '标记定时';
   }
 
   function copy(text, okMsg) {
@@ -1747,6 +1780,7 @@
 
     $('#btnExportBak').onclick = function () {
       var o = HY.Videos.read();
+      o.marks = HY.Marks.read();   // 定时标记也跟着备份走，换浏览器 / 换 file:// 与线上时能搬过去
       var blob = new Blob([JSON.stringify(o)], { type: 'application/json' });
       var a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
@@ -1766,7 +1800,9 @@
           if (!o.videos) throw new Error('不是本看板导出的备份文件');
           var arr = Object.keys(o.videos).map(function (k) { return o.videos[k]; });
           var res = HY.Videos.merge(arr, f.name);   // 合并而不是覆盖，更安全
-          log('从备份合并：新增 ' + res.added + '，更新 ' + res.updated + '，累计 ' + res.total, 'ok');
+          var nm = HY.Marks.merge(o.marks);
+          log('从备份合并：新增 ' + res.added + '，更新 ' + res.updated + '，累计 ' + res.total +
+              (nm ? '；定时标记新增 ' + nm + ' 个' : ''), 'ok');
           refreshAll();
         } catch (err) { log('备份导入失败：' + err.message, 'err'); }
       };
@@ -2023,6 +2059,10 @@
   }
   function bindPoster() {
     $('#btnPoster').onclick = openPoster;
+    $('#btnMark').onclick = function () {
+      setMarkMode(!S.markMode);
+      if (S.markMode) HY.toast('点日历格子标记 / 取消「已排定时」，标完点「完成标记」');
+    };
     $('#pstClose').onclick = closePoster;
     $$('#pstModes .segbtn').forEach(function (b) {
       b.onclick = function () { PST.mode = b.dataset.m; pstRender(); };

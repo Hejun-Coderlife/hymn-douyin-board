@@ -107,6 +107,7 @@
   --done:#2F5D45;   --done-text:#2F5D45;  --done-bg:rgba(47,93,69,.10);
   --late:#B9808B;   --late-bg:var(--pink-bg);
   --todo:#EAE6DD;
+  --sched:#A9C0B1;   /* 已排定时（人工标记，还没发出来）：已发布墨绿的浅档，一眼看出是「绿的路上」 */
   --brick:#B9808B;  --brick-bg:var(--pink-bg);
   --green:var(--done);  --green-bg:var(--done-bg); --green-text:var(--done-text);
   --camel:#9C958A;  --camel-text:#4A453C;  --camel-bg:rgba(156,149,138,.12);
@@ -604,6 +605,11 @@ td.cell.wknd{background:var(--paper)}
 .dot.todo{background:var(--todo)}    /* 待拍 */
 .dot.late{background:var(--late)} /* 逾期：整张表唯一要跳出来的 */
 .dot.done{background:var(--done)}    /* 已发布·精确：墨绿 */
+.dot.todo.sched{background:var(--sched)}   /* 待拍 + 人工标了已排定时 */
+/* 「标记定时」模式：格子光标换成加号，按钮是黑底，提醒现在点格子是在标记不是看脚本 */
+body.markmode #board .dot[data-id]{cursor:copy}
+.btn.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.mkbtn{margin-left:10px;vertical-align:middle}
 .dot.guess{background:var(--guess)}  /* 已发布·推测：驼黄 */
 .dot.none{width:4px;height:4px;background:var(--t4);cursor:default}
 .dot.none:hover{outline:none}

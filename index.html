@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>赫眉 HYMN · 视频脚本看板</title>
-<link rel="stylesheet" href="assets/style.css?v=20260928-1658">
+<link rel="stylesheet" href="assets/style.css?v=20260928-1720">
 </head>
 <body>
 <div id="boot"><div class="bmark"><img src="assets/logo-ink.png" alt="赫眉 HYMN"></div></div>
@@ -61,8 +61,10 @@
         <input type="search" id="fSearch" placeholder="搜门店 / 抖音号">
         <label class="chk"><input type="checkbox" id="fLate"> 只看有逾期</label>
         <button class="btn sm" id="btnPoster" type="button">生成战报图</button>
+        <button class="btn sm" id="btnMark" type="button" title="打开后点日历格子，标记这家店这天已经排好了定时视频">标记定时</button>
         <div class="legend">
           <span><i style="background:var(--todo)"></i>待拍</span>
+          <span><i style="background:var(--sched)"></i>已排定时</span>
           <span><i style="background:var(--late)"></i>逾期未发</span>
           <span><i style="background:var(--done)"></i>已发布</span>
           <span><i style="background:var(--camel)"></i>计划外</span>
@@ -201,12 +203,12 @@
   <div class="db" id="dBody"></div>
 </aside>
 
-<script src="data/stores.js?v=20260928-1658"></script>
-<script src="data/scripts-index.js?v=20260928-1658"></script>
+<script src="data/stores.js?v=20260928-1720"></script>
+<script src="data/scripts-index.js?v=20260928-1720"></script>
 <script src="vendor/xlsx.full.min.js"></script>
-<script src="data/videos.js?v=20260928-1658"></script>
-<script src="assets/core.js?v=20260928-1658"></script>
-<script src="assets/board.js?v=20260928-1658"></script>
+<script src="data/videos.js?v=20260928-1720"></script>
+<script src="assets/core.js?v=20260928-1720"></script>
+<script src="assets/board.js?v=20260928-1720"></script>
 
 </body>
 </html>
