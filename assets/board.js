@@ -30,6 +30,7 @@
       S.ym = S.months.indexOf(cur) >= 0 ? cur : (S.months[0] || cur);
     }
     S.m = HY.match(S.scripts, S.videos);
+    S.judge = HY.judgeDay(S.videos, S.today);   // 逾期只判到视频数据截止日，见 core.js judgeDay
 
     S.byStoreDate = {};
     S.scripts.forEach(function (s) { S.byStoreDate[s.store + '|' + s.date] = s; });
@@ -62,7 +63,7 @@
     });
   }
 
-  function statusOfScript(s) { return HY.statusOf(s, S.m.byScript[s.id], S.today); }
+  function statusOfScript(s) { return HY.statusOf(s, S.m.byScript[s.id], S.judge); }
 
   /** 当前视图覆盖的脚本：月视图=该月；全年=全部 */
   function windowScripts() {
@@ -344,7 +345,7 @@
       kpi('完成率', rate + '<small>%</small>', '', rangeLabel() + ' · 已到期 ' + due + ' 条'),
       kpi('已发布', c.done, 'done', '计划当天发的才算'),
       kpi('逾期未发', c.late, 'late', '过了计划日仍没匹配到'),
-      kpi('待拍', c.todo, '', '计划日期还没到'),
+      kpi('待拍', c.todo, '', (S.judge < S.today ? '没到日子，或数据只到 ' + HY.md(HY.ymd(HY.addDays(HY.parseYmd(S.judge), -1))) : '计划日期还没到')),
       kpi('门店', rows.length + '<small>/' + S.stores.length + '</small>', '', '当前筛选结果')
     ].join('');
     // 「逾期未发排行」卡片 2026-09-24 删了（用户：「后台这部分不要」），别加回去
@@ -715,7 +716,7 @@
     if (!s) return;
     var st = S.storeById[s.store] || {};
     var m = S.m.byScript[s.id];
-    var stt = HY.statusOf(s, m, S.today);
+    var stt = HY.statusOf(s, m, S.judge);
 
     $('#dTitle').textContent = st.storeName + '｜' + s.topic;
     $('#dSub').innerHTML = '计划发布 ' + s.date + ' · ' + esc(s.format) +

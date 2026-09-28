@@ -242,6 +242,18 @@ window.HY = (function () {
   }
   var STATUS_CN = { done: '已发布', late: '逾期未发', todo: '待拍' };
 
+  /** 判逾期的分界日：视频数据截止日（各导出「数据日期范围」终点里最晚的）的后一天，且不晚于今天。
+      传给 statusOf 当 todayYmd 用 —— 截止日之后发没发还不知道，不能算逾期（2026-09-28 用户：
+      柴桥店看板上 24~27 号标粉，战报却是 100%。战报早就按截止日算，看板和门店页没跟上）。
+      没有任何视频数据时返回今天，保持原来的判法。 */
+  function judgeDay(videos, todayYmd) {
+    var t = '';
+    videos.forEach(function (v) { if (v.rangeTo && v.rangeTo > t) t = v.rangeTo; });
+    if (!/^\d{8}$/.test(t)) return todayYmd;
+    var next = ymd(addDays(parseYmd(t.slice(0, 4) + '-' + t.slice(4, 6) + '-' + t.slice(6)), 1));
+    return next < todayYmd ? next : todayYmd;
+  }
+
   /* ---------- 加载 ---------- */
   /* 门店档案的人工编辑：存 localStorage，加载时覆盖到 stores 上 */
   var StoreEdits = {
@@ -496,7 +508,7 @@ window.HY = (function () {
     Videos: Videos, rowsToVideos: rowsToVideos,
     StoreEdits: StoreEdits, EDITABLE: EDITABLE, Managers: Managers,
     sha256: sha256, normPhone: normPhone, phoneHash: phoneHash, MyStore: MyStore,
-    match: match, statusOf: statusOf, STATUS_CN: STATUS_CN,
+    match: match, statusOf: statusOf, STATUS_CN: STATUS_CN, judgeDay: judgeDay,
     loadData: loadData, loadStores: loadStores, loadDetail: loadDetail, loadDetails: loadDetails, detail: detail, toast: toast, num: num,
     bootDone: bootDone
   };

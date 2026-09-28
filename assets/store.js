@@ -28,7 +28,7 @@
   else { id = HY.MyStore.get(); if (!id) { location.replace(LOGIN); return; } }
 
   var TODAY = HY.ymd(new Date());
-  var D, STORE, MINE = {}, HASVIDEO = false, MATCH = null;
+  var D, STORE, MINE = {}, HASVIDEO = false, MATCH = null, JUDGE = null;
   var WD = ['日', '一', '二', '三', '四', '五', '六'];
 
   /* ---------- 工具 ---------- */
@@ -43,7 +43,9 @@
   function label(s) {
     if (s.date === TODAY) return { t: '今天 · 待拍', c: 'now' };
     if (HASVIDEO) {
-      var stt = HY.statusOf(s, MATCH.byScript[s.id], TODAY);
+      var stt = HY.statusOf(s, MATCH.byScript[s.id], JUDGE || TODAY);
+      // 日子过了但视频数据还没到这天：不说逾期，也别说待拍
+      if (stt === 'todo' && s.date < TODAY) return { t: '数据未更新', c: 'todo' };
       return { t: HY.STATUS_CN[stt], c: stt };
     }
     return s.date < TODAY ? { t: '计划日期已过', c: 'late' } : { t: '待拍', c: 'todo' };
@@ -338,6 +340,7 @@
     var videos = HY.Videos.list().filter(function (v) { return v.store === id; });
     HASVIDEO = videos.length > 0;
     MATCH = HY.match(Object.keys(MINE).map(function (k) { return MINE[k]; }), videos);
+    JUDGE = HY.judgeDay(videos, TODAY);
 
     /* 头部 */
     var nm = STORE.storeName + (STORE.brandLine ? ' · ' + STORE.brandLine : '');
