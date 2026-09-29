@@ -34,6 +34,9 @@ BLANK = {
 # 新账号：三横店 8/24 才开始发视频
 START_DATES = {"28098977805": "2026-08-24"}
 
+# 抖音号名称里的店名不合用时，按抖音号指定显示名
+NAME_OVERRIDES = {"62510347405": "泗门珀莱雅"}
+
 # 只从店名里推能确定的：带行政区前缀的填区域，带商场字样的算商场店。
 # 其余一律留空，等人在「门店列表」面板里手填 —— 不瞎猜。
 REGION_PREFIX = ["海曙", "江北", "鄞州", "镇海", "北仑", "奉化", "余姚", "慈溪", "象山", "宁海"]
@@ -82,6 +85,7 @@ def main():
     stores = []
     for did, account in seen.items():
         store_name, brand_line = parse_name(account)
+        store_name = NAME_OVERRIDES.get(did, store_name)
         rec = {"douyinId": did, "accountName": account,
                "storeName": store_name, "brandLine": brand_line}
         rec.update(BLANK)
