@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>赫眉 HYMN · 视频脚本看板</title>
-<link rel="stylesheet" href="assets/style.css?v=20260929-1311">
+<link rel="stylesheet" href="assets/style.css?v=20260929-1730">
 </head>
 <body>
 <div id="boot"><div class="bmark"><img src="assets/logo-ink.png" alt="赫眉 HYMN"></div></div>
@@ -48,6 +48,12 @@
           <div class="eyebrow">赫眉 HYMN · 全部门店</div>
           <h2>视频脚本看板</h2>
           <p id="heroSub"></p>
+        </div>
+        <!-- 顶部完成率的统计日期（2026-09-29 加）：默认跟着月份条走，改了日期就按自选区间算 -->
+        <div class="rangebar" title="只影响上面的完成率圆环和数字卡片">
+          <span class="lab">完成率统计</span>
+          <input type="date" id="rFrom"><i>–</i><input type="date" id="rTo">
+          <button class="btn sm" id="rReset" type="button" hidden>跟随月份</button>
         </div>
       </header>
 
@@ -208,7 +214,7 @@
 <script src="vendor/xlsx.full.min.js"></script>
 <script src="data/videos.js?v=20260929-1311"></script>
 <script src="assets/core.js?v=20260929-1311"></script>
-<script src="assets/board.js?v=20260929-1311"></script>
+<script src="assets/board.js?v=20260929-1730"></script>
 
 </body>
 </html>

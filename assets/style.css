@@ -386,6 +386,15 @@ body.booted .pagehead p{animation:headfade .55s ease .46s both}
 .pagehead h2{font-family:var(--song);font-size:24px;line-height:1.4;font-weight:400;
   letter-spacing:.06em;color:var(--t1)}
 .pagehead p{font-size:12.5px;color:var(--t3);margin-top:10px;letter-spacing:0}
+/* 完成率统计日期（2026-09-29）：标题区右下角 */
+.rangebar{margin-left:auto;align-self:flex-end;display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--t3)}
+.rangebar .lab{margin-right:2px}
+.rangebar i{font-style:normal}
+.rangebar input[type=date]{height:32px;border:1px solid var(--line-2);padding:0 8px;font:inherit;font-size:13px;color:var(--t1);background:#fff}
+.rangebar input[type=date]:focus{outline:none;border-color:var(--ink)}
+.rangebar.custom input[type=date]{border-color:var(--ink)}
+.tile .tval i.sub2{display:block;margin-top:3px}
+td.stcol .rate.sched{text-decoration:underline dotted;text-underline-offset:2px}   /* 标记定时模式下 = 含定时完成率 */
 
 /* ===== 图块区（对着 hermes.cn 首页那排灰底商品图做的）=====
    四块灰底方块，里面是会动的数据图 + 一张线描插画。

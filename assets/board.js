@@ -77,6 +77,60 @@
       : HY.monthLabel(S.ym);
   }
 
+  /* 顶部完成率（圆环 + KPI）的统计区间（2026-09-29 用户：「上面显示的完成率，日期我要可选择」）。
+     S.range = null 时跟着月份条走（月视图=该月，全年=全部）；在标题区右边改了日期就按自选区间算，
+     点「跟随月份」回来。只管顶部，日历和店名后面的完成率仍按当前视图。 */
+  function statScripts() {
+    if (!S.range) return windowScripts();
+    return S.scripts.filter(function (s) { return s.date >= S.range.from && s.date <= S.range.to; });
+  }
+  function statLabel() {
+    if (!S.range) return rangeLabel();
+    var f = S.range.from, t = S.range.to;
+    var fmt = function (d) { return (f.slice(0, 4) !== t.slice(0, 4) ? d.slice(0, 4) + '/' : '') + HY.md(d); };
+    return f === t ? fmt(f) : fmt(f) + ' – ' + fmt(t);
+  }
+  function syncRangeBar() {
+    var from, to;
+    if (S.range) { from = S.range.from; to = S.range.to; }
+    else { var r = viewRange(); from = r.from; to = r.to; }
+    $('#rFrom').value = from; $('#rTo').value = to;
+    $('#rReset').hidden = !S.range;
+    $('.rangebar').classList.toggle('custom', !!S.range);
+  }
+  function bindRangeBar() {
+    function pick() {
+      var f = $('#rFrom').value, t = $('#rTo').value;
+      if (!f || !t) return;
+      if (f > t) { var x = f; f = t; t = x; }
+      S.range = { from: f, to: t };
+      render();
+    }
+    $('#rFrom').onchange = pick;
+    $('#rTo').onchange = pick;
+    $('#rReset').onclick = function () { S.range = null; render(); };
+  }
+
+  /* 顶部统计：已发布 / 逾期 / 待拍，另算「含定时」口径（2026-09-29 用户：「标记定时，也要能看完成率」）。
+     含定时 = 把标了「已排定时」的待拍也当成发了：(已发布 + 定时) ÷ (已到期 + 定时)。
+     只算待拍上的标记 —— 逾期格子标了定时却没查到视频，照旧算没发（跟日历上的颜色一致）。 */
+  function topStats(rows) {
+    var visible = {};
+    rows.forEach(function (st) { visible[st.douyinId] = 1; });
+    var c = { done: 0, late: 0, todo: 0, sched: 0 };
+    statScripts().forEach(function (s) {
+      if (!visible[s.store]) return;
+      var t = statusOfScript(s);
+      c[t]++;
+      if (t === 'todo' && S.mk[s.store + '|' + s.date]) c.sched++;
+    });
+    c.due = c.done + c.late;
+    c.rate = c.due ? Math.round(c.done / c.due * 100) : 0;
+    var d2 = c.due + c.sched;
+    c.rate2 = d2 ? Math.round((c.done + c.sched) / d2 * 100) : 0;
+    return c;
+  }
+
   /* ---------- 图块区（灰底方块 + 会动的数据图）----------
      四块：完成率圆环 / 当月每天发布量 / 本月状态构成 / 今天要拍（线描插画）。
      颜色沿用状态色，每块都带文字标签，不靠颜色单独表意。 */
@@ -99,11 +153,7 @@
   function renderTiles(rows) {
     var visible = {};
     rows.forEach(function (st) { visible[st.douyinId] = 1; });
-    var ws = windowScripts().filter(function (s) { return visible[s.store]; });
-    var c = { done: 0, late: 0, todo: 0 };
-    ws.forEach(function (s) { c[statusOfScript(s)]++; });
-    var due = c.done + c.late;
-    var rate = due ? Math.round(c.done / due * 100) : 0;
+    var c = topStats(rows), due = c.due, rate = c.rate;
 
     $('#tiles').innerHTML =
       // 「状态构成」「今天的活」两块 2026-09-24 删了（用户：「这2个不要」），发布量图放大占三格
@@ -186,8 +236,9 @@
           '<title>完成率 ' + rate + '%（已到期 ' + due + ' 条，已发布 ' + c.done + ' 条）</title>' +
         '</circle>' +
       '</svg>' +
-      '<div class="tval"><b>' + rate + '<small>%</small></b><i>已发布 ' + c.done + ' / ' + due + '</i></div>';
-    return tile(svg, '完成率', rangeLabel() + ' · 已到期 ' + due + ' 条');
+      '<div class="tval"><b>' + rate + '<small>%</small></b><i>已发布 ' + c.done + ' / ' + due + '</i>' +
+        (c.sched ? '<i class="sub2">含定时 ' + c.rate2 + '%</i>' : '') + '</div>';
+    return tile(svg, '完成率', statLabel() + ' · 已到期 ' + due + ' 条');
   }
 
   /* 2) 发布量：跟着选中的月份走（2026-09-24 用户要求，原来是固定的「近 13 周」）
@@ -332,20 +383,16 @@
   }
 
   function renderKpis(rows) {
-    var visible = {};
-    rows.forEach(function (st) { visible[st.douyinId] = 1; });
-    var ws = windowScripts().filter(function (s) { return visible[s.store]; });
-    var c = { done: 0, late: 0, todo: 0 };
-    ws.forEach(function (s) { c[statusOfScript(s)]++; });
-    var due = c.done + c.late;
-    var rate = due ? Math.round(c.done / due * 100) : 0;
+    var c = topStats(rows), due = c.due, rate = c.rate;
     // 「自由发挥视频」那格 2026-09-24 删了（用户：「这个不要」）
 
     $('#kpis').innerHTML = [
-      kpi('完成率', rate + '<small>%</small>', '', rangeLabel() + ' · 已到期 ' + due + ' 条'),
+      kpi('完成率', rate + '<small>%</small>', '', statLabel() + ' · 已到期 ' + due + ' 条'),
+      kpi('含定时完成率', c.rate2 + '<small>%</small>', '',
+        c.sched ? '算上已排定时的 ' + c.sched + ' 条' : '这段时间还没标定时'),
       kpi('已发布', c.done, 'done', '计划当天发的才算'),
       kpi('逾期未发', c.late, 'late', '过了计划日仍没匹配到'),
-      kpi('待拍', c.todo, '', (S.judge < S.today ? '没到日子，或数据只到 ' + HY.md(HY.ymd(HY.addDays(HY.parseYmd(S.judge), -1))) : '计划日期还没到')),
+      kpi('待拍', c.todo, '', c.sched ? '其中 ' + c.sched + ' 条已排定时' : (S.judge < S.today ? '没到日子，或数据只到 ' + HY.md(HY.ymd(HY.addDays(HY.parseYmd(S.judge), -1))) : '计划日期还没到')),
       kpi('门店', rows.length + '<small>/' + S.stores.length + '</small>', '', '当前筛选结果')
     ].join('');
     // 「逾期未发排行」卡片 2026-09-24 删了（用户：「后台这部分不要」），别加回去
@@ -425,6 +472,7 @@
     S.mk = HY.Marks.read();
     renderTiles(rows);
     renderKpis(rows);
+    syncRangeBar();
     renderMonthBar();
     rows = sortRows(rows);
     $('#board').innerHTML = S.view === 'year' ? yearTable(rows) : monthTable(rows);
@@ -564,12 +612,17 @@
       }
       if (HY.buildMonthGrid(S.ym).from < firstScript.d) return pubRate(st);
     }
-    var key = S.view + '|' + S.ym + '|' + S.videos.length;
+    // 标记定时模式下店名后面换成「含定时完成率」，边点边看（2026-09-29），口径同 topStats
+    var mm = !!S.markMode;
+    var key = S.view + '|' + S.ym + '|' + S.videos.length + '|' + (mm ? 'm' + Object.keys(S.mk).length : '');
     if (rateCache.key !== key) {
       var map = {};
       windowScripts().forEach(function (s) {
         var t = statusOfScript(s);
-        if (t === 'todo') return;
+        if (t === 'todo') {
+          if (!mm || !S.mk[s.store + '|' + s.date]) return;
+          t = 'done';
+        }
         var o = map[s.store] = map[s.store] || { done: 0, due: 0 };
         o.due++; if (t === 'done') o.done++;
       });
@@ -610,7 +663,9 @@
       '<div class="nmrow"><span class="nm">' + esc(st.storeName) + '</span>' +
       (r ? (r.pub
         ? '<span class="rate pub" title="这个月没有脚本，显示视频发布率：' + r.total + ' 天里有 ' + r.n + ' 天发了视频">' + r.p + '%</span>'
-        : '<span class="rate" title="完成率：已发布 ' + r.done + ' / 已到期 ' + r.due + ' 条">' + r.p + '%</span>') : '') +
+        : S.markMode
+          ? '<span class="rate sched" title="含定时完成率：已发布 + 已排定时 ' + r.done + ' / ' + r.due + ' 条">' + r.p + '%</span>'
+          : '<span class="rate" title="完成率：已发布 ' + r.done + ' / 已到期 ' + r.due + ' 条">' + r.p + '%</span>') : '') +
       '</div><div class="meta">' +
       (st.brandLine ? '<span class="bl">' + esc(st.brandLine) + '</span>' : '') +
       '<a class="mob" href="store.html?store=' + st.douyinId + '" target="_blank">门店页</a></div></div>' +
@@ -810,6 +865,9 @@
     var b = $('#btnMark');
     b.classList.toggle('on', on);
     b.textContent = on ? '完成标记' : '标记定时';
+    var wrap = $('.gridwrap'), top = wrap ? wrap.scrollTop : 0, left = wrap ? wrap.scrollLeft : 0;
+    render();                                 // 店名后面的完成率要在两种口径间切换
+    if (wrap) { wrap.scrollTop = top; wrap.scrollLeft = left; }
   }
 
   function copy(text, okMsg) {
@@ -1746,6 +1804,7 @@
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeDrawer(); });
 
     ['#fStore', '#fLate'].forEach(function (s) { $(s).onchange = render; });
+    bindRangeBar();
     $('#fMgr').onchange = function () { fillStoreOpts(); xsel($('#fStore')); render(); };
 
     // 效果统计：维度切换 + 按经理筛（只重画那张表，别惊动日历）
