@@ -566,6 +566,12 @@ th.day.wknd .d{color:var(--t3)}
 th.day.today{background:var(--brand-bg)}
 th.day.today .d{color:var(--navy);font-weight:700}
 th.day.wstart,td.cell.wstart{border-left:1px solid var(--line)}
+/* 表头点选统计日期（2026-09-30）：选中的日期/周下面一条 2px 黑线 */
+th.pick{cursor:pointer}
+th.day.pick:hover .d,th.wk.pick:hover{color:var(--t1);text-decoration:underline;text-underline-offset:3px}
+th.day.sel,th.wk.sel{box-shadow:inset 0 -2px 0 var(--ink)}
+th.day.sel .d{color:var(--t1);font-weight:700}
+th.day.anchor{background:var(--paper)}
 
 th.stcol,td.stcol{
   position:sticky;left:0;z-index:30;background:var(--card);

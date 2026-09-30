@@ -104,11 +104,39 @@
       if (!f || !t) return;
       if (f > t) { var x = f; f = t; t = x; }
       S.range = { from: f, to: t };
+      S.pickAnchor = null;
       render();
     }
     $('#rFrom').onchange = pick;
     $('#rTo').onchange = pick;
-    $('#rReset').onclick = function () { S.range = null; render(); };
+    $('#rReset').onclick = function () { S.range = null; S.pickAnchor = null; render(); };
+  }
+
+  /* 在日历表头上直接选统计日期（2026-09-30 用户：「我想要在这里直接能选日期，不用到上面去点」）：
+     点日期 = 只算这一天；接着再点另一天 = 从第一天到这天一段；点周标题（1–6 日）= 整周。
+     选中的日期在表头下面画一条黑线。结果跟标题区的日期框是同一个 S.range，两边同步。 */
+  function bindDayPick() {
+    $$('#board th.pick').forEach(function (th) {
+      th.onclick = function () {
+        if (th.dataset.date) {
+          var d = th.dataset.date, a = S.pickAnchor;
+          if (a && a !== d) {
+            S.range = a < d ? { from: a, to: d } : { from: d, to: a };
+            S.pickAnchor = null;
+          } else {
+            S.range = { from: d, to: d };
+            S.pickAnchor = d;
+          }
+        } else {
+          S.range = { from: th.dataset.from, to: th.dataset.to };
+          S.pickAnchor = null;
+        }
+        var wrap = $('.gridwrap'), left = wrap ? wrap.scrollLeft : 0;
+        render();
+        if (wrap) wrap.scrollLeft = left;
+        HY.toast('完成率统计：' + statLabel() + (S.pickAnchor ? '（再点另一天可选一段）' : ''));
+      };
+    });
   }
 
   /* 顶部统计：已发布 / 逾期 / 待拍，另算「含定时」口径（2026-09-29 用户：「标记定时，也要能看完成率」）。
@@ -477,6 +505,7 @@
     rows = sortRows(rows);
     $('#board').innerHTML = S.view === 'year' ? yearTable(rows) : monthTable(rows);
     bindCells();
+    bindDayPick();
     $$('#board .sk').forEach(function (el) {
       el.onclick = function () {
         var k = el.dataset.k;
@@ -499,14 +528,20 @@
       while (j + 1 < g.days.length && !g.days[j + 1].wstart) j++;
       var span = j - i + 1;
       var isNow = g.days.slice(i, j + 1).some(function (d) { return d.today; });
-      h += '<th class="wk' + (isNow ? ' now' : '') + '" colspan="' + span + '">' +
+      var wf = g.days[i].date, wt = g.days[j].date;
+      var wsel = S.range && S.range.from === wf && S.range.to === wt;
+      h += '<th class="wk pick' + (isNow ? ' now' : '') + (wsel ? ' sel' : '') + '" colspan="' + span + '" ' +
+           'data-from="' + wf + '" data-to="' + wt + '" title="点一下：上面的完成率只算这一周">' +
            g.days[i].dd + '–' + g.days[j].dd + ' 日</th>';
       i = j + 1;
     }
     h += '</tr><tr class="r2">';
     g.days.forEach(function (d) {
-      h += '<th class="day' + (d.weekend ? ' wknd' : '') + (d.today ? ' today' : '') +
-           (d.wstart ? ' wstart' : '') + '">' + d.dow + '<span class="d">' + d.dd + '</span></th>';
+      var dsel = S.range && d.date >= S.range.from && d.date <= S.range.to;
+      h += '<th class="day pick' + (d.weekend ? ' wknd' : '') + (d.today ? ' today' : '') +
+           (d.wstart ? ' wstart' : '') + (dsel ? ' sel' : '') + (S.pickAnchor === d.date ? ' anchor' : '') +
+           '" data-date="' + d.date + '" title="点一下只算这天；再点另一天，算这一段">' +
+           d.dow + '<span class="d">' + d.dd + '</span></th>';
     });
     h += '</tr></thead><tbody>';
 
