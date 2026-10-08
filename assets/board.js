@@ -2186,6 +2186,27 @@
         a.click();
       } catch (e) { HY.toast('下载失败：请用线上网址打开看板再试'); }
     };
+    $('#pstExcel').onclick = function () {
+      var D = pstData(), rate = D.mode === 'rate';
+      var aoa = [['排名', '门店', '区域经理', rate ? '完成率' : '发布率', rate ? '已发布' : '发布天数',
+                  rate ? '应发' : '天数', '视频数（条）']];
+      D.list.forEach(function (o, i) {
+        aoa.push([i + 1, o.st.storeName, o.st.manager || '', o.p == null ? '' : Math.round(o.p * 1000) / 1000,
+                  rate ? o.done : o.nDays, rate ? o.due : D.nDays, o.vids]);
+      });
+      aoa.push(['', '合计', '', Math.round(D.total * 1000) / 1000,
+                rate ? D.done : '', rate ? D.due : '', D.vids]);
+      var ws = XLSX.utils.aoa_to_sheet(aoa);
+      ws['!cols'] = [{ wch: 6 }, { wch: 18 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 8 }, { wch: 12 }];
+      ws['!autofilter'] = { ref: 'A1:G' + (D.list.length + 1) };
+      for (var r = 1; r < aoa.length; r++) {
+        var c = ws[XLSX.utils.encode_cell({ r: r, c: 3 })];
+        if (c && c.t === 'n') c.z = '0%';
+      }
+      var wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, '战报');
+      XLSX.writeFile(wb, pstFileName().replace(/\.png$/, '.xlsx'));
+    };
     $('#pstCopy').onclick = function () {
       if (!pstCanvas) return;
       if (!navigator.clipboard || !window.ClipboardItem) { HY.toast('这个浏览器不支持复制图片，请用「下载图片」'); return; }
