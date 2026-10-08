@@ -2080,6 +2080,9 @@
     // 门店行
     y += 44;
     var nameW = 150, barX = PAD + 28 + nameW, barW = 150;
+    // 店名后面跟区域经理（2026-10-08 用户要）；全是同一个经理（按经理筛过）就不重复写
+    var mgrs = {}; D.list.forEach(function (o) { mgrs[o.st.manager || ''] = 1; });
+    var showMgr = Object.keys(mgrs).length > 1;
     D.list.forEach(function (o, i) {
       var cy = y + i * ROW;
       if (i % 2 === 1) { g.fillStyle = C.paper; g.fillRect(PAD - 8, cy, W - PAD * 2 + 16, ROW); }
@@ -2088,7 +2091,14 @@
       g.fillStyle = rank <= 3 && o.p ? C.done : C.t3; g.font = '15px ' + NUM; g.textAlign = 'right';
       g.fillText(String(rank), PAD + 18, mid);
       g.textAlign = 'left'; g.fillStyle = C.ink; g.font = '13px ' + SANS;
-      g.fillText(pstFit(g, o.st.storeName, nameW - 8), PAD + 28, mid);
+      var mg = showMgr ? (o.st.manager || '') : '';
+      var nm = pstFit(g, o.st.storeName, nameW - 8 - (mg ? 34 : 0));
+      g.fillText(nm, PAD + 28, mid);
+      if (mg) {
+        var nx = PAD + 28 + g.measureText(nm).width + 6;
+        g.font = '11px ' + SANS; g.fillStyle = C.t3;
+        g.fillText(mg, nx, mid);
+      }
       // 进度条
       g.fillStyle = C.track; g.fillRect(barX, mid - 7, barW, 6);
       if (o.p) { g.fillStyle = o.p < 0.5 ? C.late : C.done; g.fillRect(barX, mid - 7, Math.max(2, barW * o.p), 6); }
