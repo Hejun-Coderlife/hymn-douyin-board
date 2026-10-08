@@ -1926,11 +1926,16 @@
        - 应发 = 范围内计划日期 <= 数据截至日 的脚本（抖音导出只到前一天，截至日之后的还没法判断，不算逾期）
        - 完成率 = 当天发了的 ÷ 应发，跟看板一致
        - 范围内一条脚本都没到期（比如脚本开排之前的日子）→ 改算「发布率」= 有发视频的天数 ÷ 天数 */
-  var PST = { mode: 'week', date: '' };
+  var PST = { mode: 'week', date: '', from: '', to: '' };
 
   function pstRange() {
     var d = HY.parseYmd(PST.date), from, to, title;
-    if (PST.mode === 'day') {
+    if (PST.mode === 'range') {
+      from = PST.from; to = PST.to;
+      var f0 = HY.parseYmd(from), t0 = HY.parseYmd(to);
+      title = from === to ? (f0.getMonth() + 1) + ' 月 ' + f0.getDate() + ' 日'
+        : (f0.getMonth() + 1) + '/' + f0.getDate() + ' – ' + (t0.getMonth() + 1) + '/' + t0.getDate();
+    } else if (PST.mode === 'day') {
       from = to = PST.date;
       title = (d.getMonth() + 1) + ' 月 ' + d.getDate() + ' 日';
     } else if (PST.mode === 'week') {
@@ -2125,9 +2130,11 @@
   var pstCanvas = null;
   function pstRender() {
     $$('#pstModes .segbtn').forEach(function (b) { b.classList.toggle('on', b.dataset.m === PST.mode); });
+    var rg = PST.mode === 'range';
+    $('#pstDate').hidden = rg; $('#pstRangeBox').hidden = !rg;
     var D = pstData();
     $('#pstInfo').textContent = D.r.from + ' ~ ' + D.r.to + ' · ' + D.scope +
-      '（门店范围跟看板上的筛选走）' + (D.future ? ' · 这段时间还没有视频数据' : '');
+      (D.future ? ' · 这段时间还没有视频数据' : '');
     pstLoadLogo().then(function (logo) {
       pstCanvas = pstDraw(D, logo);
       var box = $('#pstPreview');
@@ -2143,6 +2150,8 @@
   function openPoster() {
     if (!PST.date) PST.date = pstCutoff();
     $('#pstDate').value = PST.date;
+    if (!PST.to) { PST.to = PST.date; PST.from = HY.ymd(HY.addDays(HY.parseYmd(PST.date), -6)); }
+    $('#pstFrom').value = PST.from; $('#pstTo').value = PST.to;
     $('#posterModal').classList.add('open');
     $('#backdrop').classList.add('on');
     pstRender();
@@ -2162,6 +2171,12 @@
       b.onclick = function () { PST.mode = b.dataset.m; pstRender(); };
     });
     $('#pstDate').onchange = function () { if (this.value) { PST.date = this.value; pstRender(); } };
+    $('#pstFrom').onchange = $('#pstTo').onchange = function () {
+      var f = $('#pstFrom').value, t = $('#pstTo').value;
+      if (!f || !t) return;
+      if (f > t) { var x = f; f = t; t = x; $('#pstFrom').value = f; $('#pstTo').value = t; }
+      PST.from = f; PST.to = t; pstRender();
+    };
     $('#pstDownload').onclick = function () {
       if (!pstCanvas) return;
       try {

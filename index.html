@@ -95,9 +95,6 @@
         <div class="rowbtns" style="margin-top:10px">
           <button class="btn primary" id="btnExportStores">导出 stores.json</button>
           <button class="btn danger" id="btnResetStores">还原本机修改</button>
-          <span class="note" style="margin-left:4px">
-            改动先存在浏览器里，看板立刻生效；要固化到项目里就点「导出」，把文件放回 data/ 覆盖。
-          </span>
         </div>
         <div class="mgrbar" id="mgrBar"></div>
         <datalist id="regionList"></datalist>
@@ -111,10 +108,6 @@
     <section class="panel" id="p-import">
       <div class="card">
         <h3>导入抖音来客视频数据</h3>
-        <p class="note">
-          在浏览器本地解析，<b>不上传任何服务器</b>。按「视频ID」去重累积合并，多次导出可以反复导入。
-          品牌号「赫眉美妆护肤连锁」会自动忽略。
-        </p>
         <div class="drop" id="drop" style="margin-top:14px">点击选择 .xlsx，或把文件拖到这里</div>
         <div class="rowbtns">
           <button class="btn" id="btnExportBak">导出备份 JSON</button>
@@ -128,7 +121,6 @@
       </div>
       <div class="card">
         <h3>已上传的数据表格</h3>
-        <p class="note">放进「视频数据」文件夹发布的表：下载的是同样格式的表，<b>不含成交金额</b>（网站是公开的，原表不放上来）。<br>在本页拖进来的表：原文件存在这台电脑的浏览器里，下载就是原文件。</p>
         <div id="fileList"></div>
       </div>
     </section>
@@ -157,7 +149,6 @@
 <!-- 区域经理管理：左边名单（可增删），右边勾选他负责的门店 -->
 <div class="modal mgrmodal" id="mgrModal">
   <h3>区域经理</h3>
-  <p class="note">左边加名字，右边勾门店。一家店只能属于一个经理，勾给新的人就从原来那个名下移走。</p>
   <div class="mm">
     <div class="mm-l">
       <div class="mm-add">
@@ -187,8 +178,10 @@
       <button type="button" class="segbtn" data-m="day">日报</button>
       <button type="button" class="segbtn on" data-m="week">周报</button>
       <button type="button" class="segbtn" data-m="month">月报</button>
+      <button type="button" class="segbtn" data-m="range">自选</button>
     </div>
     <input type="date" id="pstDate">
+    <span class="pst-range" id="pstRangeBox"><input type="date" id="pstFrom"> — <input type="date" id="pstTo"></span>
   </div>
   <p class="note" id="pstInfo"></p>
   <div class="pst-preview" id="pstPreview"></div>

@@ -1315,6 +1315,8 @@ body.hasfx.focusday .emptyday{display:none}
 /* ===== 生成战报图弹窗（2026-09-24）===== */
 .postermodal{width:min(620px,94vw)}
 .pst-bar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:6px 0 8px}
+.pst-range{display:inline-flex;align-items:center;gap:6px;color:var(--t3)}
+.pst-range[hidden],.pst-bar input[hidden]{display:none}
 .pst-bar input[type=date]{height:34px;border:1px solid var(--line-2);padding:0 10px;font:inherit;font-size:13px;background:#fff}
 .pst-preview{margin-top:10px;border:1px solid var(--line-2);max-height:56vh;overflow:auto;background:#fff}
 .pst-preview canvas{display:block}
