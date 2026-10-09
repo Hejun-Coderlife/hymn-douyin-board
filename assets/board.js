@@ -1952,11 +1952,7 @@
 
   /** 视频数据截到哪天：各导出文件「数据日期范围」终点里最晚的，再不晚于昨天 */
   function pstCutoff() {
-    var t = '';
-    S.videos.forEach(function (v) { if (v.rangeTo && v.rangeTo > t) t = v.rangeTo; });
-    var y = HY.ymd(HY.addDays(HY.parseYmd(S.today), -1));
-    var c = /^\d{8}$/.test(t) ? t.slice(0, 4) + '-' + t.slice(4, 6) + '-' + t.slice(6) : y;
-    return c < y ? c : y;
+    return HY.dataEnd(S.videos, S.today) || HY.ymd(HY.addDays(HY.parseYmd(S.today), -1));
   }
 
   function pstScope(rows) {

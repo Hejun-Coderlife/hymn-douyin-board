@@ -247,11 +247,26 @@ window.HY = (function () {
       柴桥店看板上 24~27 号标粉，战报却是 100%。战报早就按截止日算，看板和门店页没跟上）。
       没有任何视频数据时返回今天，保持原来的判法。 */
   function judgeDay(videos, todayYmd) {
-    var t = '';
-    videos.forEach(function (v) { if (v.rangeTo && v.rangeTo > t) t = v.rangeTo; });
-    if (!/^\d{8}$/.test(t)) return todayYmd;
-    var next = ymd(addDays(parseYmd(t.slice(0, 4) + '-' + t.slice(4, 6) + '-' + t.slice(6)), 1));
+    var end = dataEnd(videos, todayYmd);
+    if (!end) return todayYmd;
+    var next = ymd(addDays(parseYmd(end), 1));
     return next < todayYmd ? next : todayYmd;
+  }
+
+  /** 视频数据截到哪天（YYYY-MM-DD，没数据返回 ''）：「数据日期范围」终点 和 表里最晚的发布日 取较晚的，且早于今天。
+      导出的统计范围常常只到前天，表里却已经有昨天发的视频（2026-10-09：10/8 明明有视频，战报显示 0）。 */
+  function dataEnd(videos, todayYmd) {
+    var t = '';
+    videos.forEach(function (v) {
+      if (/^\d{8}$/.test(v.rangeTo || '')) {
+        var r = v.rangeTo.slice(0, 4) + '-' + v.rangeTo.slice(4, 6) + '-' + v.rangeTo.slice(6);
+        if (r > t) t = r;
+      }
+      if (v.pubDate && v.pubDate < todayYmd && v.pubDate > t) t = v.pubDate;
+    });
+    if (!t) return '';
+    var y = ymd(addDays(parseYmd(todayYmd), -1));
+    return t < y ? t : y;
   }
 
   /* ---------- 加载 ---------- */
@@ -532,7 +547,7 @@ window.HY = (function () {
     Videos: Videos, rowsToVideos: rowsToVideos,
     StoreEdits: StoreEdits, EDITABLE: EDITABLE, Managers: Managers, Marks: Marks,
     sha256: sha256, normPhone: normPhone, phoneHash: phoneHash, MyStore: MyStore,
-    match: match, statusOf: statusOf, STATUS_CN: STATUS_CN, judgeDay: judgeDay,
+    match: match, statusOf: statusOf, STATUS_CN: STATUS_CN, judgeDay: judgeDay, dataEnd: dataEnd,
     loadData: loadData, loadStores: loadStores, loadDetail: loadDetail, loadDetails: loadDetails, detail: detail, toast: toast, num: num,
     bootDone: bootDone
   };
