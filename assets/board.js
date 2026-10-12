@@ -1929,7 +1929,10 @@
        - 应发 = 范围内计划日期 <= 数据截至日 的脚本（抖音导出只到前一天，截至日之后的还没法判断，不算逾期）
        - 完成率 = 当天发了的 ÷ 应发，跟看板一致
        - 范围内一条脚本都没到期（比如脚本开排之前的日子）→ 改算「发布率」= 有发视频的天数 ÷ 天数 */
-  var PST = { mode: 'week', date: '', from: '', to: '' };
+  var PST = { mode: 'week', date: '', from: '', to: '', sched: '' };
+  /* 定时占比（2026-10-12 用户：「战报增加标记定时的店铺占比，让我可以选择日期」）：
+     单独一个日期（默认今天），看筛选范围内有几家店在那天标了「已排定时」。
+     跟上面的时间范围脱钩 —— 范围只到数据截至日（昨天），要查的却常是今天 / 明天排没排。 */
 
   function pstRange() {
     var d = HY.parseYmd(PST.date), from, to, title;
@@ -1979,6 +1982,11 @@
       if (!ids[v.store] || !v.pubDate || v.pubDate < r.from || v.pubDate > r.to) return;
       per[v.store].vids++; per[v.store].days[v.pubDate] = 1;
     });
+    var marks = HY.Marks.read(), nSched = 0;
+    rows.forEach(function (st) {
+      var on = !!marks[st.douyinId + '|' + PST.sched];
+      per[st.douyinId].sched = on; if (on) nSched++;
+    });
     var end = r.to < cut ? r.to : cut, nDays = 0;
     for (var d = r.from; d <= end; d = HY.ymd(HY.addDays(HY.parseYmd(d), 1))) nDays++;
     var list = Object.keys(per).map(function (k) { return per[k]; });
@@ -1998,7 +2006,8 @@
     list.forEach(function (o) { dayHits += o.nDays; });
     var total = mode === 'rate' ? (due ? done / due : 0) : (nDays && list.length ? dayHits / (nDays * list.length) : 0);
     return { r: r, cut: cut, list: list, due: due, done: done, vids: vids, mode: mode, total: total,
-             nDays: nDays, scope: pstScope(rows), future: r.from > cut };
+             nDays: nDays, scope: pstScope(rows), future: r.from > cut,
+             sched: PST.sched, nSched: nSched, nStores: rows.length };
   }
 
   var pstLogo = null;
@@ -2015,12 +2024,14 @@
   function pstDraw(D, logo) {
     var W = 540, PAD = 36, ROW = 38, S2 = 2;
     var C = { ink: '#16140F', t2: '#4A453C', t3: '#9C958A', line: '#E3DFD6', done: TILE_C.done,
-              late: TILE_C.late, track: '#EFEBE3', paper: '#FAF7F2', pink: '#D9A6AE' };
+              late: TILE_C.late, track: '#EFEBE3', paper: '#FAF7F2', pink: '#D9A6AE',
+              sched: cssVar('--sched', '#A9C0B1') };
     var NUM = 'Didot, "Bodoni 72", Georgia, serif';
     var SANS = '"PingFang SC", "Helvetica Neue", sans-serif';   // 别写 -apple-system：canvas 的 font 串解析不了会整条作废
     var SONG = '"Songti SC", "STSong", serif';
     var listH = D.list.length * ROW;
-    var H = 250 + 44 + listH + 70;
+    var SB = 58;   // 定时占比那一条的高度
+    var H = 250 + SB + 44 + listH + 70;
     var cv = document.createElement('canvas');
     cv.width = W * S2; cv.height = H * S2;
     var g = cv.getContext('2d');
@@ -2067,8 +2078,27 @@
       g.fillStyle = C.t3; g.font = '11px ' + SANS; g.fillText(s[1], x, y + 22);
     });
 
+    // 定时占比：浅底一条，左边「M/D 已排定时」+ 家数，右边占比 + 进度条
+    y = 238;
+    g.fillStyle = C.paper; g.fillRect(PAD - 8, y, W - PAD * 2 + 16, 44);
+    var sp = D.nStores ? D.nSched / D.nStores : 0, smid = y + 28;
+    g.fillStyle = C.sched; g.fillRect(PAD, smid - 9, 8, 8);
+    g.fillStyle = C.t2; g.font = '12px ' + SANS;
+    var sl = HY.md(D.sched) + (D.sched === S.today ? '（今天）' : '') + ' 已排定时';
+    g.fillText(sl, PAD + 14, smid);
+    var sx = PAD + 14 + g.measureText(sl).width + 12;
+    g.fillStyle = C.ink; g.font = '20px ' + NUM; g.fillText(String(D.nSched), sx, smid);
+    sx += g.measureText(String(D.nSched)).width;
+    g.fillStyle = C.t3; g.font = '12px ' + SANS; g.fillText(' / ' + D.nStores + ' 家店', sx, smid);
+    var sbW = 120, sbX = W - PAD - sbW;
+    g.fillStyle = C.track; g.fillRect(sbX, smid - 7, sbW, 6);
+    if (sp) { g.fillStyle = C.done; g.fillRect(sbX, smid - 7, Math.max(2, sbW * sp), 6); }
+    g.textAlign = 'right'; g.fillStyle = C.ink; g.font = '20px ' + NUM;
+    g.fillText(Math.round(sp * 100) + '%', sbX - 10, smid);
+    g.textAlign = 'left';
+
     // 分隔 + 小标题
-    y = 250;
+    y = 250 + SB;
     g.fillStyle = C.ink; g.fillRect(PAD, y, W - PAD * 2, 1);
     g.font = '11px ' + SANS; g.fillStyle = C.t3;
     pstSpaced(g, '门店排名', PAD, y + 26, 2);
@@ -2098,6 +2128,8 @@
         g.font = '11px ' + SANS; g.fillStyle = C.t3;
         g.fillText(mg, nx, mid);
       }
+      // 定时日那天标了「已排定时」的店，进度条前面一个浅绿小方块（图例在上面那条）
+      if (o.sched) { g.fillStyle = C.sched; g.fillRect(barX - 14, mid - 9, 8, 8); }
       // 进度条
       g.fillStyle = C.track; g.fillRect(barX, mid - 7, barW, 6);
       if (o.p) { g.fillStyle = o.p < 0.5 ? C.late : C.done; g.fillRect(barX, mid - 7, Math.max(2, barW * o.p), 6); }
@@ -2143,7 +2175,8 @@
     $('#pstDate').hidden = rg; $('#pstRangeBox').hidden = !rg;
     var D = pstData();
     $('#pstInfo').textContent = D.r.from + ' ~ ' + D.r.to + ' · ' + D.scope +
-      (D.future ? ' · 这段时间还没有视频数据' : '');
+      (D.future ? ' · 这段时间还没有视频数据' : '') +
+      ' · ' + HY.md(D.sched) + ' 已排定时 ' + D.nSched + '/' + D.nStores + ' 家';
     pstLoadLogo().then(function (logo) {
       pstCanvas = pstDraw(D, logo);
       var box = $('#pstPreview');
@@ -2162,6 +2195,8 @@
     $('#pstDate').value = PST.date;
     if (!PST.to) { PST.to = PST.date; PST.from = HY.ymd(HY.addDays(HY.parseYmd(PST.date), -6)); }
     $('#pstFrom').value = PST.from; $('#pstTo').value = PST.to;
+    if (!PST.sched) PST.sched = S.today;
+    $('#pstSched').value = PST.sched;
     $('#posterModal').classList.add('open');
     $('#backdrop').classList.add('on');
     pstRender();
@@ -2181,6 +2216,7 @@
       b.onclick = function () { PST.mode = b.dataset.m; pstRender(); };
     });
     $('#pstDate').onchange = function () { if (this.value) { PST.date = this.value; pstRender(); } };
+    $('#pstSched').onchange = function () { if (this.value) { PST.sched = this.value; pstRender(); } };
     $('#pstFrom').onchange = $('#pstTo').onchange = function () {
       var f = $('#pstFrom').value, t = $('#pstTo').value;
       if (!f || !t) return;
@@ -2199,16 +2235,16 @@
     $('#pstExcel').onclick = function () {
       var D = pstData(), rate = D.mode === 'rate';
       var aoa = [['排名', '门店', '区域经理', rate ? '完成率' : '发布率', rate ? '已发布' : '发布天数',
-                  rate ? '应发' : '天数', '视频数（条）']];
+                  rate ? '应发' : '天数', '视频数（条）', HY.md(D.sched) + ' 已排定时']];
       D.list.forEach(function (o, i) {
         aoa.push([i + 1, o.st.storeName, o.st.manager || '', o.p == null ? '' : Math.round(o.p * 1000) / 1000,
-                  rate ? o.done : o.nDays, rate ? o.due : D.nDays, o.vids]);
+                  rate ? o.done : o.nDays, rate ? o.due : D.nDays, o.vids, o.sched ? '是' : '']);
       });
       aoa.push(['', '合计', '', Math.round(D.total * 1000) / 1000,
-                rate ? D.done : '', rate ? D.due : '', D.vids]);
+                rate ? D.done : '', rate ? D.due : '', D.vids, D.nSched + '/' + D.nStores + ' 家']);
       var ws = XLSX.utils.aoa_to_sheet(aoa);
-      ws['!cols'] = [{ wch: 6 }, { wch: 18 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 8 }, { wch: 12 }];
-      ws['!autofilter'] = { ref: 'A1:G' + (D.list.length + 1) };
+      ws['!cols'] = [{ wch: 6 }, { wch: 18 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 8 }, { wch: 12 }, { wch: 14 }];
+      ws['!autofilter'] = { ref: 'A1:H' + (D.list.length + 1) };
       for (var r = 1; r < aoa.length; r++) {
         var c = ws[XLSX.utils.encode_cell({ r: r, c: 3 })];
         if (c && c.t === 'n') c.z = '0%';
