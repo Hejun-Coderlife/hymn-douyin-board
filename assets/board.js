@@ -2229,11 +2229,11 @@
     };
   }
 
-  /* ---------- 定时清单（2026-10-12 用户：「选择后我能看到截止到某一天，已经设置好定时的门店清单、占比，
-     没设置的也要能看到；这个和已经发视频的完成率分开来做」） ----------
+  /* ---------- 定时清单（2026-10-12 用户：视频每天发，从今天到截止日（如 10/20），每家店每天排没排都要看到；
+     最上面一个占比；排了的放前面、没排的放后面；版式适合手机看）。跟完成率 / 战报分开。 ----------
      区间 = 今天 → 截止日（截止日早于今天就只看那一天）。门店范围跟看板筛选走，同战报。
-     某天算「排好」= 标了「已排定时」，或者那天已经查到发了视频（发出来了自然不用再排）。
-     区间里每天都排好 = 排好；差一天也算没排好，列出缺哪几天。 */
+     某天算「排了」= 标了「已排定时」，或者那天已经查到发了视频（发出来了自然不用再排）。
+     占比按「店 × 天」算：排了的天次 ÷ 总天次；另给全部排好 / 部分 / 没排的家数。 */
   var SCH = { to: '' };
   function schData() {
     var rows = filtered(), marks = HY.Marks.read();
@@ -2241,39 +2241,53 @@
     for (var d = from; d <= SCH.to; d = HY.ymd(HY.addDays(HY.parseYmd(d), 1))) days.push(d);
     var pub = {};
     S.videos.forEach(function (v) { if (v.pubDate) pub[v.store + '|' + v.pubDate] = 1; });
-    var ok = [], bad = [];
-    rows.forEach(function (st) {
-      var miss = days.filter(function (d) { var k = st.douyinId + '|' + d; return !marks[k] && !pub[k]; });
-      var o = { st: st, miss: miss, has: days.length - miss.length };
-      (miss.length ? bad : ok).push(o);
+    var list = rows.map(function (st) {
+      var on = days.map(function (d) { var k = st.douyinId + '|' + d; return !!(marks[k] || pub[k]); });
+      var has = on.filter(Boolean).length;
+      return { st: st, on: on, has: has, miss: days.filter(function (d, i) { return !on[i]; }) };
     });
-    var byMgr = function (a, b) {
-      return (a.st.manager || '').localeCompare(b.st.manager || '', 'zh') || b.has - a.has ||
+    list.sort(function (a, b) {
+      return b.has - a.has || (a.st.manager || '').localeCompare(b.st.manager || '', 'zh') ||
              a.st.storeName.localeCompare(b.st.storeName, 'zh');
-    };
-    ok.sort(byMgr); bad.sort(byMgr);
-    return { from: from, to: SCH.to, days: days, ok: ok, bad: bad, n: rows.length, scope: pstScope(rows) };
+    });
+    var hit = 0; list.forEach(function (o) { hit += o.has; });
+    var full = list.filter(function (o) { return o.has === days.length; }),
+        none = list.filter(function (o) { return o.has === 0; });
+    return { from: from, to: SCH.to, days: days, list: list, hit: hit, total: days.length * list.length,
+             full: full, part: list.filter(function (o) { return o.has && o.has < days.length; }), none: none,
+             n: rows.length, scope: pstScope(rows) };
   }
   function schMissText(o, D) {
     if (o.has === 0) return D.days.length > 1 ? '一天都没排' : '没排';
-    return '排了 ' + o.has + '/' + D.days.length + ' 天，缺 ' + o.miss.map(HY.md).join('、');
+    return '缺 ' + o.miss.map(HY.md).join('、');
   }
   function schRender() {
-    var D = schData(), pct = D.n ? Math.round(D.ok.length / D.n * 100) : 0;
-    $('#schSpan').textContent = (D.days.length > 1 ? HY.md(D.from) + ' – ' + HY.md(D.to) + ' 共 ' + D.days.length + ' 天'
-      : HY.md(D.to) + (D.to === S.today ? '（今天）' : '')) + ' · ' + D.scope;
-    $('#schSum').innerHTML = '<b>' + pct + '<small style="font-size:16px">%</small></b>' +
-      '<span class="of">定时排好 ' + D.ok.length + ' / ' + D.n + ' 家，没排好 ' + D.bad.length + ' 家</span>' +
-      '<span class="bar"><i style="width:' + pct + '%"></i></span>';
-    function sec(title, color, list, isBad) {
-      return '<div class="sch-sec"><h4><i style="background:' + color + '"></i>' + title + ' · ' + list.length + ' 家</h4>' +
-        (list.length ? list.map(function (o) {
-          return '<div class="sch-row"><span class="nm">' + esc(o.st.storeName) + '</span><span class="mg">' +
-            esc(o.st.manager || '') + '</span><span class="gap' + (isBad ? ' bad' : '') + '">' +
-            (isBad ? esc(schMissText(o, D)) : (D.days.length > 1 ? D.days.length + ' 天都排好' : '已排好')) + '</span></div>';
-        }).join('') : '<div class="sch-empty">没有</div>') + '</div>';
+    var D = schData(), pct = D.total ? Math.round(D.hit / D.total * 100) : 0, WK = '日一二三四五六';
+    $('#schSpan').textContent = (D.days.length > 1 ? HY.md(D.from) + ' – ' + HY.md(D.to) + ' · ' + D.days.length + ' 天'
+      : HY.md(D.to) + (D.to === S.today ? ' 今天' : '')) + ' · ' + D.scope;
+    $('#schSum').innerHTML =
+      '<div class="sch-big"><b>' + pct + '<small>%</small></b><span>已排定时<br>' + D.hit + ' / ' + D.total + ' 天次</span></div>' +
+      '<span class="bar"><i style="width:' + pct + '%"></i></span>' +
+      '<div class="sch-cnt"><span><em>' + D.full.length + '</em>全部排好</span><span><em>' + D.part.length +
+      '</em>排了一部分</span><span class="bad"><em>' + D.none.length + '</em>一天没排</span></div>';
+    var head = '<div class="sch-days">' + D.days.map(function (d) {
+      var t = HY.parseYmd(d);
+      return '<span>' + t.getDate() + '<i>' + WK[t.getDay()] + '</i></span>';
+    }).join('') + '</div>';
+    function sec(title, cls, list) {
+      if (!list.length) return '';
+      return '<div class="sch-sec"><h4 class="' + cls + '">' + title + ' · ' + list.length + ' 家</h4>' +
+        list.map(function (o) {
+          return '<div class="sch-row"><div class="top"><span class="nm">' + esc(o.st.storeName) +
+            '</span><span class="mg">' + esc(o.st.manager || '') + '</span><span class="ct' +
+            (o.has < D.days.length ? ' bad' : '') + '">' + o.has + '/' + D.days.length + '</span></div>' +
+            (D.days.length > 1 ? '<div class="sch-days dots">' + o.on.map(function (x, i) {
+              return '<span class="' + (x ? 'on' : 'off') + '" title="' + HY.md(D.days[i]) + (x ? ' 已排' : ' 没排') + '"></span>';
+            }).join('') + '</div>' : '') + '</div>';
+        }).join('') + '</div>';
     }
-    $('#schBody').innerHTML = sec('没排好', 'var(--late)', D.bad, true) + sec('已排好', 'var(--done)', D.ok, false);
+    $('#schBody').innerHTML = (D.days.length > 1 ? '<div class="sch-dayhead">' + head + '</div>' : '') +
+      sec('全部排好', 'ok', D.full) + sec('排了一部分', 'mid', D.part) + sec('没排', 'bad', D.none);
   }
   function bindSched() {
     $('#btnSchedList').onclick = function () {
@@ -2289,11 +2303,12 @@
     $('#schTo').onchange = function () { if (this.value) { SCH.to = this.value; schRender(); } };
     $('#schCopy').onclick = function () {
       var D = schData();
-      var head = '截止 ' + HY.md(D.to) + ' 定时还没排好的门店（' + D.bad.length + '/' + D.n + ' 家）：';
-      var lines = D.bad.map(function (o) {
+      var bad = D.part.concat(D.none);
+      var head = HY.md(D.from) + (D.days.length > 1 ? '–' + HY.md(D.to) : '') + ' 定时还没排好的门店（' + bad.length + '/' + D.n + ' 家）：';
+      var lines = bad.map(function (o) {
         return o.st.storeName + (o.st.manager ? '（' + o.st.manager + '）' : '') + (D.days.length > 1 ? ' ' + schMissText(o, D) : '');
       });
-      var t = [head].concat(lines).join('\n'), msg = D.bad.length ? '已复制，去微信里粘贴就行' : '全部排好了，已复制';
+      var t = [head].concat(lines).join('\n'), msg = bad.length ? '已复制，去微信里粘贴就行' : '全部排好了，已复制';
       var fb = function () {   // file:// 下 clipboard 常被禁，退回 execCommand
         var ta = document.createElement('textarea');
         ta.value = t; ta.style.cssText = 'position:fixed;left:-9999px';
@@ -2306,18 +2321,17 @@
     };
     $('#schExcel').onclick = function () {
       var D = schData();
-      var aoa = [['门店', '区域经理', '状态', '已排天数', '统计天数', '缺的日期']];
-      D.bad.concat(D.ok).forEach(function (o) {
-        aoa.push([o.st.storeName, o.st.manager || '', o.miss.length ? '没排好' : '已排好', o.has, D.days.length,
-                  o.miss.map(HY.md).join('、')]);
+      var aoa = [['门店', '区域经理', '已排天数', '总天数'].concat(D.days.map(HY.md))];
+      D.list.forEach(function (o) {
+        aoa.push([o.st.storeName, o.st.manager || '', o.has, D.days.length].concat(o.on.map(function (x) { return x ? '✓' : '没排'; })));
       });
-      aoa.push(['合计', '', '排好 ' + D.ok.length + '/' + D.n + ' 家', '', '', '']);
+      aoa.push(['合计', '', D.hit, D.total, '占比 ' + (D.total ? Math.round(D.hit / D.total * 100) : 0) + '%']);
       var ws = XLSX.utils.aoa_to_sheet(aoa);
-      ws['!cols'] = [{ wch: 18 }, { wch: 10 }, { wch: 14 }, { wch: 9 }, { wch: 9 }, { wch: 30 }];
-      ws['!autofilter'] = { ref: 'A1:F' + (D.bad.length + D.ok.length + 1) };
+      ws['!cols'] = [{ wch: 18 }, { wch: 10 }, { wch: 9 }, { wch: 8 }].concat(D.days.map(function () { return { wch: 7 }; }));
+      ws['!autofilter'] = { ref: 'A1:' + XLSX.utils.encode_cell({ r: D.list.length, c: 3 + D.days.length }) };
       var wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, '定时清单');
-      XLSX.writeFile(wb, '赫眉定时清单_截止' + D.to + '.xlsx');
+      XLSX.writeFile(wb, '赫眉定时清单_' + D.from + '_' + D.to + '.xlsx');
     };
   }
 
