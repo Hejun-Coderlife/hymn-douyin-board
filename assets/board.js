@@ -1837,6 +1837,7 @@
     $('#backdrop').onclick = function () {
       if ($('#mgrModal').classList.contains('open')) closeMgrModal();
       else if ($('#posterModal').classList.contains('open')) closePoster();
+      else if ($('#schedModal').classList.contains('open')) $('#schClose').onclick();
       else closeDrawer();
     };
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeDrawer(); });
@@ -2228,6 +2229,98 @@
     };
   }
 
+  /* ---------- 定时清单（2026-10-12 用户：「选择后我能看到截止到某一天，已经设置好定时的门店清单、占比，
+     没设置的也要能看到；这个和已经发视频的完成率分开来做」） ----------
+     区间 = 今天 → 截止日（截止日早于今天就只看那一天）。门店范围跟看板筛选走，同战报。
+     某天算「排好」= 标了「已排定时」，或者那天已经查到发了视频（发出来了自然不用再排）。
+     区间里每天都排好 = 排好；差一天也算没排好，列出缺哪几天。 */
+  var SCH = { to: '' };
+  function schData() {
+    var rows = filtered(), marks = HY.Marks.read();
+    var from = SCH.to < S.today ? SCH.to : S.today, days = [];
+    for (var d = from; d <= SCH.to; d = HY.ymd(HY.addDays(HY.parseYmd(d), 1))) days.push(d);
+    var pub = {};
+    S.videos.forEach(function (v) { if (v.pubDate) pub[v.store + '|' + v.pubDate] = 1; });
+    var ok = [], bad = [];
+    rows.forEach(function (st) {
+      var miss = days.filter(function (d) { var k = st.douyinId + '|' + d; return !marks[k] && !pub[k]; });
+      var o = { st: st, miss: miss, has: days.length - miss.length };
+      (miss.length ? bad : ok).push(o);
+    });
+    var byMgr = function (a, b) {
+      return (a.st.manager || '').localeCompare(b.st.manager || '', 'zh') || b.has - a.has ||
+             a.st.storeName.localeCompare(b.st.storeName, 'zh');
+    };
+    ok.sort(byMgr); bad.sort(byMgr);
+    return { from: from, to: SCH.to, days: days, ok: ok, bad: bad, n: rows.length, scope: pstScope(rows) };
+  }
+  function schMissText(o, D) {
+    if (o.has === 0) return D.days.length > 1 ? '一天都没排' : '没排';
+    return '排了 ' + o.has + '/' + D.days.length + ' 天，缺 ' + o.miss.map(HY.md).join('、');
+  }
+  function schRender() {
+    var D = schData(), pct = D.n ? Math.round(D.ok.length / D.n * 100) : 0;
+    $('#schSpan').textContent = (D.days.length > 1 ? HY.md(D.from) + ' – ' + HY.md(D.to) + ' 共 ' + D.days.length + ' 天'
+      : HY.md(D.to) + (D.to === S.today ? '（今天）' : '')) + ' · ' + D.scope;
+    $('#schSum').innerHTML = '<b>' + pct + '<small style="font-size:16px">%</small></b>' +
+      '<span class="of">定时排好 ' + D.ok.length + ' / ' + D.n + ' 家，没排好 ' + D.bad.length + ' 家</span>' +
+      '<span class="bar"><i style="width:' + pct + '%"></i></span>';
+    function sec(title, color, list, isBad) {
+      return '<div class="sch-sec"><h4><i style="background:' + color + '"></i>' + title + ' · ' + list.length + ' 家</h4>' +
+        (list.length ? list.map(function (o) {
+          return '<div class="sch-row"><span class="nm">' + esc(o.st.storeName) + '</span><span class="mg">' +
+            esc(o.st.manager || '') + '</span><span class="gap' + (isBad ? ' bad' : '') + '">' +
+            (isBad ? esc(schMissText(o, D)) : (D.days.length > 1 ? D.days.length + ' 天都排好' : '已排好')) + '</span></div>';
+        }).join('') : '<div class="sch-empty">没有</div>') + '</div>';
+    }
+    $('#schBody').innerHTML = sec('没排好', 'var(--late)', D.bad, true) + sec('已排好', 'var(--done)', D.ok, false);
+  }
+  function bindSched() {
+    $('#btnSchedList').onclick = function () {
+      if (HY.ymd(new Date()) !== S.today) refreshAll();
+      if (!SCH.to) SCH.to = S.today;
+      $('#schTo').value = SCH.to;
+      $('#schedModal').classList.add('open'); $('#backdrop').classList.add('on');
+      schRender();
+    };
+    $('#schClose').onclick = function () {
+      $('#schedModal').classList.remove('open'); $('#backdrop').classList.remove('on');
+    };
+    $('#schTo').onchange = function () { if (this.value) { SCH.to = this.value; schRender(); } };
+    $('#schCopy').onclick = function () {
+      var D = schData();
+      var head = '截止 ' + HY.md(D.to) + ' 定时还没排好的门店（' + D.bad.length + '/' + D.n + ' 家）：';
+      var lines = D.bad.map(function (o) {
+        return o.st.storeName + (o.st.manager ? '（' + o.st.manager + '）' : '') + (D.days.length > 1 ? ' ' + schMissText(o, D) : '');
+      });
+      var t = [head].concat(lines).join('\n'), msg = D.bad.length ? '已复制，去微信里粘贴就行' : '全部排好了，已复制';
+      var fb = function () {   // file:// 下 clipboard 常被禁，退回 execCommand
+        var ta = document.createElement('textarea');
+        ta.value = t; ta.style.cssText = 'position:fixed;left:-9999px';
+        document.body.appendChild(ta); ta.select();
+        try { document.execCommand('copy'); HY.toast(msg); } catch (e) { HY.toast('复制失败'); }
+        document.body.removeChild(ta);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(function () { HY.toast(msg); }, fb);
+      else fb();
+    };
+    $('#schExcel').onclick = function () {
+      var D = schData();
+      var aoa = [['门店', '区域经理', '状态', '已排天数', '统计天数', '缺的日期']];
+      D.bad.concat(D.ok).forEach(function (o) {
+        aoa.push([o.st.storeName, o.st.manager || '', o.miss.length ? '没排好' : '已排好', o.has, D.days.length,
+                  o.miss.map(HY.md).join('、')]);
+      });
+      aoa.push(['合计', '', '排好 ' + D.ok.length + '/' + D.n + ' 家', '', '', '']);
+      var ws = XLSX.utils.aoa_to_sheet(aoa);
+      ws['!cols'] = [{ wch: 18 }, { wch: 10 }, { wch: 14 }, { wch: 9 }, { wch: 9 }, { wch: 30 }];
+      ws['!autofilter'] = { ref: 'A1:F' + (D.bad.length + D.ok.length + 1) };
+      var wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, '定时清单');
+      XLSX.writeFile(wb, '赫眉定时清单_截止' + D.to + '.xlsx');
+    };
+  }
+
   /* ---------- 启动 ---------- */
   HY.loadData().then(function (d) {
     S.stores = d.stores; S.storeById = d.storeById; S.scripts = d.scripts;
@@ -2235,6 +2328,7 @@
     fillFilters();
     bind();
     bindPoster();
+    bindSched();
     refreshAll();
     showPanel(hashView());
     window.addEventListener('hashchange', function () { showPanel(hashView()); });

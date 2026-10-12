@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>赫眉 HYMN · 视频脚本看板</title>
-<link rel="stylesheet" href="assets/style.css?v=20260930-0954">
+<link rel="stylesheet" href="assets/style.css?v=20261012-02">
 </head>
 <body>
 <div id="boot"><div class="bmark"><img src="assets/logo-ink.png" alt="赫眉 HYMN"></div></div>
@@ -68,6 +68,7 @@
         <label class="chk"><input type="checkbox" id="fLate"> 只看有逾期</label>
         <button class="btn sm" id="btnPoster" type="button">生成战报图</button>
         <button class="btn sm" id="btnMark" type="button" title="打开后点日历格子，标记这家店这天已经排好了定时视频">标记定时</button>
+        <button class="btn sm" id="btnSchedList" type="button" title="截止到某一天，哪些店定时排好了、哪些没排">定时清单</button>
         <div class="legend">
           <span><i style="background:var(--todo)"></i>待拍</span>
           <span><i style="background:var(--sched)"></i>已排定时</span>
@@ -192,6 +193,21 @@
     <button class="btn" id="pstClose" type="button">关闭</button>
   </div>
 </div>
+<!-- 定时清单：截止到某天，哪些店已经把定时排好了、哪些没排（跟完成率分开，只看人工标记） -->
+<div class="modal schedmodal" id="schedModal">
+  <h3>定时清单</h3>
+  <div class="pst-bar">
+    <label class="sch-lab">截止到 <input type="date" id="schTo"></label>
+    <span class="note" id="schSpan"></span>
+  </div>
+  <div class="sch-sum" id="schSum"></div>
+  <div class="sch-body" id="schBody"></div>
+  <div class="rowbtns">
+    <button class="btn primary" id="schCopy" type="button">复制没排好名单</button>
+    <button class="btn" id="schExcel" type="button">下载 Excel</button>
+    <button class="btn" id="schClose" type="button">关闭</button>
+  </div>
+</div>
 <aside class="drawer" id="drawer">
   <div class="dh">
     <div>
@@ -203,12 +219,12 @@
   <div class="db" id="dBody"></div>
 </aside>
 
-<script src="data/stores.js?v=20260930-0954"></script>
-<script src="data/scripts-index.js?v=20260930-0954"></script>
+<script src="data/stores.js?v=20261012-02"></script>
+<script src="data/scripts-index.js?v=20261012-02"></script>
 <script src="vendor/xlsx.full.min.js"></script>
-<script src="data/videos.js?v=20260930-0954"></script>
-<script src="assets/core.js?v=20260930-0954"></script>
-<script src="assets/board.js?v=20260930-0954"></script>
+<script src="data/videos.js?v=20261012-02"></script>
+<script src="assets/core.js?v=20261012-02"></script>
+<script src="assets/board.js?v=20261012-02"></script>
 
 </body>
 </html>

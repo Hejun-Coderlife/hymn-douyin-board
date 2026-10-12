@@ -1341,3 +1341,21 @@ table.mini tr.dim td{color:var(--t4)}
 table.mini thead th{position:sticky;top:0;z-index:5;background:var(--card);box-shadow:inset 0 -1px 0 var(--line-2)}
 #fileList a.dl{cursor:pointer;text-decoration:underline;text-underline-offset:3px;color:var(--t1)}
 #fileList td{white-space:nowrap}
+
+/* ===== 定时清单 ===== */
+.schedmodal{width:min(620px,94vw)}
+.sch-lab{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--t3)}
+.sch-sum{display:flex;align-items:baseline;gap:14px;padding:14px 16px;background:var(--paper);margin:6px 0 14px}
+.sch-sum b{font-size:34px;font-weight:400;font-family:Didot,"Bodoni 72",Georgia,serif;line-height:1}
+.sch-sum .of{font-size:13px;color:var(--t3)}
+.sch-sum .bar{flex:1;height:6px;background:var(--line);align-self:center;margin-left:8px}
+.sch-sum .bar i{display:block;height:100%;background:var(--done)}
+.sch-sec{margin-bottom:14px}
+.sch-sec h4{font-size:12.5px;font-weight:600;padding:6px 0;border-bottom:1px solid var(--line-2);display:flex;gap:8px;align-items:center}
+.sch-sec h4 i{width:9px;height:9px;display:inline-block}
+.sch-row{display:flex;gap:10px;align-items:baseline;padding:7px 0;border-bottom:1px solid var(--line);font-size:13px}
+.sch-row .nm{min-width:9em}
+.sch-row .mg{color:var(--t3);font-size:12px;min-width:3em}
+.sch-row .gap{margin-left:auto;color:var(--t3);font-size:12px;text-align:right}
+.sch-row .gap.bad{color:var(--late)}
+.sch-empty{color:var(--t3);font-size:12.5px;padding:8px 0}
