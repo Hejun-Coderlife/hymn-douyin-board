@@ -2309,12 +2309,13 @@
     var y = 40;
     if (logo) g.drawImage(logo, PAD, y - 14, 72, 72 * logo.height / logo.width);
     g.font = '10px ' + SANS; g.fillStyle = C.t3;
-    pstSpaced(g, '抖音定时清单', W - PAD, y, 2.5, 'right');
-    y = 92;
-    g.fillStyle = C.ink; g.font = '22px ' + SONG;
-    g.fillText(multi ? HY.md(D.from) + ' – ' + HY.md(D.to) : HY.md(D.to) + (D.to === S.today ? ' 今天' : ''), PAD, y);
+    pstSpaced(g, 'SCHEDULE', W - PAD, y, 2.5, 'right');
+    y = 90;
+    g.fillStyle = C.ink; g.font = '21px ' + SONG;
+    g.fillText('抖音视频 · 定时发布清单', PAD, y);
     g.font = '12px ' + SANS; g.fillStyle = C.t3;
-    g.fillText((multi ? D.days.length + ' 天 · ' : '') + D.scope, PAD, y + 22);
+    g.fillText((multi ? HY.md(D.from) + ' – ' + HY.md(D.to) + ' · ' + D.days.length + ' 天'
+      : HY.md(D.to) + (D.to === S.today ? '（今天）' : '')) + ' · ' + D.scope + ' · 每天有没有排好定时', PAD, y + 22);
     // 占比块
     y = 132;
     g.fillStyle = C.paper; g.fillRect(PAD, y, W - PAD * 2, 130);
