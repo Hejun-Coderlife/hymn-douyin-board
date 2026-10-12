@@ -18,6 +18,9 @@
 
   /* ---------- 计算 ---------- */
   function recompute() {
+    // 今天要每次现取：页面开着跨了天，S.today 还停在打开那天，战报「统计到」就会少算几天
+    // （2026-10-12 用户：10/10 打开的页面到 10/12 生成周报，应发只算到 10/09）
+    S.today = HY.ymd(new Date());
     S.videos = HY.Videos.list();
     // 月份条 = 有脚本的月 ∪ 有视频发布的月。脚本从 8 月底才开始排，只按脚本算的话
     // 7 月及以前翻不到，那几个月店里自己发的视频就看不见（2026-09-24 用户：「我没法拉到7月」）
@@ -2154,6 +2157,7 @@
     return '赫眉视频战报_' + r.from + (r.to !== r.from ? '_' + r.to : '') + '.png';
   }
   function openPoster() {
+    if (HY.ymd(new Date()) !== S.today) refreshAll();   // 标签页一直亮着过了夜，visibilitychange 不会触发
     if (!PST.date) PST.date = pstCutoff();
     $('#pstDate').value = PST.date;
     if (!PST.to) { PST.to = PST.date; PST.from = HY.ymd(HY.addDays(HY.parseYmd(PST.date), -6)); }
@@ -2234,6 +2238,10 @@
     refreshAll();
     showPanel(hashView());
     window.addEventListener('hashchange', function () { showPanel(hashView()); });
+    // 切回这个标签页时发现已经跨天了，整页按新日期重算
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden && HY.ymd(new Date()) !== S.today) refreshAll();
+    });
     HY.bootDone();
   }).catch(function (e) {
     $('#board').innerHTML = '<tbody><tr><td class="emptyrow">数据加载失败：' + esc(e.message) + '</td></tr></tbody>';
