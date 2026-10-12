@@ -2289,6 +2289,90 @@
     $('#schBody').innerHTML = (D.days.length > 1 ? '<div class="sch-dayhead">' + head + '</div>' : '') +
       sec('全部排好', 'ok', D.full) + sec('排了一部分', 'mid', D.part) + sec('没排', 'bad', D.none);
   }
+  /** 定时清单画成图：跟弹窗同一套内容（占比 + 日期头 + 全部排好 / 部分 / 没排三段，每店一排小方块） */
+  function schDraw(D, logo) {
+    var W = 420, PAD = 24, S2 = 2, multi = D.days.length > 1;
+    var C = { ink: '#16140F', t3: '#9C958A', line: '#E3DFD6', done: TILE_C.done, late: TILE_C.late,
+              todo: TILE_C.todo, sched: cssVar('--sched', '#A9C0B1'), paper: '#FAF7F2', pink: '#D9A6AE' };
+    var NUM = 'Didot, "Bodoni 72", Georgia, serif', SANS = '"PingFang SC", "Helvetica Neue", sans-serif',
+        SONG = '"Songti SC", "STSong", serif', WK = '日一二三四五六';
+    var ROW = multi ? 50 : 34, CELL = Math.min(22, Math.floor((W - PAD * 2 + 4) / D.days.length) - 4);
+    var secs = [['全部排好', C.done, D.full], ['排了一部分', C.sched, D.part], ['没排', C.late, D.none]]
+      .filter(function (x) { return x[2].length; });
+    var H = 300 + (multi ? 34 : 0) + secs.length * 40 + D.list.length * ROW + 50;
+    var cv = document.createElement('canvas');
+    cv.width = W * S2; cv.height = H * S2;
+    var g = cv.getContext('2d');
+    g.scale(S2, S2);
+    g.fillStyle = '#fff'; g.fillRect(0, 0, W, H);
+    g.fillStyle = C.pink; g.fillRect(0, 0, W, 4);
+    var y = 40;
+    if (logo) g.drawImage(logo, PAD, y - 14, 72, 72 * logo.height / logo.width);
+    g.font = '10px ' + SANS; g.fillStyle = C.t3;
+    pstSpaced(g, '抖音定时清单', W - PAD, y, 2.5, 'right');
+    y = 92;
+    g.fillStyle = C.ink; g.font = '22px ' + SONG;
+    g.fillText(multi ? HY.md(D.from) + ' – ' + HY.md(D.to) : HY.md(D.to) + (D.to === S.today ? ' 今天' : ''), PAD, y);
+    g.font = '12px ' + SANS; g.fillStyle = C.t3;
+    g.fillText((multi ? D.days.length + ' 天 · ' : '') + D.scope, PAD, y + 22);
+    // 占比块
+    y = 132;
+    g.fillStyle = C.paper; g.fillRect(PAD, y, W - PAD * 2, 130);
+    var pct = D.total ? Math.round(D.hit / D.total * 100) : 0;
+    g.fillStyle = C.done; g.font = '52px ' + NUM; g.fillText(String(pct), PAD + 16, y + 62);
+    var pw = g.measureText(String(pct)).width;
+    g.font = '20px ' + NUM; g.fillText('%', PAD + 18 + pw, y + 62);
+    g.font = '12px ' + SANS; g.fillStyle = C.t3;
+    g.fillText('已排定时', PAD + 50 + pw, y + 42);
+    g.fillText(D.hit + ' / ' + D.total + ' 天次', PAD + 50 + pw, y + 60);
+    g.fillStyle = C.line; g.fillRect(PAD + 16, y + 78, W - PAD * 2 - 32, 6);
+    g.fillStyle = C.done; g.fillRect(PAD + 16, y + 78, (W - PAD * 2 - 32) * pct / 100, 6);
+    [[D.full.length, '全部排好', C.ink], [D.part.length, '排了一部分', C.ink], [D.none.length, '一天没排', C.late]]
+      .forEach(function (c, i) {
+        var x = PAD + 16 + i * ((W - PAD * 2 - 32) / 3);
+        g.fillStyle = c[2]; g.font = '18px ' + NUM; g.fillText(String(c[0]), x, y + 112);
+        var nw = g.measureText(String(c[0])).width;
+        g.fillStyle = C.t3; g.font = '12px ' + SANS; g.fillText(c[1], x + nw + 4, y + 112);
+      });
+    y = 290;
+    function dayX(i) { return PAD + i * (CELL + 4); }
+    if (multi) {
+      g.textAlign = 'center';
+      D.days.forEach(function (d, i) {
+        var t = HY.parseYmd(d), cx = dayX(i) + CELL / 2;
+        g.fillStyle = C.ink; g.font = '11px ' + SANS; g.fillText(String(t.getDate()), cx, y);
+        g.fillStyle = C.t3; g.font = '10px ' + SANS; g.fillText(WK[t.getDay()], cx, y + 13);
+      });
+      g.textAlign = 'left';
+      y += 22; g.fillStyle = C.line; g.fillRect(PAD, y, W - PAD * 2, 1); y += 12;
+    }
+    secs.forEach(function (sc) {
+      y += 10;
+      g.fillStyle = sc[1]; g.fillRect(PAD, y, 3, 20);
+      g.fillStyle = C.ink; g.font = '600 12.5px ' + SANS; g.fillText(sc[0] + ' · ' + sc[2].length + ' 家', PAD + 10, y + 15);
+      y += 30;
+      sc[2].forEach(function (o) {
+        var by = y + 18;
+        g.fillStyle = C.ink; g.font = '14px ' + SANS; g.fillText(o.st.storeName, PAD, by);
+        var nw = g.measureText(o.st.storeName).width;
+        g.fillStyle = C.t3; g.font = '12px ' + SANS; g.fillText(o.st.manager || '', PAD + nw + 8, by);
+        g.textAlign = 'right'; g.font = '13px ' + NUM; g.fillStyle = o.has < D.days.length ? C.late : C.ink;
+        g.fillText(o.has + '/' + D.days.length, W - PAD, by); g.textAlign = 'left';
+        if (multi) o.on.forEach(function (x, i) {
+          g.fillStyle = x ? C.done : C.todo; g.fillRect(dayX(i), by + 10, CELL, 12);
+        });
+        y += ROW;
+        g.fillStyle = C.line; g.fillRect(PAD, y - 4, W - PAD * 2, 1);
+      });
+    });
+    y += 22;
+    g.font = '10.5px ' + SANS; g.fillStyle = C.t3;
+    var now = new Date();
+    g.fillText('生成于 ' + (now.getMonth() + 1) + '/' + now.getDate() + ' ' + String(now.getHours()).padStart(2, '0') + ':' +
+      String(now.getMinutes()).padStart(2, '0') + ' · 墨绿=已排定时 浅灰=没排', PAD, y);
+    pstSpaced(g, 'HYMN STUDIO', W - PAD, y, 3, 'right');
+    return cv;
+  }
   function bindSched() {
     $('#btnSchedList').onclick = function () {
       if (HY.ymd(new Date()) !== S.today) refreshAll();
@@ -2301,23 +2385,16 @@
       $('#schedModal').classList.remove('open'); $('#backdrop').classList.remove('on');
     };
     $('#schTo').onchange = function () { if (this.value) { SCH.to = this.value; schRender(); } };
+    // 复制整个清单（2026-10-12 用户：「要复制就复制整个」）：画成一张图，跟战报一样粘进微信
     $('#schCopy').onclick = function () {
-      var D = schData();
-      var bad = D.part.concat(D.none);
-      var head = HY.md(D.from) + (D.days.length > 1 ? '–' + HY.md(D.to) : '') + ' 定时还没排好的门店（' + bad.length + '/' + D.n + ' 家）：';
-      var lines = bad.map(function (o) {
-        return o.st.storeName + (o.st.manager ? '（' + o.st.manager + '）' : '') + (D.days.length > 1 ? ' ' + schMissText(o, D) : '');
+      if (!navigator.clipboard || !window.ClipboardItem) { HY.toast('这个浏览器不支持复制图片'); return; }
+      pstLoadLogo().then(function (logo) {
+        schDraw(schData(), logo).toBlob(function (blob) {
+          navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
+            .then(function () { HY.toast('已复制，去微信里粘贴就行'); })
+            .catch(function () { HY.toast('复制失败，请用线上网址打开看板再试'); });
+        }, 'image/png');
       });
-      var t = [head].concat(lines).join('\n'), msg = bad.length ? '已复制，去微信里粘贴就行' : '全部排好了，已复制';
-      var fb = function () {   // file:// 下 clipboard 常被禁，退回 execCommand
-        var ta = document.createElement('textarea');
-        ta.value = t; ta.style.cssText = 'position:fixed;left:-9999px';
-        document.body.appendChild(ta); ta.select();
-        try { document.execCommand('copy'); HY.toast(msg); } catch (e) { HY.toast('复制失败'); }
-        document.body.removeChild(ta);
-      };
-      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(function () { HY.toast(msg); }, fb);
-      else fb();
     };
     $('#schExcel').onclick = function () {
       var D = schData();
