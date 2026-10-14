@@ -106,6 +106,7 @@
      中途用过近黑，但日历上「今天那列」也是黑的，两者挤在一起分不清。 */
   --done:#2F5D45;   --done-text:#2F5D45;  --done-bg:rgba(47,93,69,.10);
   --late:#B9808B;   --late-bg:var(--pink-bg);
+  --new:#C8322B;    /* 「新标定时」按钮数字 + 「新」字专用的红，别跟逾期粉 --late 混用（2026-10-14 用户要求分开） */
   --todo:#EAE6DD;
   --sched:#A9C0B1;   /* 已排定时（人工标记，还没发出来）：已发布墨绿的浅档，一眼看出是「绿的路上」 */
   --brick:#B9808B;  --brick-bg:var(--pink-bg);
@@ -1381,10 +1382,10 @@ table.mini thead th{position:sticky;top:0;z-index:5;background:var(--card);box-s
 /* ===== 新标定时（门店在手机上点的排定时） ===== */
 #btnNewMarks{position:relative}
 .nbadge{display:inline-block;min-width:16px;height:16px;line-height:16px;padding:0 4px;margin-left:6px;
-  background:var(--late);color:#fff;font-size:10.5px;font-weight:600;text-align:center;box-sizing:border-box}
-#btnNewMarks:hover .nbadge{background:#fff;color:var(--late)}
+  background:var(--new);color:#fff;font-size:10.5px;font-weight:600;text-align:center;box-sizing:border-box}
+#btnNewMarks:hover .nbadge{background:#fff;color:var(--new)}
 .nm-row .top b{font-weight:600}
-.nm-new{font-size:10.5px;padding:1px 5px;background:var(--late);color:#fff;align-self:center}
+.nm-new{font-size:10.5px;padding:1px 5px;background:var(--new);color:#fff;align-self:center}
 .nm-days{display:flex;flex-wrap:wrap;gap:4px;margin-top:7px}
 .nm-days span{font-size:11.5px;padding:3px 6px;background:var(--paper);color:var(--t3)}
 .nm-days span.on{background:var(--sched);color:var(--t1)}
