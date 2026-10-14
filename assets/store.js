@@ -55,6 +55,17 @@
     return (full && full.title) || (s.topic + '｜' + s.format);
   }
 
+  /* 定时标记（2026-10-14）：店员在抖音里排好了定时发布，就在这里点一下「排定时」，
+     总部看板上那天变浅绿、算进含定时完成率。存云端（HY.Marks，见 core.js），总部打开就能看到。
+     只有今天及以后、还没查到已发布的那几天能标：过去的日子发没发看导出数据，不靠标。 */
+  function canMark(s) { return s.date >= TODAY && label(s).c !== 'done'; }
+  function markBtn(s, big) {
+    if (!canMark(s)) return '';
+    var on = HY.Marks.has(id, s.date);
+    return '<button class="mk' + (on ? ' on' : '') + (big ? ' big' : '') + '" data-mark="' + esc(s.date) + '">' +
+      (on ? '✓ 已排定时' : '排定时') + '</button>';
+  }
+
   /* 分片按需加载：要用到哪几个月就拉哪几个月，拉过的不重复拉 */
   var loaded = {};
   function needMonths(yms) {
@@ -113,6 +124,8 @@
           '<div class="hash">' + tags.map(function (t) {
             return '<span>' + esc(t) + '</span>';
           }).join('') + '</div></div>' : '') +
+      (canMark(s) ? '<div class="mkrow">' + markBtn(s, true) +
+        '<span>在抖音里设好了定时发布，就点一下，总部能看到</span></div>' : '') +
       '<div class="acts">' +
         '<button class="main" data-copy="all" data-id="' + esc(s.id) + '">复制整条脚本</button>' +
         '<button class="sub2" data-copy="tags" data-id="' + esc(s.id) + '">只复制标签</button>' +
@@ -160,7 +173,7 @@
           '<div class="dt"><b>' + dd.getDate() + '</b><span>' + WD[dd.getDay()] + '</span></div>' +
           '<div class="mid"><div class="t">' + esc(titleOf(s)) + '</div>' +
             '<div class="s' + (l.c === 'late' ? ' late' : '') + '">' + l.t + '</div></div>' +
-          '<div class="go">›</div></div>';
+          (canMark(s) ? markBtn(s) : '<div class="go">›</div>') + '</div>';
       }).join('') || '<div class="none" style="padding:26px 0;color:var(--dim)">这段时间还没有脚本</div>';
     });
   }
@@ -367,12 +380,35 @@
     return needMonths([ymOf(TODAY)]).then(function () {
       paintList();
       HY.bootDone();
+      HY.Marks.pull(id).then(function (changed) { if (changed) repaintMarks(); });
     });
   }).catch(function () { HY.bootDone(); });
 
   /* ---------- 事件 ---------- */
+  function repaintMarks() {
+    paintList();                                  // 详情里点的，返回列表时也得是新的
+    $$('#viewB [data-mark]').forEach(function (b) {
+      var on = HY.Marks.has(id, b.dataset.mark);
+      b.classList.toggle('on', on); b.textContent = on ? '✓ 已排定时' : '排定时';
+    });
+  }
+  var marking = {};
+  function toggleMark(date) {
+    if (marking[date]) return;                    // 上一下还没回来，别连点
+    marking[date] = 1;
+    var p = HY.Marks.toggle(id, date, 'store');
+    repaintMarks();
+    p.then(function (on) {
+      toast(on ? HY.md(date) + ' 已排定时，总部能看到了' : HY.md(date) + ' 已取消');
+    }, function () {
+      repaintMarks();
+      toast('网络不好，没标上，再点一次');
+    }).then(function () { delete marking[date]; });
+  }
+
   document.addEventListener('click', function (e) {
     var t;
+    if ((t = e.target.closest('[data-mark]'))) { toggleMark(t.dataset.mark); return; }
     if ((t = e.target.closest('[data-copy]'))) {
       copyText(t.dataset.copy === 'tags' ? tagsOf(t.dataset.id) : scriptText(t.dataset.id)); return; }
     if ((t = e.target.closest('[data-back]'))) { $('#viewB').classList.add('hide'); show(backTo); return; }

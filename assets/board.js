@@ -878,7 +878,10 @@
     $('#dBody').scrollTop = 0;
 
     var dm = document.getElementById('dMark');
-    if (dm) dm.onclick = function () { toggleMark(s.id); drawScript(s.id); };
+    if (dm) dm.onclick = function () {
+      toggleMark(s.id, function () { drawScript(s.id); });
+      drawScript(s.id);
+    };
 
     var ca = document.getElementById('copyAll');
     if (ca) ca.onclick = function () {
@@ -887,15 +890,28 @@
   }
 
   /* 定时标记：侧栏按钮、以及「标记定时」模式下直接点格子，都走这里 */
-  function toggleMark(id) {
+  function toggleMark(id, redraw) {
     var sc = S.scriptById[id];
     if (!sc) return;
-    var on = HY.Marks.toggle(sc.store, sc.date);
     var st = S.storeById[sc.store] || {};
+    var p = HY.Marks.toggle(sc.store, sc.date, 'hq');
+    rerenderKeepScroll();                     // 本机先变，云端写失败再改回来
+    p.then(function (on) {
+      HY.toast(st.storeName + ' ' + HY.md(sc.date) + (on ? ' 已标记：排了定时' : ' 已取消定时标记'));
+    }, function () {
+      rerenderKeepScroll();
+      if (redraw) redraw();
+      HY.toast('没连上云端，' + st.storeName + ' ' + HY.md(sc.date) + ' 的定时标记没改成，请稍后再试');
+    });
+  }
+  function rerenderKeepScroll() {
     var wrap = $('.gridwrap'), top = wrap ? wrap.scrollTop : 0, left = wrap ? wrap.scrollLeft : 0;
     render();
     if (wrap) { wrap.scrollTop = top; wrap.scrollLeft = left; }
-    HY.toast(st.storeName + ' ' + HY.md(sc.date) + (on ? ' 已标记：排了定时' : ' 已取消定时标记'));
+  }
+  /* 定时标记以云端为准（店员在门店页也能标）：打开时、切回这个标签页时各拉一次 */
+  function pullMarks() {
+    HY.Marks.pull().then(function (changed) { if (changed) rerenderKeepScroll(); });
   }
   function setMarkMode(on) {
     S.markMode = on;
@@ -2429,6 +2445,8 @@
       if (!document.hidden && HY.ymd(new Date()) !== S.today) refreshAll();
     });
     HY.bootDone();
+    pullMarks();
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) pullMarks(); });
   }).catch(function (e) {
     $('#board').innerHTML = '<tbody><tr><td class="emptyrow">数据加载失败：' + esc(e.message) + '</td></tr></tbody>';
     HY.bootDone();

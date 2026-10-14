@@ -17,3 +17,6 @@ __pycache__/
 
 # 抖音来客导出的视频 xlsx（含成交金额等经营数据）：只在本机用来生成 data/rank.js，不进公开仓库
 视频数据/
+
+# wrangler 本地开发生成的模拟数据库/缓存
+worker/.wrangler/

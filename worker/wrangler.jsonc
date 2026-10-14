@@ -1,0 +1,16 @@
+// 定时标记云端同步。部署：cd worker && npx wrangler deploy
+// 国内手机打不开 *.workers.dev，所以必须走自定义域名 sched.hemei.asia
+{
+  "name": "hymn-sched",
+  "main": "src/index.js",
+  "compatibility_date": "2026-10-01",
+  "workers_dev": false,
+  "routes": [{ "pattern": "sched.hemei.asia", "custom_domain": true }],
+  "d1_databases": [
+    {
+      "binding": "hymn_sched",
+      "database_name": "hymn-sched",
+      "database_id": "a274fd19-d126-4b0a-b924-ae459abb91e6"
+    }
+  ]
+}

@@ -296,25 +296,69 @@ window.HY = (function () {
 
   /* 定时发布的人工标记：总部确认过「这家店这天已经排了定时视频」就标一下（2026-09-28 加）。
      键 = 抖音号|日期。只是预先确认，**不算完成**——完成与否仍看导出数据里当天有没有视频。
-     存本机 localStorage，跟着「导出/导入备份 JSON」一起走。 */
+     2026-10-14 起**以云端为准**（worker/ 下的 Cloudflare Worker + D1，挂 sched.hemei.asia）：
+     店员在门店页点「排定时」、总部在看板上标，都写云端；打开页面时 pull() 拉回来覆盖本机。
+     localStorage 只当缓存（离线也能先画出来）。云端连不上时本机照常显示，toggle 失败由调用方回滚。 */
   var LS_MARK = 'hymn_sched_marks_v1';
+  var LS_MARK_UP = 'hymn_sched_uploaded_v1';   // 本机老标记是否已经补传过云端（只传一次）
+  var SCHED_API = window.HY_SCHED_API || 'https://sched.hemei.asia';   // 测试时可指到本机 wrangler dev
+  function api(path, body) {
+    return fetch(SCHED_API + path, body ? {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+    } : { cache: 'no-store' }).then(function (r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    });
+  }
   var Marks = {
     read: function () {
       try { return JSON.parse(localStorage.getItem(LS_MARK)) || {}; } catch (e) { return {}; }
     },
     write: function (o) { localStorage.setItem(LS_MARK, JSON.stringify(o)); },
     has: function (store, date) { return !!this.read()[store + '|' + date]; },
-    toggle: function (store, date) {
-      var o = this.read(), k = store + '|' + date;
-      if (o[k]) delete o[k]; else o[k] = 1;
+    /* 本机先改（页面马上变），再写云端；返回 Promise<是否标上>，云端失败就把本机改回去再 reject */
+    toggle: function (store, date, by) {
+      var self = this, o = this.read(), k = store + '|' + date, on = !o[k];
+      if (on) o[k] = 1; else delete o[k];
       this.write(o);
-      return !!o[k];
+      return api('/marks', { k: k, on: on, by: by || 'hq' }).then(function () { return on; }, function (e) {
+        var b = self.read();
+        if (on) delete b[k]; else b[k] = 1;
+        self.write(b);
+        throw e;
+      });
     },
     merge: function (m) {
-      var o = this.read(), n = 0;
-      Object.keys(m || {}).forEach(function (k) { if (!o[k]) { o[k] = 1; n++; } });
+      var o = this.read(), n = 0, add = [];
+      Object.keys(m || {}).forEach(function (k) { if (!o[k]) { o[k] = 1; n++; add.push(k); } });
       this.write(o);
+      if (add.length) api('/marks/bulk', { keys: add }).catch(function () {});
       return n;
+    },
+    /* 从云端拉。store 给了就只拉这家店（门店页），不给就拉全部（总部）。
+       返回 Promise<本机有没有变>，连不上 resolve(false)，页面照旧用缓存。
+       总部第一次拉的时候，把本机以前标的（云端还没有的）补传上去，别丢。 */
+    pull: function (store) {
+      var self = this;
+      return api('/marks' + (store ? '?store=' + encodeURIComponent(store) : '')).then(function (d) {
+        var cloud = d.marks || {}, local = self.read(), up = [];
+        if (!store && !localStorage.getItem(LS_MARK_UP)) {
+          Object.keys(local).forEach(function (k) { if (!cloud[k]) { up.push(k); cloud[k] = 1; } });
+        }
+        var next = {};
+        if (store) {                              // 只换这家店的，别家的（切换门店留下的）原样保留
+          Object.keys(local).forEach(function (k) { if (k.split('|')[0] !== store) next[k] = 1; });
+        }
+        Object.keys(cloud).forEach(function (k) { next[k] = 1; });
+        var changed = JSON.stringify(Object.keys(next).sort()) !== JSON.stringify(Object.keys(local).sort());
+        self.write(next);
+        if (!store && !localStorage.getItem(LS_MARK_UP)) {
+          (up.length ? api('/marks/bulk', { keys: up }) : Promise.resolve()).then(function () {
+            localStorage.setItem(LS_MARK_UP, '1');
+          }).catch(function () {});
+        }
+        return changed;
+      }, function () { return false; });
     }
   };
 
