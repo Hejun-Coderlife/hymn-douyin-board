@@ -300,7 +300,8 @@ window.HY = (function () {
      店员在门店页点「排定时」、总部在看板上标，都写云端；打开页面时 pull() 拉回来覆盖本机。
      localStorage 只当缓存（离线也能先画出来）。云端连不上时本机照常显示，toggle 失败由调用方回滚。 */
   var LS_MARK = 'hymn_sched_marks_v1';
-  var LS_MARK_UP = 'hymn_sched_uploaded_v1';   // 本机老标记是否已经补传过云端（只传一次）
+  var LS_MARK_UP = 'hymn_sched_uploaded_v1';
+  var LS_MARK_META = 'hymn_sched_meta_v1';       // 云端的 by/at，见 Marks.meta()   // 本机老标记是否已经补传过云端（只传一次）
   var SCHED_API = window.HY_SCHED_API || 'https://sched.hemei.asia';   // 测试时可指到本机 wrangler dev
   function api(path, body) {
     return fetch(SCHED_API + path, body ? {
@@ -316,6 +317,10 @@ window.HY = (function () {
     },
     write: function (o) { localStorage.setItem(LS_MARK, JSON.stringify(o)); },
     has: function (store, date) { return !!this.read()[store + '|' + date]; },
+    /* 云端带回来的 { 键: [by, at] }：谁标的（store=店员 / hq=看板）、什么时候标的。只有看板拉全量时才存 */
+    meta: function () {
+      try { return JSON.parse(localStorage.getItem(LS_MARK_META)) || {}; } catch (e) { return {}; }
+    },
     /* 本机先改（页面马上变），再写云端；返回 Promise<是否标上>，云端失败就把本机改回去再 reject */
     toggle: function (store, date, by) {
       var self = this, o = this.read(), k = store + '|' + date, on = !o[k];
@@ -352,6 +357,7 @@ window.HY = (function () {
         Object.keys(cloud).forEach(function (k) { next[k] = 1; });
         var changed = JSON.stringify(Object.keys(next).sort()) !== JSON.stringify(Object.keys(local).sort());
         self.write(next);
+        if (!store) localStorage.setItem(LS_MARK_META, JSON.stringify(d.meta || {}));
         if (!store && !localStorage.getItem(LS_MARK_UP)) {
           (up.length ? api('/marks/bulk', { keys: up }) : Promise.resolve()).then(function () {
             localStorage.setItem(LS_MARK_UP, '1');

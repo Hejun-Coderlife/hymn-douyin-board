@@ -909,9 +909,78 @@
     render();
     if (wrap) { wrap.scrollTop = top; wrap.scrollLeft = left; }
   }
-  /* 定时标记以云端为准（店员在门店页也能标）：打开时、切回这个标签页时各拉一次 */
+  /* 定时标记以云端为准（店员在门店页也能标）：打开时、切回这个标签页时、开着的时候每 2 分钟各拉一次 */
   function pullMarks() {
-    HY.Marks.pull().then(function (changed) { if (changed) rerenderKeepScroll(); });
+    HY.Marks.pull().then(function (changed) {
+      if (changed) rerenderKeepScroll();
+      nmBadge();
+      if ($('#nmModal').classList.contains('open')) nmRender();
+    });
+  }
+
+  /* ---------- 新标定时（2026-10-14 用户：「我需要知道有哪些店新点了标记定时」）----------
+     只列门店自己在手机上点的（云端 meta 的 by = 'store'），看板上标的不算。
+     「新」= 上次打开这个弹窗之后标的（hymn_sched_seen_v1 存那个时间）；按钮上的数字 = 有新标记的店数。
+     取消了的标记云端直接删行，这里就不再出现。 */
+  var NM_SEEN = 'hymn_sched_seen_v1', NM_DAYS = 7;
+  function nmData(seen) {
+    var meta = HY.Marks.meta(), marks = HY.Marks.read(), by = {};
+    var since = Date.now() - NM_DAYS * 864e5;
+    Object.keys(meta).forEach(function (k) {
+      var m = meta[k];
+      if (!marks[k] || m[0] !== 'store' || !(m[1] > since)) return;
+      var p = k.split('|'), st = S.storeById[p[0]];
+      if (!st) return;
+      var g = by[p[0]] || (by[p[0]] = { st: st, days: [], last: 0, fresh: 0 });
+      g.days.push({ d: p[1], at: m[1], fresh: m[1] > seen });
+      if (m[1] > g.last) g.last = m[1];
+      if (m[1] > seen) g.fresh++;
+    });
+    return Object.keys(by).map(function (k) {
+      by[k].days.sort(function (a, b) { return a.d < b.d ? -1 : 1; });
+      return by[k];
+    }).sort(function (a, b) { return (b.fresh ? 1 : 0) - (a.fresh ? 1 : 0) || b.last - a.last; });
+  }
+  function nmWhen(t) {
+    var m = Math.round((Date.now() - t) / 6e4), d = new Date(t);
+    if (m < 1) return '刚刚';
+    if (m < 60) return m + ' 分钟前';
+    var hm = ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
+    return (HY.ymd(d) === S.today ? '今天 ' : HY.md(HY.ymd(d)) + ' ') + hm;
+  }
+  function nmBadge() {
+    var n = nmData(+localStorage.getItem(NM_SEEN) || 0).filter(function (g) { return g.fresh; }).length;
+    var b = $('#nmBadge');
+    b.hidden = !n; b.textContent = n;
+  }
+  var nmSeenShown = 0;                      // 这次打开时的「上次看过」时间，弹窗开着期间按它标「新」
+  function nmRender() {
+    var list = nmData(nmSeenShown), nNew = list.filter(function (g) { return g.fresh; }).length;
+    $('#nmDesc').textContent = list.length
+      ? '近 ' + NM_DAYS + ' 天有 ' + list.length + ' 家店在手机上点了排定时' + (nNew ? '，其中 ' + nNew + ' 家是上次查看之后新标的' : '，上次查看之后没有新的')
+      : '近 ' + NM_DAYS + ' 天还没有门店在手机上点过排定时';
+    $('#nmBody').innerHTML = list.map(function (g) {
+      return '<div class="sch-row nm-row' + (g.fresh ? ' fresh' : '') + '">' +
+        '<div class="top">' + (g.fresh ? '<span class="nm-new">新</span>' : '') +
+          '<b>' + esc(g.st.storeName) + '</b><span class="mg">' + esc(g.st.manager || '') + '</span>' +
+          '<span class="ct">' + nmWhen(g.last) + '</span></div>' +
+        '<div class="nm-days">' + g.days.map(function (x) {
+          return '<span class="' + (x.fresh ? 'on' : '') + '" title="' + nmWhen(x.at) + ' 标的">' +
+            HY.md(x.d) + ' 周' + '日一二三四五六'.charAt(HY.parseYmd(x.d).getDay()) + '</span>';
+        }).join('') + '</div></div>';
+    }).join('');
+  }
+  function bindNewMarks() {
+    $('#btnNewMarks').onclick = function () {
+      nmSeenShown = +localStorage.getItem(NM_SEEN) || 0;
+      nmRender();
+      localStorage.setItem(NM_SEEN, String(Date.now()));
+      nmBadge();
+      $('#nmModal').classList.add('open'); $('#backdrop').classList.add('on');
+    };
+    $('#nmClose').onclick = function () {
+      $('#nmModal').classList.remove('open'); $('#backdrop').classList.remove('on');
+    };
   }
   function setMarkMode(on) {
     S.markMode = on;
@@ -1854,6 +1923,7 @@
       if ($('#mgrModal').classList.contains('open')) closeMgrModal();
       else if ($('#posterModal').classList.contains('open')) closePoster();
       else if ($('#schedModal').classList.contains('open')) $('#schClose').onclick();
+      else if ($('#nmModal').classList.contains('open')) $('#nmClose').onclick();
       else closeDrawer();
     };
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeDrawer(); });
@@ -2437,6 +2507,7 @@
     bind();
     bindPoster();
     bindSched();
+    bindNewMarks();
     refreshAll();
     showPanel(hashView());
     window.addEventListener('hashchange', function () { showPanel(hashView()); });
@@ -2447,6 +2518,7 @@
     HY.bootDone();
     pullMarks();
     document.addEventListener('visibilitychange', function () { if (!document.hidden) pullMarks(); });
+    setInterval(function () { if (!document.hidden) pullMarks(); }, 120000);
   }).catch(function (e) {
     $('#board').innerHTML = '<tbody><tr><td class="emptyrow">数据加载失败：' + esc(e.message) + '</td></tr></tbody>';
     HY.bootDone();

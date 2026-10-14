@@ -2,7 +2,7 @@
    店员在 store.html 点「已排定时」、总部在看板上标，都写到这里；两边打开时都从这里拉。
    键跟前端 HY.Marks 一样：抖音号|日期。表里只存「标了的」，取消 = 删行。
 
-   GET  /marks                → { marks: { "抖音号|日期": 1, ... } }
+   GET  /marks                → { marks: { "抖音号|日期": 1, ... }, meta: { "抖音号|日期": [by, at毫秒] } }
    GET  /marks?store=抖音号    → 只要这家店的
    POST /marks  { k, on, by }  → 标 / 取消一条（by = 'store' | 'hq'，只记一下谁标的）
    POST /marks/bulk { keys }   → 批量补标（总部本机老标记第一次上云用），只加不删
@@ -34,11 +34,12 @@ export default {
     if (url.pathname === '/marks' && req.method === 'GET') {
       const store = url.searchParams.get('store');
       const r = store
-        ? await db.prepare('SELECT k FROM marks WHERE k LIKE ?').bind(store.replace(/\D/g, '') + '|%').all()
-        : await db.prepare('SELECT k FROM marks').all();
-      const marks = {};
-      r.results.forEach((x) => { marks[x.k] = 1; });
-      return json({ marks });
+        ? await db.prepare('SELECT k, by, at FROM marks WHERE k LIKE ?').bind(store.replace(/\D/g, '') + '|%').all()
+        : await db.prepare('SELECT k, by, at FROM marks').all();
+      // meta = 谁标的、什么时候标的，看板「新标记」用来列出哪些店新点了排定时
+      const marks = {}, meta = {};
+      r.results.forEach((x) => { marks[x.k] = 1; meta[x.k] = [x.by, x.at]; });
+      return json({ marks, meta });
     }
 
     if (url.pathname === '/marks' && req.method === 'POST') {
