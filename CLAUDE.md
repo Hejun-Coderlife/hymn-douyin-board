@@ -468,6 +468,16 @@ python3 tools/sync_data.py && git add -A && git commit -m "更新脚本数据" &
 - ~~按钮/卡片要有立体层次（渐变底 + inset 高光 + 投影 + hover 抬起）~~ —— 这条是旧画风时期的，
   2026-09-17 改成爱马仕风之后作废：现在就是直角 + 发丝线 + 纯色，层次靠留白和线，不靠阴影。
 - **改完直接推 GitHub**（2026-09-30 用户：「每次直接推」），不用再等用户说「推送」；推完等 Pages 构建好再汇报。
+- **推上线后必须用 Playwright 验线上版**（2026-10-14 用户定的规矩）：Pages 构建好之后，打开线上网址
+  （https://hejun-coderlife.github.io/hymn-douyin-board/ ，网址后加 `?t=时间戳` 绕开缓存），
+  把这次改动涉及的按钮和页面**都点一遍**，截图，再用文字汇报：显示了什么、数据对不对（跟云端 / 数据文件对得上吗）、
+  有没有报错（`pageerror` + 控制台 error + 4xx/5xx 请求）。**以文字和数据核对为主**，截图样式不准没关系（无头浏览器本来就不准，见「本地验证」）。
+  - **只看、只点，不许改线上数据**：不点「排定时」「标记定时」模式里的格子、侧栏「标记：已排定时」、导入、改门店档案这类会写数据的操作
+    ——定时标记是真云端（sched.hemei.asia），点一下全公司都看得到。也不往 sched.hemei.asia 发 POST。
+    打开弹窗、切页面、切月份、筛选这类只读操作随便点。
+  - 环境：Playwright 装在 `/tmp/pwtest`（`npm install --prefix /tmp/pwtest playwright`，/tmp 会被清，没了就重装）；
+    它自带的浏览器版本对不上时，`chromium.launch({ executablePath })` 指向 `~/Library/Caches/ms-playwright/chromium-*/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing`，别去 `playwright install` 下几百 MB。
+    截图存 `/tmp/pwshots/`，汇报时给出路径。
 
 ## 已上传的数据表格（2026-09-28）
 
