@@ -485,6 +485,7 @@ python3 tools/sync_data.py && git add -A && git commit -m "更新脚本数据" &
   （国内打不开 `*.workers.dev`，必须走自定义域名）。接口 `GET /marks[?store=]`、`POST /marks {k,on,by}`、`POST /marks/bulk {keys}`，无密码（网页公开，放密钥等于没放），键格式严格校验。
   前端 `HY.Marks.toggle()` 先改本机再写云端，失败自动回滚并返回 reject；`HY.Marks.pull()` 打开页面 / 切回标签页时拉，覆盖本机缓存。
   总部第一次 pull 会把本机老标记补传（`hymn_sched_uploaded_v1` 标志）。
+  **门店页 / 登录页上任何文字都不许出现「总部」**（2026-10-14 用户：被管理感很强），提示语只说事，不说给谁看。
   门店页：今天及以后、未发布的那几天，列表行右边「排定时」按钮（顶替 ›）+ 详情里一行同款大按钮，标上 = 墨绿实底「✓ 已排定时」。
   改 worker：`cd worker && npx wrangler deploy`；本地测：`npx wrangler dev --port 8799` + 页面上设 `window.HY_SCHED_API='http://localhost:8799'`。
 - **只是预先确认，不算完成、不进主完成率/战报**。

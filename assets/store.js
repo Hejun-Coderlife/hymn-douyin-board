@@ -55,7 +55,8 @@
     return (full && full.title) || (s.topic + '｜' + s.format);
   }
 
-  /* 定时标记（2026-10-14）：店员在抖音里排好了定时发布，就在这里点一下「排定时」，
+  /* 页面上（按钮、提示、空状态）**一个「总部」都不许出现**（2026-10-14 用户：被管理感很强）。
+     定时标记（2026-10-14）：店员在抖音里排好了定时发布，就在这里点一下「排定时」，
      总部看板上那天变浅绿、算进含定时完成率。存云端（HY.Marks，见 core.js），总部打开就能看到。
      只有今天及以后、还没查到已发布的那几天能标：过去的日子发没发看导出数据，不靠标。 */
   function canMark(s) { return s.date >= TODAY && label(s).c !== 'done'; }
@@ -125,7 +126,7 @@
             return '<span>' + esc(t) + '</span>';
           }).join('') + '</div></div>' : '') +
       (canMark(s) ? '<div class="mkrow">' + markBtn(s, true) +
-        '<span>在抖音里设好了定时发布，就点一下，总部能看到</span></div>' : '') +
+        '<span>在抖音里设好了定时发布，就点一下</span></div>' : '') +
       '<div class="acts">' +
         '<button class="main" data-copy="all" data-id="' + esc(s.id) + '">复制整条脚本</button>' +
         '<button class="sub2" data-copy="tags" data-id="' + esc(s.id) + '">只复制标签</button>' +
@@ -186,7 +187,7 @@
   function paintRank() {
     var R = window.HY_RANK;
     if (!R || !R.counts) {
-      $('#rankBody').innerHTML = '<div class="none" style="padding:26px 0;color:var(--dim)">还没有视频数据，等总部更新</div>';
+      $('#rankBody').innerHTML = '<div class="none" style="padding:26px 0;color:var(--dim)">还没有视频数据，稍后再来看</div>';
       return;
     }
     var r = rankKey === 'week' ? RANGES.week() : RANGES.month();
@@ -399,7 +400,7 @@
     var p = HY.Marks.toggle(id, date, 'store');
     repaintMarks();
     p.then(function (on) {
-      toast(on ? HY.md(date) + ' 已排定时，总部能看到了' : HY.md(date) + ' 已取消');
+      toast(on ? HY.md(date) + ' 已排定时' : HY.md(date) + ' 已取消');
     }, function () {
       repaintMarks();
       toast('网络不好，没标上，再点一次');
