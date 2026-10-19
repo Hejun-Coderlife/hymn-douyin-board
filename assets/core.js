@@ -391,6 +391,24 @@ window.HY = (function () {
     }
   };
 
+  /* 2026-10-19 经理改真名、张敏不做了：本机名单和本机门店编辑里的旧名字清一次。
+     旧名映射到 ''＝删掉（门店上的则去掉本机覆盖，回到 stores.js 里的归属）。 */
+  (function () {
+    var FLAG = 'hymn_mgr_rename_20261019';
+    var MAP = { '沫沫': '官卜妮', '霞姐': '杜海霞', '张敏': '' };
+    try {
+      if (localStorage.getItem(FLAG)) return;
+      var a = Managers.list().map(function (x) { return MAP.hasOwnProperty(x) ? MAP[x] : x; })
+        .filter(function (x, i, arr) { return x && arr.indexOf(x) === i; });
+      Managers.write(a);
+      var o = StoreEdits.read();
+      Object.keys(o).forEach(function (id) {
+        if (MAP.hasOwnProperty(o[id].manager)) StoreEdits.set(id, 'manager', '');
+      });
+      localStorage.setItem(FLAG, '1');
+    } catch (e) {}
+  })();
+
   /* 只要门店表，不碰脚本索引（login.html 用）。
      【为什么单独做一个】loadData() 要求 HY_STORES 和 HY_SCRIPTS **都**在，
      缺一个就退回 fetch —— 而 file:// 下 fetch 一律失败，登录页会直接白掉。
