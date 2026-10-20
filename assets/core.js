@@ -95,57 +95,15 @@ window.HY = (function () {
     });
   }
 
-  /* ---------- 视频库（localStorage，累积不覆盖） ---------- */
+  /* ---------- 视频库：只读线上 data/videos.js ----------
+     2026-10-20 用户：「改成只能走线上，把本机的去掉」。网页里不再能导入 xlsx / 备份 JSON / 清空，
+     数据只有一个来源 = 「视频数据/」文件夹 + 发布到线上。线上不含成交金额，所以每条都带 noGmv，
+     成交金额显示「—」，别当成 0。以前本机导入的 localStorage（hymn_videos_v1）不再读，也没去删。 */
   var Videos = {
-    read: function () {
-      try {
-        var raw = localStorage.getItem(LS_KEY);
-        if (!raw) return { videos: {}, meta: { imports: [] } };
-        var o = JSON.parse(raw);
-        o.videos = o.videos || {};
-        o.meta = o.meta || { imports: [] };
-        o.meta.imports = o.meta.imports || [];
-        return o;
-      } catch (e) {
-        return { videos: {}, meta: { imports: [] } };
-      }
-    },
-    write: function (o) { localStorage.setItem(LS_KEY, JSON.stringify(o)); },
-    /** 线上数据（data/videos.js，发布时生成，不含成交金额）打底，本机导入的盖在上面。
-        只有线上数据的视频标 noGmv —— 成交金额显示「—」，别当成 0 */
     list: function () {
-      var o = this.read(), map = {}, out = [];
       var pub = (window.HY_VIDEOS_PUB && window.HY_VIDEOS_PUB.videos) || [];
-      pub.forEach(function (v) { map[v.id] = Object.assign({ gmv: 0, direct: 0, noGmv: 1 }, v); });
-      for (var k in o.videos) {
-        map[k] = map[k] ? Object.assign({}, map[k], o.videos[k]) : o.videos[k];
-        delete map[k].noGmv;
-      }
-      for (var id in map) out.push(map[id]);
-      return out;
-    },
-    meta: function () { return this.read().meta; },
-    /** 按「视频ID」去重合并，已存在的用新记录覆盖字段（播放数会更新），不删旧的 */
-    merge: function (rows, source) {
-      var o = this.read(), added = 0, updated = 0;
-      rows.forEach(function (r) {
-        if (!r || !r.id) return;
-        if (o.videos[r.id]) { updated++; o.videos[r.id] = Object.assign(o.videos[r.id], r); }
-        else { added++; o.videos[r.id] = r; }
-      });
-      o.meta.imports.push({
-        at: new Date().toISOString(), file: source || '', added: added,
-        updated: updated, total: Object.keys(o.videos).length
-      });
-      if (o.meta.imports.length > 40) o.meta.imports = o.meta.imports.slice(-40);
-      this.write(o);
-      return { added: added, updated: updated, total: Object.keys(o.videos).length,
-               at: o.meta.imports[o.meta.imports.length - 1].at };   // 原文件按这个存（见 board.js RawFiles）
-    },
-    replaceAll: function (backup) {
-      this.write({ videos: backup.videos || {}, meta: backup.meta || { imports: [] } });
-    },
-    clear: function () { localStorage.removeItem(LS_KEY); }
+      return pub.map(function (v) { return Object.assign({ gmv: 0, direct: 0, noGmv: 1 }, v); });
+    }
   };
 
   /* ---------- xlsx -> 视频记录 ---------- */

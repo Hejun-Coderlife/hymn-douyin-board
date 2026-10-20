@@ -1,4 +1,4 @@
-/* 总部看板 —— 脚本日历（按天）/ 门店列表 / 视频导入 / 效果统计 */
+/* 总部看板 —— 脚本日历（按天）/ 门店列表 / 视频数据 / 效果统计 */
 (function () {
   'use strict';
 
@@ -685,7 +685,7 @@
       var g = HY.buildMonthGrid(S.ym), end = g.to;
       var upto = window.HY_VIDEOS_PUB && window.HY_VIDEOS_PUB.upto;
       if (S.today < end) end = S.today;
-      if (upto && upto < end && !HY.Videos.meta().imports.length) end = upto;
+      if (upto && upto < end) end = upto;
       var total = 0;
       for (var d = g.from; d <= end; d = HY.ymd(HY.addDays(HY.parseYmd(d), 1))) total++;
       pubCache = { key: key, days: days, total: total };
@@ -833,7 +833,7 @@
       h += videoInfo(m.video);
       h += '<div class="vmeta">※ 计划当天该门店发了这条视频，就按完成算（没有标签可核对，只看日期）。</div>';
     } else if (stt === 'late') {
-      h += '<div class="vmeta">计划日期已过，当天该门店没有视频。晚几天补发的不算，已拍的话重新导入最新数据看看。</div>';
+      h += '<div class="vmeta">计划日期已过，当天该门店没有视频。晚几天补发的不算，已拍的话等下次数据发布后再看。</div>';
     } else {
       h += '<div class="vmeta">还没到计划日期。</div>';
     }
@@ -1203,126 +1203,27 @@
     HY.toast('已导出 stores.json，替换到 data/ 里再跑 sync_data.py');
   }
 
-  /* ---------- 导入 ---------- */
-  function log(msg, cls) {
-    var d = document.createElement('div');
-    d.className = cls || '';
-    d.textContent = msg;
-    $('#log').prepend(d);
-  }
-
-  function handleFile(f) {
-    if (!f) return;
-    log('读取 ' + f.name + ' …');
-    var fr = new FileReader();
-    fr.onload = function (e) {
-      try {
-        var wb = XLSX.read(e.target.result, { type: 'array' });
-        var ws = wb.Sheets[wb.SheetNames[0]];
-        // raw:false 让大数按显示文本出来，19 位视频ID 才不会精度丢失
-        var rows = XLSX.utils.sheet_to_json(ws, { defval: '', raw: false });
-        var r = HY.rowsToVideos(rows);
-        if (!r.videos.length) { log('没解析出有效行，确认是「生意经_视频列表」的导出文件', 'err'); return; }
-        var res = HY.Videos.merge(r.videos, f.name);
-        RawFiles.put(res.at, f.name, e.target.result).then(renderFiles);
-        log('新增 ' + res.added + ' 条，更新 ' + res.updated + ' 条，累计 ' + res.total +
-            ' 条（忽略品牌号 ' + r.skippedBrand + ' 条）', 'ok');
-        refreshAll();
-      } catch (err) {
-        log('解析失败：' + err.message, 'err');
-      }
-    };
-    fr.readAsArrayBuffer(f);
-  }
-
   /* ---------- 已上传的数据表格（2026-09-28 用户：要看到清单，并且能下载） ----------
      清单来自 data/videos.js 里的 files（发布时 build_rank.js 按「视频数据/」逐个文件生成）。
-     原表有成交金额，不进公开仓库，所以下载是按原表列名重新拼出来的，少了两列成交金额。
-     本机在页面上拖进来的表：2026-09-28 起原文件存 IndexedDB（见 RawFiles），下载就是原文件、含成交金额。 */
+     原表有成交金额，不进公开仓库，所以下载是按原表列名重新拼出来的，少了两列成交金额。 */
   function rangeTxt(r) {   // 20260817~20260915 -> 2026-08-17 ~ 2026-09-15
     return r.split('~').map(function (x) {
       return /^\d{8}$/.test(x) ? x.slice(0, 4) + '-' + x.slice(4, 6) + '-' + x.slice(6) : x;
     }).join(' ~ ');
   }
-  /* 本机拖进来的 xlsx 原文件存 IndexedDB（2026-09-28 用户要能下载）。
-     localStorage 只有 5MB 左右，已经被视频明细占掉一大半，一份原表就 400~500KB，放不下；
-     IndexedDB 容量大得多。键 = 导入记录的 at（meta.imports 里那条），只在本机，含成交金额也没关系。
-     这之前导入的没存过原文件，清单上仍然显示「原表未保存」。 */
-  var RawFiles = (function () {
-    var dbp = null;
-    function db() {
-      if (!dbp) dbp = new Promise(function (ok, no) {
-        if (!window.indexedDB) return no(new Error('no idb'));
-        var q = indexedDB.open('hymn_raw_files', 1);
-        q.onupgradeneeded = function () { q.result.createObjectStore('files'); };
-        q.onsuccess = function () { ok(q.result); };
-        q.onerror = function () { no(q.error); };
-      });
-      return dbp;
-    }
-    function tx(mode, fn) {
-      return db().then(function (d) {
-        return new Promise(function (ok, no) {
-          var t = d.transaction('files', mode), st = t.objectStore('files'), out = fn(st);
-          t.oncomplete = function () { ok(out && 'result' in out ? out.result : undefined); };
-          t.onerror = function () { no(t.error); };
-        });
-      });
-    }
-    return {
-      put: function (at, name, buf) {
-        return tx('readwrite', function (st) { st.put({ name: name, buf: buf }, at); })
-          .catch(function () { log('原文件没能存到本机（浏览器空间不够），这份表之后下载不了', 'err'); });
-      },
-      get: function (at) { return tx('readonly', function (st) { return st.get(at); }); },
-      keys: function () { return tx('readonly', function (st) { return st.getAllKeys(); }).catch(function () { return []; }); },
-      del: function (at) { return tx('readwrite', function (st) { st.delete(at); }).catch(function () {}); },
-      clear: function () { return tx('readwrite', function (st) { st.clear(); }).catch(function () {}); }
-    };
-  })();
-
   function renderFiles() {
     var host = $('#fileList'); if (!host) return;
     var pub = window.HY_VIDEOS_PUB || {}, files = pub.files || [];
-    var local = HY.Videos.meta().imports || [];
     var rows = files.map(function (f, i) {
       return '<tr><td>' + esc(f.name) + '</td><td>' + esc(f.ranges.map(rangeTxt).join('、')) + '</td><td>' +
         HY.num(f.rows.length) + '</td><td>' + f.stores + '</td><td><a class="dl" data-i="' + i + '">下载</a></td></tr>';
-    });
-    var saved = renderFiles.saved || {};
-    local.slice().reverse().forEach(function (m) {
-      rows.push('<tr><td>' + esc(m.file || '（未命名）') + ' <span class="note">本机导入 ' +
-        new Date(m.at).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) +
-        '</span></td><td>—</td><td>' + HY.num(m.added + m.updated) + '</td><td>—</td><td>' +
-        (saved[m.at] ? '<a class="dl" data-raw="' + esc(m.at) + '">下载原表</a>' : '<span class="note">原表未保存</span>') +
-        '</td></tr>');
     });
     host.innerHTML = rows.length
       ? '<table class="mini"><thead><tr><th>文件</th><th>数据日期范围</th><th>视频条数</th><th>门店数</th><th></th></tr></thead><tbody>' +
         rows.join('') + '</tbody></table>'
       : '<p class="note">还没有发布过数据表格</p>';
     $$('#fileList a.dl').forEach(function (a) {
-      a.onclick = a.dataset.raw ? function () { downloadRaw(a.dataset.raw); }
-                                : function () { downloadFile(files[+a.dataset.i]); };
-    });
-    // 本机存了哪些原文件要异步查，查完有变化再画一遍；顺手删掉导入记录里已经没有的（记录只留最近 40 条）
-    RawFiles.keys().then(function (ks) {
-      var live = {}, now = {}, changed = false;
-      local.forEach(function (m) { live[m.at] = 1; });
-      ks.forEach(function (k) { if (live[k]) now[k] = 1; else RawFiles.del(k); });
-      Object.keys(now).concat(Object.keys(saved)).forEach(function (k) { if (!!now[k] !== !!saved[k]) changed = true; });
-      renderFiles.saved = now;
-      if (changed) renderFiles();
-    });
-  }
-  function downloadRaw(at) {
-    RawFiles.get(at).then(function (o) {
-      if (!o) { HY.toast('这份原表在本机找不到了'); return; }
-      var a = document.createElement('a');
-      a.href = URL.createObjectURL(new Blob([o.buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
-      a.download = o.name;
-      a.click();
-      setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+      a.onclick = function () { downloadFile(files[+a.dataset.i]); };
     });
   }
   function downloadFile(f) {
@@ -1351,15 +1252,11 @@
 
   function renderHint() {
     var n = HY.Videos.list().length;
-    if (!n) { $('#datahint').innerHTML = '未导入视频数据'; return; }
-    var meta = HY.Videos.meta();
-    var last = meta.imports[meta.imports.length - 1];
+    if (!n) { $('#datahint').innerHTML = '还没有视频数据'; return; }
     var ranges = {};
     S.videos.forEach(function (v) { if (v.rangeFrom) ranges[v.rangeFrom + '~' + v.rangeTo] = 1; });
     $('#datahint').innerHTML = '已累计 <b>' + HY.num(n) + '</b> 条视频<br>统计范围 ' +
       Object.keys(ranges).sort().join('、') +
-      (last ? '<br>本机最近导入 ' + new Date(last.at).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric',
-              hour: '2-digit', minute: '2-digit' }) : '') +
       (window.HY_VIDEOS_PUB ? '<br>线上数据截至 ' + (window.HY_VIDEOS_PUB.upto || '—') : '');
   }
 
@@ -1462,7 +1359,7 @@
 
   function renderEffect() {
     if (!S.videos.length) {
-      $('#effStores').innerHTML = '<div class="emptyrow">还没有视频数据，先去「视频数据导入」。</div>';
+      $('#effStores').innerHTML = '<div class="emptyrow">还没有视频数据，放进「视频数据」文件夹再发布到线上。</div>';
       ['#effTop', '#effWhen', '#effFreq', '#effTitle'].forEach(function (s) { $(s).innerHTML = ''; });
       return;
     }
@@ -1532,7 +1429,7 @@
     $('#effTop').innerHTML = '<h4>播放最高的 10 条</h4>' + vlist(topPlay, 'play', '播放') +
       (gmvKnown
         ? '<h4 style="margin-top:22px">成交最高的 10 条</h4>' + (topGmv.length ? vlist(topGmv, 'gmv', '成交') : '<p class="note">这段时间没有带来成交的视频。</p>')
-        : '<p class="note" style="margin-top:14px">成交金额不上线，在本机「视频数据导入」导入 xlsx 后，这里会多一张「成交最高的 10 条」。</p>');
+        : '<p class="note" style="margin-top:14px">成交金额不上线，所以这里只排播放。</p>');
 
     /* ③ 几点发、星期几发 */
     var HB = [['早上 8 点前', 0, 8], ['上午 8–11 点', 8, 11], ['中午 11–14 点', 11, 14],
@@ -1861,7 +1758,7 @@
   }
 
   /* ---------- 面板切换 ---------- */
-  var TITLES = { board: '脚本日历', stores: '门店列表', import: '视频数据导入', effect: '效果统计' };
+  var TITLES = { board: '脚本日历', stores: '门店列表', import: '视频数据', effect: '效果统计' };
   function hashView() {
     var m = /(?:^|[#&])view=([a-z]+)/.exec(location.hash || '');
     return m && TITLES[m[1]] ? m[1] : 'board';
@@ -1950,48 +1847,6 @@
     si.addEventListener('compositionend', function () { composing = false; schedule(); });
     si.oninput = function () { if (!composing) schedule(); };
 
-    $('#drop').onclick = function () { $('#file').click(); };
-    $('#file').onchange = function () { handleFile(this.files[0]); this.value = ''; };
-    ['dragenter', 'dragover'].forEach(function (ev) {
-      $('#drop').addEventListener(ev, function (e) { e.preventDefault(); this.classList.add('over'); });
-    });
-    ['dragleave', 'drop'].forEach(function (ev) {
-      $('#drop').addEventListener(ev, function (e) { e.preventDefault(); this.classList.remove('over'); });
-    });
-    $('#drop').addEventListener('drop', function (e) {
-      if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
-    });
-
-    $('#btnExportBak').onclick = function () {
-      var o = HY.Videos.read();
-      o.marks = HY.Marks.read();   // 定时标记也跟着备份走，换浏览器 / 换 file:// 与线上时能搬过去
-      var blob = new Blob([JSON.stringify(o)], { type: 'application/json' });
-      var a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = '赫眉视频数据备份_' + HY.ymd(new Date()).replace(/-/g, '') + '.json';
-      a.click();
-      URL.revokeObjectURL(a.href);
-      log('已导出备份（' + HY.num(HY.Videos.list().length) + ' 条）', 'ok');
-    };
-    $('#btnImportBak').onclick = function () { $('#fileBak').click(); };
-    $('#fileBak').onchange = function () {
-      var f = this.files[0]; this.value = '';
-      if (!f) return;
-      var fr = new FileReader();
-      fr.onload = function (e) {
-        try {
-          var o = JSON.parse(e.target.result);
-          if (!o.videos) throw new Error('不是本看板导出的备份文件');
-          var arr = Object.keys(o.videos).map(function (k) { return o.videos[k]; });
-          var res = HY.Videos.merge(arr, f.name);   // 合并而不是覆盖，更安全
-          var nm = HY.Marks.merge(o.marks);
-          log('从备份合并：新增 ' + res.added + '，更新 ' + res.updated + '，累计 ' + res.total +
-              (nm ? '；定时标记新增 ' + nm + ' 个' : ''), 'ok');
-          refreshAll();
-        } catch (err) { log('备份导入失败：' + err.message, 'err'); }
-      };
-      fr.readAsText(f);
-    };
     $('#btnExportStores').onclick = exportStores;
     $('#btnResetStores').onclick = function () {
       if (!window.confirm('清掉本机对门店档案的所有修改，回到 data/stores.json 的内容？')) return;
@@ -1999,13 +1854,6 @@
       location.reload();
     };
 
-    $('#btnClear').onclick = function () {
-      if (!window.confirm('确定清空这个浏览器里累计的全部视频数据？建议先导出备份。')) return;
-      HY.Videos.clear();
-      RawFiles.clear();
-      refreshAll();
-      log('已清空视频数据', 'err');
-    };
   }
 
   /* ---------- 生成战报图（2026-09-24 用户：选某一天 / 某一周 / 某一月 + 某几家店，
