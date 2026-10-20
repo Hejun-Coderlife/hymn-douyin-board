@@ -1214,12 +1214,18 @@
   function renderFiles() {
     var host = $('#fileList'); if (!host) return;
     var pub = window.HY_VIDEOS_PUB || {}, files = pub.files || [];
-    var rows = files.map(function (f, i) {
-      return '<tr><td>' + esc(f.name) + '</td><td>' + esc(f.ranges.map(rangeTxt).join('、')) + '</td><td>' +
+    // 最新的排最上面（2026-10-20 用户：新表压在最底下，以为没有 10 月数据）；data-i 仍指 files 里的原位置
+    var order = files.map(function (f, i) { return i; }).sort(function (a, b) {
+      var ka = (files[a].time || '') + files[a].name, kb = (files[b].time || '') + files[b].name;
+      return ka < kb ? 1 : ka > kb ? -1 : 0;
+    });
+    var rows = order.map(function (i) {
+      var f = files[i];
+      return '<tr><td>' + esc(f.name) + '</td><td>' + esc(f.time || '—') + '</td><td>' + esc(f.ranges.map(rangeTxt).join('、')) + '</td><td>' +
         HY.num(f.rows.length) + '</td><td>' + f.stores + '</td><td><a class="dl" data-i="' + i + '">下载</a></td></tr>';
     });
     host.innerHTML = rows.length
-      ? '<table class="mini"><thead><tr><th>文件</th><th>数据日期范围</th><th>视频条数</th><th>门店数</th><th></th></tr></thead><tbody>' +
+      ? '<table class="mini"><thead><tr><th>文件</th><th>更新时间</th><th>数据日期范围</th><th>视频条数</th><th>门店数</th><th></th></tr></thead><tbody>' +
         rows.join('') + '</tbody></table>'
       : '<p class="note">还没有发布过数据表格</p>';
     $$('#fileList a.dl').forEach(function (a) {

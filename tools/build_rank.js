@@ -54,7 +54,12 @@ files.sort().forEach(f => {
   const rg = {}, st = {};
   r.videos.forEach(v => { if (v.rangeFrom) rg[v.rangeFrom + '~' + v.rangeTo] = 1; st[v.store] = 1;
                           if (v.account) accounts[v.store] = v.account; });
-  fileList.push({ name: f, ranges: Object.keys(rg).sort(), stores: Object.keys(st).length,
+  // 更新时间：抖音来客导出的文件名自带「_20261020_0943」，取它；改过名的退回文件修改时间
+  const m = f.match(/_(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})/);
+  const mt = fs.statSync(path.join(dir, f)).mtime, p2 = n => String(n).padStart(2, '0');
+  const time = m ? m[1] + '-' + m[2] + '-' + m[3] + ' ' + m[4] + ':' + m[5]
+    : mt.getFullYear() + '-' + p2(mt.getMonth() + 1) + '-' + p2(mt.getDate()) + ' ' + p2(mt.getHours()) + ':' + p2(mt.getMinutes());
+  fileList.push({ name: f, time: time, ranges: Object.keys(rg).sort(), stores: Object.keys(st).length,
                   rows: r.videos.map(v => [v.id, v.play, v.validPlay]), titles: r.videos.map(v => v.title) });
   console.log('   ' + f + '：' + r.videos.length + ' 条');
 });
