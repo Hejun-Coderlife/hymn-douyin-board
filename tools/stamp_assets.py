@@ -15,7 +15,7 @@
 import io, os, re, sys, time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-PAGES = ['index.html', 'store.html', 'login.html']
+PAGES = ['index.html', 'store.html', 'login.html', 'mgr.html']
 # 只给这两个目录下的 css/js 打戳；vendor/ 是第三方库，不会改，不用打
 PAT = re.compile(r'((?:src|href)=")((?:assets|data)/[^"?]+\.(?:js|css))(\?v=[^"]*)?(")')
 
