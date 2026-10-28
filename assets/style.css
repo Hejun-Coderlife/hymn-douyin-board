@@ -439,7 +439,7 @@ body.booted .tiles .tile:nth-child(3){animation-delay:.62s}
 body.booted .tiles .tile:nth-child(4){animation-delay:.68s}
 /* 图形本身的绘制动画 */
 body.booted .tile .ring-val{animation:ringdraw 1.1s cubic-bezier(.25,.1,.25,1) .7s both}
-body.booted .tile .spark rect{animation:sparkgrow .5s cubic-bezier(.25,.1,.25,1) both}
+body.booted .tile .spark rect.bar{animation:sparkgrow .5s cubic-bezier(.25,.1,.25,1) both}
 body.booted .tile .seg{animation:segopen .8s cubic-bezier(.25,.1,.25,1) .8s both}
 body.booted .tile .ink-draw{animation:inkdraw 1.6s ease .75s both}
 @keyframes ringdraw{from{stroke-dashoffset:var(--dash)}to{stroke-dashoffset:var(--off)}}
@@ -447,7 +447,7 @@ body.booted .tile .ink-draw{animation:inkdraw 1.6s ease .75s both}
 @keyframes segopen{from{transform:scaleX(0)}to{transform:scaleX(1)}}
 @keyframes inkdraw{from{stroke-dashoffset:var(--len)}to{stroke-dashoffset:0}}
 @media (prefers-reduced-motion:reduce){
-  body.booted .tiles .tile,body.booted .tile .ring-val,body.booted .tile .spark rect,
+  body.booted .tiles .tile,body.booted .tile .ring-val,body.booted .tile .spark rect.bar,
   body.booted .tile .seg,body.booted .tile .ink-draw{animation:none}
 }
 @media (max-width:1180px){.tiles{grid-template-columns:1fr}.tiles .tile:first-child .box{aspect-ratio:auto;height:220px}.tile.tile-wide .box{aspect-ratio:auto;height:220px}}
@@ -855,10 +855,29 @@ table.list td .code{display:block;font-size:10.5px;color:var(--t4);margin-top:2p
   opacity:0;transition:opacity .12s ease;
 }
 .sparktip.on{opacity:1}
+/* 发布量柱图（2026-10-28 重画）：按真实像素画，字号就是写的 px，不随图缩放 */
+.tile .box .sparkhost{position:absolute;inset:0}
+.tile .box .sparkhost svg{width:auto;height:auto}
+body.booted .tile .spark.still rect.bar{animation:none}
+.sparkread{position:absolute;left:22px;top:16px;display:flex;align-items:baseline;gap:22px;
+  font-size:11.5px;color:var(--t3);letter-spacing:.02em;white-space:nowrap;pointer-events:none}
+.sparkread b{font-family:var(--num);font-weight:400;font-size:20px;color:var(--t1);margin:0 3px 0 5px;font-variant-numeric:lining-nums}
+.sparkread i{font-style:normal;color:var(--t3)}
+.sparkread .hl{color:var(--t1);font-size:13px;font-weight:500}
+.sparkread u.dash{display:inline-block;width:16px;margin-left:4px;vertical-align:middle;border-top:1px dashed var(--t3)}
+.spark rect.band{fill:transparent;transition:fill .12s ease}
+.spark rect.band.on{fill:var(--paper)}
+.spark line.base{stroke:var(--line-2);stroke-width:1}
+.spark line.avg{stroke:var(--t3);stroke-width:1;stroke-dasharray:3 4;opacity:.7}
 .spark rect.bar{transition:fill .12s ease}
 .spark rect.bar.on{fill:#B58B3E}        /* 悬停=色系里的棕（驼黄），别用黑也别用深绿（用户 2026-09-17 两次纠正）*/
-.spark rect.hot{cursor:default}
-.spark .bnums text{fill:#000;font-family:var(--num);font-weight:400;pointer-events:none}   /* 跟 KPI 大数字同一套 Didot（用户 2026-09-24 指定），黑色 */
+.spark rect.hot{fill:transparent;cursor:default}
+.spark .bnums text{fill:#000;font-family:var(--num);font-size:13px;font-weight:400;pointer-events:none;
+  paint-order:stroke;stroke:#fff;stroke-width:3px;stroke-linejoin:round}   /* 白描边：日均虚线从数字后面穿过去时不糊 */   /* 跟 KPI 大数字同一套 Didot（用户 2026-09-24 指定），黑色 */
+.spark .ticks text{font-size:10.5px;fill:var(--t3);font-variant-numeric:tabular-nums;pointer-events:none}
+.spark .ticks text.we{fill:var(--t4)}
+.spark .ticks text.fut{fill:#D6D1C8}
+.spark .ticks text.now{fill:var(--t1);font-weight:600}
 #tiles rect.seg{transition:opacity .12s ease}
 #tiles rect.seg:hover,#tiles rect.seg.on{opacity:.75}
 

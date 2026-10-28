@@ -190,34 +190,20 @@
       // 「状态构成」「今天的活」两块 2026-09-24 删了（用户：「这2个不要」），发布量图放大占三格
       tileRing(rate, due, c) + tileSpark(visible);
     bindSparkHover();
-    layoutSparkNums();
+    drawSpark();
     if (!renderTiles.__rs) {
       renderTiles.__rs = true;
-      window.addEventListener('resize', layoutSparkNums);
+      var rt;
+      window.addEventListener('resize', function () {
+        clearTimeout(rt);
+        rt = setTimeout(function () { drawSpark(true); }, 80);   // 重画不重播长出来的动画
+      });
     }
   }
 
-  /* 图块里的悬停标签：柱状图按周、堆叠条按状态，都在鼠标那块的正上方弹一个黑标签 */
+  /* 图块里的悬停标签：状态构成堆叠条，在鼠标那块的正上方弹一个黑标签
+     （发布量柱图 2026-10-28 改成左上读数，不再用浮层，见 drawSpark） */
   function bindSparkHover() {
-    // 1) 近 13 周柱状图
-    var spark = $('#tiles .spark');
-    if (spark) {
-      var sbox = spark.closest('.tile');             // 必须是 figure.tile（position:relative），挂到 .box 上定位会偏
-      var stip = mkTip(sbox);
-      var bars = sbox.querySelectorAll('rect.bar');
-      sbox.querySelectorAll('rect.hot').forEach(function (hot) {
-        hot.onmouseenter = function () {
-          var bar = bars[+hot.dataset.i];
-          if (bar) bar.classList.add('on');
-          showTip(stip, sbox, bar, hot.dataset.lab + ' · ' + hot.dataset.n + ' 条');
-        };
-        hot.onmouseleave = function () {
-          var bar = bars[+hot.dataset.i];
-          if (bar) bar.classList.remove('on');
-          stip.classList.remove('on');
-        };
-      });
-    }
     // 2) 状态构成堆叠条
     var segs = $$('#tiles rect.seg');
     if (segs.length) {
@@ -274,9 +260,12 @@
 
   /* 2) 发布量：跟着选中的月份走（2026-09-24 用户要求，原来是固定的「近 13 周」）
      月视图 = 该月每天一根柱；全年总览 = 每月一根柱。
-     柱顶标数字 —— 但只在排得下的时候标（用户：「前提是，数字能排得下」）：
-     画完后按 SVG 实际显示宽度量一次，一根柱的间距装不下最长的数字就整排不标，
-     改窗口大小会重新量（layoutSparkNums）。排不下时照旧靠悬停看。 */
+     【2026-10-28 重画】用户：「这个图表设计我不满意」。旧版用 viewBox 缩放，字跟着图一起放大
+     （右上「峰值 24」大得出奇），底下没有日期轴、看不出哪根是哪天，悬停黑标签还盖住旁边柱顶数字。现在：
+     - 按 .box 的真实像素画（drawSpark），字号固定，改窗口大小重画；
+     - 左上一行读数：平时是 合计 / 日均 / 峰值，悬停时换成那一天的明细（不再弹浮层，不会盖住数据）；
+     - 一条虚线日均参考线；底下日期轴，周末字浅一档，「今天」黑字标出；未来的日子不画柱子；
+     - 柱顶 Didot 数字（用户 2026-09-24 指定）只在排得下时标，排不下只标峰值和今天。 */
   function viewRange() {
     if (S.view === 'year') {
       return { from: HY.buildMonthGrid(S.months[0]).from, to: HY.buildMonthGrid(S.months[S.months.length - 1]).to };
@@ -284,71 +273,113 @@
     var g = HY.buildMonthGrid(S.ym);
     return { from: g.from, to: g.to };
   }
+  var SPARK = null;                            // 最近一次算好的柱数据，drawSpark 按像素重画用
   function tileSpark(visible) {
-    var buckets = [], idx = {};
-    if (S.view === 'year') {
+    var buckets = [], idx = {}, year = S.view === 'year';
+    if (year) {
       S.months.forEach(function (ym, i) {
         idx[ym] = i;
-        buckets.push({ lab: HY.monthLabel(ym), short: +ym.slice(5) + '月', n: 0, future: ym > HY.ymOf(S.today) });
+        buckets.push({ lab: HY.monthLabel(ym), tick: +ym.slice(5) + '月', n: 0,
+          future: ym > HY.ymOf(S.today), today: ym === HY.ymOf(S.today) });
       });
     } else {
       HY.buildMonthGrid(S.ym).days.forEach(function (d, i) {
         idx[d.date] = i;
-        buckets.push({ lab: HY.md(d.date) + '（周' + d.dow + '）', short: '', n: 0, future: d.date > S.today });
+        buckets.push({ lab: HY.md(d.date) + ' 周' + d.dow, tick: String(d.dd), date: d.date, n: 0,
+          future: d.date > S.today, today: d.date === S.today, weekend: d.weekend });
       });
     }
     S.videos.forEach(function (v) {
       if (!v.pubDate || !visible[v.store]) return;
-      var k = S.view === 'year' ? HY.ymOf(v.pubDate) : v.pubDate;
+      var k = year ? HY.ymOf(v.pubDate) : v.pubDate;
       if (idx[k] != null) buckets[idx[k]].n++;
     });
-    var max = Math.max.apply(null, buckets.map(function (w) { return w.n; })) || 1;
-    var total = buckets.reduce(function (a, w) { return a + w.n; }, 0);
-    // 宽图（占三格，box 4:1）：viewBox 也按 4:1 左右排
-    var nb = buckets.length, W = 600, H = 112, pitch = W / nb, bw = Math.max(4, Math.min(22, pitch * 0.6));
-    var bars = '', nums = '', hots = '';
+    var total = 0, past = 0, max = 0, peak = -1;
     buckets.forEach(function (w, i) {
-      var h = Math.max(w.n ? 3 : 1, Math.round(w.n / max * (H - 26)));
-      var x = pitch * i + (pitch - bw) / 2, y = H - h;
-      // 鼠标悬停靠 bindSparkHover() 画自己的标签（原生 <title> 要等 1 秒、字还小）
-      bars += '<rect class="bar" x="' + x.toFixed(1) + '" y="' + y + '" width="' + bw.toFixed(1) + '" height="' + h + '" rx="1" ' +
-        'fill="' + (w.n ? TILE_C.done : TILE_C.todo) + '" data-lab="' + w.lab + '" data-n="' + w.n + '" ' +
-        'style="transform-origin:' + (x + bw / 2).toFixed(1) + 'px ' + H + 'px;animation-delay:' + (0.72 + i * 0.015).toFixed(3) + 's"></rect>';
-      if (w.n) {
-        nums += '<text class="bnum" x="' + (x + bw / 2).toFixed(1) + '" y="' + (y - 3) + '" text-anchor="middle">' + w.n + '</text>';
-      }
-      // 透明热区：整列都能触发，不然细柱子太难瞄
-      hots += '<rect class="hot" x="' + (pitch * i).toFixed(1) + '" y="-20" width="' + pitch.toFixed(1) + '" height="' + (H + 20) +
-        '" fill="transparent" data-lab="' + w.lab + '" data-n="' + w.n + '" data-i="' + i + '"></rect>';
+      total += w.n;
+      if (!w.future) past++;
+      if (w.n > max) { max = w.n; peak = i; }
     });
-    var foot = S.view === 'year' ? '' :
-      (HY.ymOf(S.today) === S.ym ? '今天 ' + (buckets[idx[S.today]] || { n: 0 }).n : '');
-    var svg = '<svg class="spark" viewBox="-6 -22 612 152" data-w="612" role="img" aria-label="' + esc(rangeLabel()) + ' 发布量">' +
-      '<text x="' + W + '" y="-8" text-anchor="end" font-size="11" fill="#3A3A42">峰值 ' + max + '</text>' +
-      bars + '<g class="bnums">' + nums + '</g>' + hots +
-      (foot ? '<text x="' + W + '" y="' + (H + 16) + '" text-anchor="end" font-size="11" fill="#7A6E60">' + foot + '</text>' : '') +
-      '</svg>';
-    return tile(svg, S.view === 'year' ? '每月发布量' : '每天发布量', null, 'tile-wide',
+    // 日均只算已经过去的日子（含今天），不然月初会被后面的空白天拉低
+    SPARK = { b: buckets, total: total, max: max, peak: peak, avg: past ? total / past : 0, year: year };
+    return tile('<div class="sparkhost"></div>', year ? '每月发布量' : '每天发布量', null, 'tile-wide',
       total ? rangeLabel() + ' · 合计 ' + HY.num(total) + ' 条' : rangeLabel() + ' · 没有视频数据');
   }
 
-  /* 柱顶数字排不排得下：按实际显示宽度算。字号固定显示成 10px（viewBox 缩放多少就反过来除多少） */
-  function layoutSparkNums() {
-    var svg = $('#tiles svg.spark');
-    if (!svg) return;
-    var g = svg.querySelector('.bnums'), texts = g ? g.querySelectorAll('text') : [];
-    if (!texts.length) return;
-    var px = svg.getBoundingClientRect().width;
-    if (!px) return;
-    var scale = px / +svg.getAttribute('data-w');
-    var bars = svg.querySelectorAll('rect.bar');
-    var pitchPx = 600 / bars.length * scale;
-    var maxDigits = 0;
-    texts.forEach(function (t) { maxDigits = Math.max(maxDigits, t.textContent.length); });
-    var fontPx = 15, need = maxDigits * fontPx * 0.62 + 3;      // 数字字形约 0.6 个字号宽，再留 3px 缝
-    var fit = pitchPx >= need;
-    g.style.display = fit ? '' : 'none';
-    texts.forEach(function (t) { t.setAttribute('font-size', (fontPx / scale).toFixed(2)); });
+  function drawSpark(still) {
+    var host = $('#tiles .sparkhost');
+    if (!host || !SPARK) return;
+    var box = host.parentNode, W = box.clientWidth, H = box.clientHeight;
+    if (!W || !H) return;
+    var d = SPARK, b = d.b, nb = b.length, unit = d.year ? '月均' : '日均';
+    var L = 22, R = 22, top = 78, bot = H - 36, ph = bot - top;
+    var pitch = (W - L - R) / nb, bw = Math.max(3, Math.min(26, pitch * 0.56));
+    var max = Math.max(d.max, 1);
+    var yOf = function (n) { return bot - n / max * ph; };
+    var fitNum = pitch >= String(d.max).length * 8 + 6;      // Didot 13px 一个数字约 7.5px
+    var tickEvery = pitch >= 15 ? 1 : (pitch >= 8 ? 5 : 10);
+    var avg1 = (Math.round(d.avg * 10) / 10).toString();
+
+    var bands = '', bars = '', nums = '', ticks = '', hots = '';
+    b.forEach(function (w, i) {
+      var cx = L + pitch * i + pitch / 2, x = cx - bw / 2;
+      bands += '<rect class="band" x="' + (L + pitch * i).toFixed(1) + '" y="' + (top - 22) + '" width="' + pitch.toFixed(1) +
+        '" height="' + (bot - top + 22) + '" data-i="' + i + '"></rect>';
+      if (!w.future && w.n) {
+        var y = yOf(w.n);
+        bars += '<rect class="bar" x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + (bot - y).toFixed(1) +
+          '" fill="' + TILE_C.done + '" data-i="' + i + '" style="transform-origin:' + cx.toFixed(1) + 'px ' + bot + 'px;animation-delay:' +
+          (0.72 + i * 0.015).toFixed(3) + 's"></rect>';
+      }
+      if (!w.future && (fitNum || i === d.peak || w.today) && (w.n || w.today)) {
+        nums += '<text x="' + cx.toFixed(1) + '" y="' + (yOf(w.n) - 6).toFixed(1) + '" text-anchor="middle">' + w.n + '</text>';
+      }
+      var showTick = w.today || d.year || i === 0 || (+w.tick) % tickEvery === 0;
+      if (showTick && !(tickEvery > 1 && !w.today && b.some(function (o, j) { return o.today && Math.abs(j - i) < 2 && j !== i; }))) {
+        ticks += '<text class="tk' + (w.today ? ' now' : (w.future ? ' fut' : (w.weekend ? ' we' : ''))) + '" x="' + cx.toFixed(1) +
+          '" y="' + (bot + 16) + '" text-anchor="middle">' + w.tick + '</text>';
+      }
+      if (w.today) {
+        ticks += '<text class="tk now" x="' + cx.toFixed(1) + '" y="' + (bot + 29) + '" text-anchor="middle">' + (d.year ? '本月' : '今天') + '</text>';
+      }
+      hots += '<rect class="hot" x="' + (L + pitch * i).toFixed(1) + '" y="' + (top - 22) + '" width="' + pitch.toFixed(1) +
+        '" height="' + (H - top + 22) + '" data-i="' + i + '"></rect>';
+    });
+    var ya = yOf(d.avg), avgLine = d.avg ?
+      '<line class="avg" x1="' + L + '" x2="' + (W - R) + '" y1="' + ya.toFixed(1) + '" y2="' + ya.toFixed(1) + '"></line>' : '';
+
+    host.innerHTML =
+      '<div class="sparkread"></div>' +
+      '<svg class="spark' + (still ? ' still' : '') + '" width="' + W + '" height="' + H + '" role="img" aria-label="' + esc(rangeLabel()) + ' 发布量">' +
+        '<g class="bands">' + bands + '</g>' + avgLine +
+        '<line class="base" x1="' + L + '" x2="' + (W - R) + '" y1="' + (bot + 0.5) + '" y2="' + (bot + 0.5) + '"></line>' +
+        bars + '<g class="bnums">' + nums + '</g><g class="ticks">' + ticks + '</g>' + hots +
+      '</svg>';
+
+    var read = host.querySelector('.sparkread');
+    var idle = d.total
+      ? '<span>合计 <b>' + HY.num(d.total) + '</b></span><span>' + unit + ' <b>' + avg1 + '</b><u class="dash"></u></span>' +
+        (d.peak >= 0 ? '<span>峰值 <b>' + d.max + '</b>' + '<i>' + esc(d.year ? b[d.peak].tick : HY.md(b[d.peak].date)) + '</i>' + '</span>' : '')
+      : '<span>这个范围还没有视频数据</span>';
+    read.innerHTML = idle;
+    var svg = host.querySelector('svg'), bandEls = svg.querySelectorAll('rect.band');
+    svg.querySelectorAll('rect.hot').forEach(function (hot) {
+      var i = +hot.dataset.i, w = b[i];
+      hot.onmouseenter = function () {
+        bandEls[i].classList.add('on');
+        var bar = svg.querySelector('rect.bar[data-i="' + i + '"]');
+        if (bar) bar.classList.add('on');
+        var diff = w.n - d.avg, rel = w.future ? '还没到' :
+          (Math.abs(diff) < 0.05 ? '持平' + unit : (diff > 0 ? '比' + unit + '多 ' : '比' + unit + '少 ') + (Math.round(Math.abs(diff) * 10) / 10));
+        read.innerHTML = '<span class="hl">' + esc(w.lab) + (w.today ? '（' + (d.year ? '本月' : '今天') + '）' : '') + '</span>' +
+          (w.future ? '<span>' + rel + '</span>' : '<span><b>' + w.n + '</b> 条</span><span>' + rel + '</span>');
+      };
+      hot.onmouseleave = function () {
+        bandEls[i].classList.remove('on');
+        svg.querySelectorAll('rect.bar.on').forEach(function (x) { x.classList.remove('on'); });
+        read.innerHTML = idle;
+      };
+    });
   }
 
   /* 3) 本月状态构成：一根堆叠条 + 四个直接标注（段间留 2px 缝） */
