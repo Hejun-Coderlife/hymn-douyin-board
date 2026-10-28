@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>赫眉·STUDIO</title>
+<link rel="stylesheet" href="assets/store-mobile.css?v=20261028-1124">
+<style>
+/* ===========================================================
+   区域经理页（手机，只读）—— 2026-10-28 加
+   用户：「我要给几位经理一个手机上能看到门店视频发布情况，定时发布情况的网站」
+   版式沿用门店页 store-mobile.css（Didot 数字、发丝线、直角），这里只写本页独有的。
+   只看不改：不放「排定时」按钮，定时标记由店员在门店页点。
+   =========================================================== */
+.who{display:flex;align-items:baseline;justify-content:space-between;padding:18px 0 0}
+.who h1{margin:0;font-size:20px;font-weight:600;letter-spacing:.02em}
+.who h1 small{font-size:12.5px;font-weight:400;color:var(--dim);margin-left:8px;letter-spacing:.06em}
+.who a{font-size:12.5px;color:var(--ink-2);border-bottom:1px solid var(--ink-2);padding-bottom:1px}
+.upto{font-size:11.5px;color:var(--dim);padding:6px 0 0;letter-spacing:.04em}
+.sum .v small{font-size:15px;margin-left:1px}
+.sec{display:flex;align-items:baseline;justify-content:space-between;padding:26px 0 10px}
+.sec h2{margin:0;font-size:15px;font-weight:600}
+.sec .more{font-size:11.5px;color:var(--dim)}
+
+/* 未来 7 天定时：每天一格，「几家已排 / 共几家」 */
+.wk{display:grid;grid-template-columns:repeat(7,1fr);border:1px solid var(--line)}
+.wk a{padding:10px 0 9px;text-align:center;border-left:1px solid var(--line-2);color:var(--ink)}
+.wk a:first-child{border-left:0}
+.wk a .d{font-size:11px;color:var(--dim)}
+.wk a .n{font-family:var(--serif);font-size:22px;line-height:1.15;margin-top:3px}
+.wk a .n small{font-size:11px;color:var(--dim)}
+.wk a .b{height:3px;margin:7px 8px 0;background:var(--line-2);position:relative}
+.wk a .b i{position:absolute;left:0;top:0;bottom:0;background:var(--sched)}
+.wk a.on{background:var(--ink);color:#fff}
+.wk a.on .d,.wk a.on .n small{color:rgba(255,255,255,.7)}
+.wk a.on .b{background:rgba(255,255,255,.25)}
+.wkmiss{font-size:12.5px;line-height:1.7;color:var(--ink-2);padding:10px 0 0}
+.wkmiss b{font-weight:600;color:var(--ink)}
+
+/* 门店卡：店名 + 完成率 + 本月每天一格 */
+.chips.sm a{padding:7px 13px;font-size:12.5px}
+.st{border-bottom:1px solid var(--line-2);padding:14px 0 13px}
+.st .h{display:flex;align-items:baseline;gap:8px}
+.st .h .nm{font-size:15px;font-weight:500;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.st .h .nm small{font-size:11px;color:var(--dim);margin-left:6px;font-weight:400}
+.st .h .r{font-family:var(--serif);font-size:24px;line-height:1}
+.st .h .r small{font-size:12px}
+.st .h .r.lo{color:var(--pink-deep)}
+.st .sub{font-size:11.5px;color:var(--dim);margin-top:4px;letter-spacing:.02em}
+.st .sub b{font-weight:600;color:var(--ink-2)}
+.st .sub b.p{color:var(--pink-deep)}
+.strip{display:grid;gap:2px;margin-top:9px}
+.strip i{display:block;height:14px;background:var(--todo)}
+.strip i.done{background:var(--done)}
+.strip i.late{background:var(--pink-deep)}
+.strip i.sched{background:var(--sched)}
+.strip i.unk{background:repeating-linear-gradient(135deg,var(--todo) 0 2px,#fff 2px 4px)}
+.strip i.now{outline:1.5px solid var(--ink);outline-offset:1px}
+.st .more2{display:none;font-size:12.5px;line-height:1.75;color:var(--ink-2);padding:10px 0 2px}
+.st.open .more2{display:block}
+.st .more2 .k{color:var(--dim);margin-right:6px}
+.st .more2 a{color:var(--ink);border-bottom:1px solid var(--ink)}
+.key2{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:11px;color:var(--dim);padding:14px 0 0}
+.key2 i{display:inline-block;width:9px;height:9px;margin-right:5px;vertical-align:-1px}
+
+/* 选人 */
+.pk{padding:12vh 0 0}
+.pk h2{font-size:15px;font-weight:500;text-align:center;margin:0 0 22px;color:var(--ink-2);letter-spacing:.08em}
+.pk a{display:flex;align-items:baseline;justify-content:space-between;border:1px solid var(--line);
+  padding:17px 16px;margin-top:10px;color:var(--ink);font-size:16px}
+.pk a small{font-size:12px;color:var(--dim)}
+:root{--todo:#EAE6DD;--sched:#A9C0B1}
+.hide{display:none!important}
+</style>
+</head>
+<body>
+<div id="boot"><div class="bmark"><img src="assets/logo-ink.png" alt="赫眉 HYMN"></div></div>
+
+<div class="ph">
+  <div class="bar"><span class="av l"></span><span class="lock"><span class="lg"></span><em>·</em><b>STUDIO</b></span><span class="av l"></span></div>
+
+  <div id="viewPick" class="pk hide">
+    <h2>你是哪位区域经理</h2>
+    <div id="pickList"></div>
+  </div>
+
+  <div id="viewMain" class="hide">
+    <div class="who"><h1 id="mgrName">—</h1><a id="goPick">切换</a></div>
+    <div class="upto" id="upto"></div>
+    <div class="chips" id="moChips"></div>
+    <div class="sum" id="sum"></div>
+
+    <div class="sec"><h2>接下来 7 天 · 定时排了几家</h2><span class="more">点某天看没排的店</span></div>
+    <div class="wk" id="wk"></div>
+    <div class="wkmiss" id="wkMiss"></div>
+
+    <div class="sec"><h2>门店</h2><span class="more">点门店看明细</span></div>
+    <div class="chips sm" id="sortChips"><a class="on" data-s="rate">完成率低的在前</a><a data-s="late">逾期多的在前</a><a data-s="sched">定时少的在前</a></div>
+    <div id="stores"></div>
+    <div class="key2">
+      <span><i style="background:var(--done)"></i>已发布</span>
+      <span><i style="background:var(--pink-deep)"></i>逾期未发</span>
+      <span><i style="background:var(--sched)"></i>已排定时</span>
+      <span><i style="background:var(--todo)"></i>还没到</span>
+      <span><i style="background:repeating-linear-gradient(135deg,var(--todo) 0 2px,#fff 2px 4px)"></i>数据还没更新</span>
+    </div>
+  </div>
+</div>
+
+<script src="data/stores.js?v=20261028-1124"></script>
+<script src="data/scripts-index.js?v=20261028-1124"></script>
+<script src="data/videos.js?v=20261028-1124"></script>
+<script src="assets/core.js?v=20261028-1124"></script>
+<script src="assets/mgr.js?v=20261028-1124"></script>
+</body>
+</html>
