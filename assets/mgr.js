@@ -128,8 +128,15 @@
       var more =
         '<div><span class="k">逾期</span>' + (c.lateDays.length ? c.lateDays.map(HY.md).join('、') : '没有') + '</div>' +
         '<div><span class="k">接下来已排定时</span>' + (c.schedDays.length ? c.schedDays.map(function (d) { return HY.md(d) + ' 周' + wd(d); }).join('、') : '还没排') + '</div>' +
-        '<div><span class="k">本月发了</span>' + vids.length + ' 条' +
-          (vids[0] ? '，最近一条 ' + HY.md(vids[0].pubDate) + (vids[0].url ? ' <a href="' + esc(vids[0].url) + '" target="_blank" rel="noopener">看视频</a>' : '') : '') + '</div>';
+        '<div><span class="k">本月发了</span>' + vids.length + ' 条</div>' +
+        // 每条视频都列出来（2026-10-28 用户：「要每个视频都能看到」），新的在上，点整行去抖音
+        (vids.length ? '<div class="vl">' + vids.map(function (v) {
+          var sc = S.m.claimed[v.id] ? '' : '<em>计划外</em>';
+          return '<a class="v" href="' + esc(v.url) + '" target="_blank" rel="noopener">' +
+            '<span class="vd">' + HY.md(v.pubDate) + '<br>周' + wd(v.pubDate) + '</span>' +
+            '<span class="vt">' + sc + esc(String(v.title || '').split('#')[0].trim() || String(v.title || '').trim() || '（无标题）') + '</span>' +
+            '<span class="vp">' + (v.play ? HY.num(v.play) + '<br>播放' : '') + '</span><span class="go">›</span></a>';
+        }).join('') + '</div>' : '');
       return '<div class="st' + (S.open[id] ? ' open' : '') + '" data-id="' + esc(id) + '">' +
         '<div class="h"><span class="nm">' + esc(st.storeName) + '<small>' + esc(st.code || '') + '</small></span>' +
           '<span class="r' + (c.rate != null && c.rate < 80 ? ' lo' : '') + '">' + (c.rate == null ? '–' : c.rate + '<small>%</small>') + '</span></div>' +
