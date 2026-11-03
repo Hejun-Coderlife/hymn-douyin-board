@@ -7,6 +7,18 @@ echo "  赫眉抖音脚本看板 · 发布到线上"
 echo "════════════════════════════════════════════"
 echo
 
+# 先把线上的改动拉下来（另一台 Windows 电脑也会改代码直接推）。
+# 必须放最前面：后面 stamp_assets.py 会改 html 的版本戳，先生成再拉容易冲突。
+echo "⓪ 先拉取线上的改动…"
+if ! git pull -q --rebase --autostash origin main; then
+  echo
+  echo "❌ 拉取失败：和线上的改动冲突了，需要先合并，再双击一次。"
+  echo "   当前状态："
+  git status
+  echo; read -n 1 -s -r -p "按任意键关闭"; exit 1
+fi
+echo
+
 if [ ! -f data/scripts.json ]; then
   echo "⚠️  没找到 data/scripts.json —— 先把 AI 生成的脚本放到那里再来。"
   echo; read -n 1 -s -r -p "按任意键关闭"; exit 1
@@ -36,8 +48,13 @@ echo
 echo "③ 提交并推送…"
 git add -A
 git commit -q -m "更新脚本数据（$(date '+%Y-%m-%d %H:%M')）" || true
-if ! git push -q origin main; then
-  echo "❌ 推送失败。多半是网络/代理的问题，等一下再双击一次就行。"
+if ! PUSH_OUT=$(git push -q origin main 2>&1); then
+  echo "$PUSH_OUT"
+  if echo "$PUSH_OUT" | grep -qiE 'rejected|non-fast-forward|fetch first'; then
+    echo "❌ 推送被拒绝：线上有新的提交，再双击一次就会先拉下来。"
+  else
+    echo "❌ 推送失败。可能是网络/代理的问题，等一下再双击一次就行。"
+  fi
   echo; read -n 1 -s -r -p "按任意键关闭"; exit 1
 fi
 echo "   已推送。"
