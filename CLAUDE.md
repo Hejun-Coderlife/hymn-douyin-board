@@ -415,6 +415,10 @@ node tools/dom_check.js '#view=effect' '#p-effect' --seed=/tmp/fakevideos.json
 （已 .gitignore，含成交金额不上线），`node tools/build_rank.js` 汇总成**每店每天条数**，发布脚本会自动跑。
 条数口径 = 按发布日期数，脚本视频 + 自由发挥都算，按视频ID去重。标题旁「数据截至」= 导出统计范围终点。
 
+**门店页「本周」列表的完成情况也读 `data/rank.js`**（2026-11-03，见 store.js 头注释）：过了计划日，截至日之前有视频 = 「已发布」、没有 = 「没查到视频」，截至日之后 = 「数据未更新」；顶部三个数变成 已发布 / 没查到 / 今天。
+起因是门店电脑上的赫眉助手会弹抖音战报卡片（数据同样来自 rank.js），原来门店页一律写「计划日期已过」，跟卡片打架。
+战报卡片的数据由另一台 Windows 电脑上的「LoginWatch 汇总服务」（登录监控仓库的 watchdog.ps1）读线上 `data/rank.js` 生成，推到 Gitee，**这边发布流程不用改**；改 rank.js 的格式要跟那边一起改。
+
 同一步还生成 `data/videos.js`（`window.HY_VIDEOS_PUB`，视频明细**去掉成交金额**，用户选的「除成交金额外都传」），
 index.html 加载它，`HY.Videos.list()` 用它打底、本机 localStorage 导入的盖在上面 → **总部看板打开就有数据，不用再导入**。
 只有线上数据的视频带 `noGmv`，效果统计 / 抽屉里成交金额显示「—」不显示 0；要看成交还是得本机导入 xlsx。

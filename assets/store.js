@@ -7,9 +7,11 @@
    data/scripts/<门店编号>-<年月>.js 分片（开头 3 秒、分镜、标签）。
    **分片只在要用到那个月时才拉**，一次一个月约 70KB，手机上不会卡。
 
-   状态怎么定（跟旧版一致，别改）：店员手机上通常没有视频数据，
-   所以**不猜发没发** —— 过了计划日只说「计划日期已过」，不说「逾期未发」。
-   只有本机真导入过视频数据时，才显示已发布/逾期。 */
+   状态怎么定：店员手机上没有视频明细，但有 data/rank.js（每店每天发了几条，排行也用它）。
+   2026-11-03 起过了计划日就按它说（用户：赫眉助手的战报卡片说「发了」，门店页却写「计划日期已过」，两边打架）：
+   数据截至日之前 —— 那天有视频 = 已发布，没有 = 没查到视频；截至日之后 = 数据未更新。
+   口径跟匹配规则一致（同一天有视频就算发了），**仍然不说「逾期」**。
+   rank.js 没有时退回旧说法「计划日期已过」；本机真导入过视频数据时走 HY.statusOf。 */
 (function () {
   'use strict';
   var $ = function (s, r) { return (r || document).querySelector(s); };
@@ -48,7 +50,13 @@
       if (stt === 'todo' && s.date < TODAY) return { t: '数据未更新', c: 'todo' };
       return { t: HY.STATUS_CN[stt], c: stt };
     }
-    return s.date < TODAY ? { t: '计划日期已过', c: 'late' } : { t: '待拍', c: 'todo' };
+    if (s.date >= TODAY) return { t: '待拍', c: 'todo' };
+    var R = window.HY_RANK;
+    if (R && R.counts && R.upto) {
+      if (s.date > R.upto) return { t: '数据未更新', c: 'todo' };
+      return (R.counts[id] || {})[s.date] > 0 ? { t: '已发布', c: 'done' } : { t: '没查到视频', c: 'late' };
+    }
+    return { t: '计划日期已过', c: 'late' };
   }
   function titleOf(s) {
     var full = HY.detail(s.id);
@@ -159,9 +167,11 @@
 
       var c = { done: 0, late: 0, todo: 0, now: 0 };
       rows.forEach(function (s) { var l = label(s); if (c[l.c] != null) c[l.c]++; });
+      var R = window.HY_RANK, RANKED = !HASVIDEO && R && R.counts && R.upto;
       var sum = HASVIDEO
         // 第三个值 = 给哪个数上色：1=品牌粉（要处理的），2=墨绿（已完成的）
         ? [['已发布', c.done, 2], ['逾期', c.late, 1], ['今天', c.now, 0]]
+        : RANKED ? [['已发布', c.done, 2], ['没查到', c.late, 1], ['今天', c.now, 0]]
         : [['已到期', c.late, 1], ['待拍', c.todo, 0], ['今天', c.now, 0]];
       $('#viewA .sum').innerHTML = sum.map(function (x) {
         return '<div><div class="v' + (x[2] === 1 ? ' p' : x[2] === 2 ? ' g' : '') + '">' + x[1] + '</div>' +
@@ -173,7 +183,7 @@
         return '<div class="row ' + l.c + '" data-id="' + esc(s.id) + '">' +
           '<div class="dt"><b>' + dd.getDate() + '</b><span>' + WD[dd.getDay()] + '</span></div>' +
           '<div class="mid"><div class="t">' + esc(titleOf(s)) + '</div>' +
-            '<div class="s' + (l.c === 'late' ? ' late' : '') + '">' + l.t + '</div></div>' +
+            '<div class="s' + (l.c === 'late' || l.c === 'done' ? ' ' + l.c : '') + '">' + l.t + '</div></div>' +
           (canMark(s) ? markBtn(s) : '<div class="go">›</div>') + '</div>';
       }).join('') || '<div class="none" style="padding:26px 0;color:var(--dim)">这段时间还没有脚本</div>';
     });
