@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>赫眉·抖音战报</title>
+<link rel="stylesheet" href="assets/store-mobile.css?v=20261106-0953">
+<style>
+/* ===========================================================
+   抖音战报页（只读）—— 2026-11-06 加
+   门店电脑上赫眉助手点「抖音战报」打开（Chrome/Edge --app 窗口）。
+   用户：「要能看到所有门店的，应该是能看到日、周、月、自选」。
+   图跟看板「生成战报图」是同一张（assets/report.js 同一套口径和画法），全部门店、带排名。
+   页面上的字不许出现「总部」（见 CLAUDE.md）。
+   只看不改：不放导入、标记这些写数据的按钮。
+   =========================================================== */
+.ph{max-width:620px}
+.rp-modes{padding-top:18px}
+.chips a.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.rp-dates{display:flex;align-items:center;gap:8px;padding:12px 0 0;font-size:13px;color:var(--ink-2)}
+.rp-dates input{font:inherit;font-size:14px;padding:7px 9px;border:1px solid var(--line);background:#fff;color:var(--ink)}
+.rp-info{font-size:11.5px;color:var(--dim);padding:10px 0 0;letter-spacing:.04em}
+.rp-img{margin:14px 0 0;border:1px solid var(--line)}
+.rp-img canvas{display:block;width:100%;height:auto}
+.rp-btns{display:flex;gap:10px;padding:14px 0 30px}
+.rp-btns a{font-size:13px;padding:9px 18px;border:1px solid var(--ink);color:var(--ink);cursor:pointer}
+.rp-btns a.pri{background:var(--ink);color:#fff}
+.hide{display:none!important}
+</style>
+</head>
+<body>
+<div id="boot"><div class="bmark"><img src="assets/logo-ink.png" alt="赫眉 HYMN"></div></div>
+
+<div class="ph">
+  <div class="bar"><span class="av l"></span><span class="lock"><span class="lg"></span><em>·</em><b>STUDIO</b></span><span class="av l"></span></div>
+
+  <div class="chips rp-modes" id="modes">
+    <a data-m="day">日报</a><a data-m="week">周报</a><a data-m="month">月报</a><a data-m="range">自选</a>
+  </div>
+  <div class="rp-dates">
+    <span id="oneBox"><input type="date" id="date"></span>
+    <span id="rangeBox" class="hide"><input type="date" id="from"> — <input type="date" id="to"></span>
+  </div>
+  <div class="rp-info" id="info"></div>
+  <div class="rp-img" id="img"></div>
+  <div class="rp-btns"><a class="pri" id="dl">下载图片</a></div>
+</div>
+
+<script src="data/stores.js?v=20261106-0953"></script>
+<script src="data/scripts-index.js?v=20261106-0953"></script>
+<script src="data/videos.js?v=20261106-0953"></script>
+<script src="assets/core.js?v=20261106-0953"></script>
+<script src="assets/report.js?v=20261106-0953"></script>
+<script>
+(function () {
+  'use strict';
+  var $ = function (s) { return document.querySelector(s); };
+  var P = { mode: 'week', date: '', from: '', to: '' };
+  var D, videos, byScript, cut, logo = null, canvas = null;
+  // 跟看板 style.css 的 --done / --late 一样（本页用的 store-mobile.css 没有 --late），图才跟看板生成的一模一样
+  var COLORS = { done: '#2F5D45', late: '#B9808B' };
+
+  function render() {
+    Array.prototype.forEach.call(document.querySelectorAll('#modes a'), function (a) {
+      a.classList.toggle('on', a.dataset.m === P.mode);
+    });
+    var rg = P.mode === 'range';
+    $('#oneBox').classList.toggle('hide', rg); $('#rangeBox').classList.toggle('hide', !rg);
+    var R = HY.Report.compute({ stores: D.stores, scripts: D.scripts, videos: videos, byScript: byScript,
+                                r: HY.Report.range(P), cut: cut, scope: '全部 ' + D.stores.length + ' 家店' });
+    $('#info').textContent = R.r.from + ' ~ ' + R.r.to + (R.future ? ' · 这段时间还没有视频数据' : '');
+    canvas = HY.Report.draw(R, logo, COLORS);
+    $('#img').innerHTML = ''; $('#img').appendChild(canvas);
+  }
+
+  function bind() {
+    Array.prototype.forEach.call(document.querySelectorAll('#modes a'), function (a) {
+      a.onclick = function () { P.mode = a.dataset.m; render(); };
+    });
+    $('#date').onchange = function () { if (this.value) { P.date = this.value; render(); } };
+    $('#from').onchange = $('#to').onchange = function () {
+      var f = $('#from').value, t = $('#to').value;
+      if (!f || !t) return;
+      if (f > t) { var x = f; f = t; t = x; $('#from').value = f; $('#to').value = t; }
+      P.from = f; P.to = t; render();
+    };
+    $('#dl').onclick = function () {
+      if (!canvas) return;
+      var r = HY.Report.range(P), a = document.createElement('a');
+      a.download = '赫眉视频战报_' + r.from + (r.to !== r.from ? '_' + r.to : '') + '.png';
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+    };
+  }
+
+  var im = new Image();
+  var logoReady = new Promise(function (ok) { im.onload = function () { logo = im; ok(); }; im.onerror = ok; });
+  im.src = 'assets/logo-ink.png';
+
+  Promise.all([HY.loadData(), logoReady]).then(function (a) {
+    D = a[0];
+    videos = HY.Videos.list();
+    byScript = HY.match(D.scripts, videos).byScript;
+    cut = HY.Report.cutoff(videos, HY.ymd(new Date()));
+    var q = new URLSearchParams(location.search).get('m');
+    if (['day', 'week', 'month', 'range'].indexOf(q) >= 0) P.mode = q;
+    P.date = cut; P.to = cut; P.from = HY.ymd(HY.addDays(HY.parseYmd(cut), -6));
+    $('#date').value = P.date; $('#from').value = P.from; $('#to').value = P.to;
+    bind();
+    render();
+    HY.bootDone();
+  }).catch(function (err) {
+    HY.bootDone();
+    $('#info').textContent = '加载失败：' + (err && err.message);
+  });
+})();
+</script>
+</body>
+</html>
