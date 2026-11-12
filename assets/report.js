@@ -83,6 +83,9 @@
     g.fillStyle = '#FFFFFF'; g.fillRect(0, 0, W, H);
     // 顶上一条品牌粉细带
     g.fillStyle = C.pink; g.fillRect(0, 0, W, 4);
+    // 背景水印「抖」（2026-11-12 用户，跟会员战报的「VIP」水印同一做法）：右上角宋体大字，淡粉，压在内容下面
+    g.save(); g.globalAlpha = 0.12; g.fillStyle = C.pink; g.font = '170px ' + SONG; g.textAlign = 'right'; g.textBaseline = 'alphabetic';
+    g.fillText('抖', W - PAD + 4, 215); g.restore();
 
     // 头部：logo + STUDIO / 右边小字标签
     var y = 44;
