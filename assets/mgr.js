@@ -216,6 +216,8 @@
   HY.loadData().then(function (d) {
     D = d;
     var q = new URLSearchParams(location.search).get('m');
+    // 嵌在会员助手 vip.hemei.asia/hq 里（2026-11-13 用户：经理的抖音页合并进去）：?embed=1&m=经理名，只看自己，不给切换
+    if (q && /[?&]embed=1/.test(location.search)) document.documentElement.classList.add('embed');   // 总号没带 m 时照常能切换
     var saved = '';
     try { saved = localStorage.getItem(LS_ME) || ''; } catch (e) {}
     var names = mgrList().map(function (m) { return m.name; });
