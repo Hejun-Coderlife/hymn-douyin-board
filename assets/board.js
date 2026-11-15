@@ -93,26 +93,40 @@
     var fmt = function (d) { return (f.slice(0, 4) !== t.slice(0, 4) ? d.slice(0, 4) + '/' : '') + HY.md(d); };
     return f === t ? fmt(f) : fmt(f) + ' – ' + fmt(t);
   }
+  /* 2026-11-15 用户：「这里的日期也按同样的来」—— 换成赫眉统一的时间段条（assets/rangeseg.js）：
+     今天｜昨天｜近7天｜近30天｜本月｜自定义（弹框改年月日数字）。原来的两个 type=date + 「跟随月份」按钮去掉了；
+     S.range = null 仍是跟着月份条走，现在点月份条 / 全年总览就回到跟随（代替原来的「跟随月份」按钮）。
+     选的档存 localStorage.hymn_rseg（刷新不丢），预设档每次按今天重算。 */
+  var RSEG = null, RKEY = 'hymn_rseg';
+  function dataFirst() {     // 有数据的第一天 = 最早的脚本日 / 视频发布日，区间比它早就从这天算
+    var f = '';
+    S.scripts.forEach(function (x) { if (!f || x.date < f) f = x.date; });
+    (S.videos || []).forEach(function (v) { if (v.pubDate && v.pubDate < f) f = v.pubDate; });
+    return f || null;
+  }
+  function saveRange() { try { if (S.range) localStorage.setItem(RKEY, JSON.stringify(S.range)); else localStorage.removeItem(RKEY); } catch (e) {} }
+  function followMonth() { S.range = null; S.pickAnchor = null; saveRange(); }
   function syncRangeBar() {
-    var from, to;
-    if (S.range) { from = S.range.from; to = S.range.to; }
-    else { var r = viewRange(); from = r.from; to = r.to; }
-    $('#rFrom').value = from; $('#rTo').value = to;
-    $('#rReset').hidden = !S.range;
-    $('.rangebar').classList.toggle('custom', !!S.range);
+    var p = '', f, t;
+    if (S.range) { p = S.range.p || 'custom'; f = S.range.from; t = S.range.to; }
+    else {
+      var r = viewRange(); f = r.from; t = r.to;
+      if (S.view === 'month' && S.ym === HY.ymOf(S.today)) p = 'month';
+    }
+    RSEG.show(p, f, t);
   }
   function bindRangeBar() {
-    function pick() {
-      var f = $('#rFrom').value, t = $('#rTo').value;
-      if (!f || !t) return;
-      if (f > t) { var x = f; f = t; t = x; }
-      S.range = { from: f, to: t };
-      S.pickAnchor = null;
-      render();
-    }
-    $('#rFrom').onchange = pick;
-    $('#rTo').onchange = pick;
-    $('#rReset').onclick = function () { S.range = null; S.pickAnchor = null; render(); };
+    RSEG = HY.rangeSeg($('#rSeg'), {
+      first: dataFirst,
+      onPick: function (p, f, t) { S.range = { p: p, from: f, to: t }; S.pickAnchor = null; saveRange(); render(); }
+    });
+    try {
+      var o = JSON.parse(localStorage.getItem(RKEY) || 'null');
+      if (o && o.from) {
+        var r = o.p && o.p !== 'custom' ? HY.periodRange(o.p, '', '', dataFirst()) : o;
+        S.range = { p: o.p || 'custom', from: r.from, to: r.to };
+      }
+    } catch (e) {}
   }
 
   /* 在日历表头上直接选统计日期（2026-09-30 用户：「我想要在这里直接能选日期，不用到上面去点」）：
@@ -124,16 +138,17 @@
         if (th.dataset.date) {
           var d = th.dataset.date, a = S.pickAnchor;
           if (a && a !== d) {
-            S.range = a < d ? { from: a, to: d } : { from: d, to: a };
+            S.range = a < d ? { p: 'custom', from: a, to: d } : { p: 'custom', from: d, to: a };
             S.pickAnchor = null;
           } else {
-            S.range = { from: d, to: d };
+            S.range = { p: 'custom', from: d, to: d };
             S.pickAnchor = d;
           }
         } else {
-          S.range = { from: th.dataset.from, to: th.dataset.to };
+          S.range = { p: 'custom', from: th.dataset.from, to: th.dataset.to };
           S.pickAnchor = null;
         }
+        saveRange();
         var wrap = $('.gridwrap'), left = wrap ? wrap.scrollLeft : 0;
         render();
         if (wrap) wrap.scrollLeft = left;
@@ -476,9 +491,9 @@
     $('#monthbar').innerHTML = h;
 
     $$('#monthbar .mchip[data-ym]').forEach(function (el) {
-      el.onclick = function () { S.view = 'month'; S.ym = el.dataset.ym; render(); scrollMonthIntoView(); };
+      el.onclick = function () { S.view = 'month'; S.ym = el.dataset.ym; followMonth(); render(); scrollMonthIntoView(); };
     });
-    $('#mYear').onclick = function () { S.view = S.view === 'year' ? 'month' : 'year'; render(); };
+    $('#mYear').onclick = function () { S.view = S.view === 'year' ? 'month' : 'year'; followMonth(); render(); };
     $('#mPrev').onclick = function () { stepMonth(-1); };
     $('#mNext').onclick = function () { stepMonth(1); };
     scrollMonthIntoView();
@@ -486,7 +501,7 @@
   function stepMonth(d) {
     var i = S.months.indexOf(S.ym) + d;
     if (i < 0 || i >= S.months.length) return;
-    S.view = 'month'; S.ym = S.months[i];
+    S.view = 'month'; S.ym = S.months[i]; followMonth();
     render(); scrollMonthIntoView();
   }
   function scrollMonthIntoView() {
@@ -803,7 +818,7 @@
       el.onclick = function () { openFree(el.dataset.free); };
     });
     $$('#board td.mcell[data-ym]').forEach(function (el) {
-      el.onclick = function () { S.view = 'month'; S.ym = el.dataset.ym; render(); };
+      el.onclick = function () { S.view = 'month'; S.ym = el.dataset.ym; followMonth(); render(); };
     });
   }
 
@@ -1901,9 +1916,11 @@
        - 应发 = 范围内计划日期 <= 数据截至日 的脚本（抖音导出只到前一天，截至日之后的还没法判断，不算逾期）
        - 完成率 = 当天发了的 ÷ 应发，跟看板一致
        - 范围内一条脚本都没到期（比如脚本开排之前的日子）→ 改算「发布率」= 有发视频的天数 ÷ 天数 */
-  var PST = { mode: 'week', date: '', from: '', to: '' };
+  /* 2026-11-15：时间换成统一的「今天｜昨天｜近7天｜近30天｜本月｜自定义」（assets/rangeseg.js），原来的 日报/周报/月报/自选 + 日期框去掉。
+     默认「近7天」（抖音导出常常晚几天，默认昨天经常是空的）；选的档存 localStorage.hymn_pst_p，预设档按今天重算。 */
+  var PST = { p: 'd7', from: '', to: '' }, PSEG = null, PKEY = 'hymn_pst_p';
 
-  function pstRange() { return HY.Report.range(PST); }
+  function pstRange() { return HY.Report.range({ mode: 'range', from: PST.from, to: PST.to }); }
 
   /** 视频数据截到哪天：各导出文件「数据日期范围」终点里最晚的，再不晚于昨天 */
   function pstCutoff() { return HY.Report.cutoff(S.videos, S.today); }
@@ -1937,9 +1954,7 @@
 
   var pstCanvas = null;
   function pstRender() {
-    $$('#pstModes .segbtn').forEach(function (b) { b.classList.toggle('on', b.dataset.m === PST.mode); });
-    var rg = PST.mode === 'range';
-    $('#pstDate').hidden = rg; $('#pstRangeBox').hidden = !rg;
+    PSEG.show(PST.p, PST.from, PST.to);
     var D = pstData();
     $('#pstInfo').textContent = D.r.from + ' ~ ' + D.r.to + ' · ' + D.scope +
       (D.future ? ' · 这段时间还没有视频数据' : '');
@@ -1957,10 +1972,7 @@
   }
   function openPoster() {
     if (HY.ymd(new Date()) !== S.today) refreshAll();   // 标签页一直亮着过了夜，visibilitychange 不会触发
-    if (!PST.date) PST.date = pstCutoff();
-    $('#pstDate').value = PST.date;
-    if (!PST.to) { PST.to = PST.date; PST.from = HY.ymd(HY.addDays(HY.parseYmd(PST.date), -6)); }
-    $('#pstFrom').value = PST.from; $('#pstTo').value = PST.to;
+    if (PST.p !== 'custom' || !PST.from) { var r = HY.periodRange(PST.p, PST.from, PST.to, dataFirst()); PST.from = r.from; PST.to = r.to; }
     $('#posterModal').classList.add('open');
     $('#backdrop').classList.add('on');
     pstRender();
@@ -1976,16 +1988,15 @@
       if (S.markMode) HY.toast('点日历格子标记 / 取消「已排定时」，标完点「完成标记」');
     };
     $('#pstClose').onclick = closePoster;
-    $$('#pstModes .segbtn').forEach(function (b) {
-      b.onclick = function () { PST.mode = b.dataset.m; pstRender(); };
+    try { var o = JSON.parse(localStorage.getItem(PKEY) || 'null'); if (o && o.p) { PST.p = o.p; PST.from = o.from || ''; PST.to = o.to || ''; } } catch (e) {}
+    PSEG = HY.rangeSeg($('#pstSeg'), {
+      first: dataFirst,
+      onPick: function (p, f, t) {
+        PST.p = p; PST.from = f; PST.to = t;
+        try { localStorage.setItem(PKEY, JSON.stringify(PST)); } catch (e) {}
+        pstRender();
+      }
     });
-    $('#pstDate').onchange = function () { if (this.value) { PST.date = this.value; pstRender(); } };
-    $('#pstFrom').onchange = $('#pstTo').onchange = function () {
-      var f = $('#pstFrom').value, t = $('#pstTo').value;
-      if (!f || !t) return;
-      if (f > t) { var x = f; f = t; t = x; $('#pstFrom').value = f; $('#pstTo').value = t; }
-      PST.from = f; PST.to = t; pstRender();
-    };
     $('#pstDownload').onclick = function () {
       if (!pstCanvas) return;
       try {
